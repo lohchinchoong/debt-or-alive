@@ -393,7 +393,7 @@ function GrowthChart({ data }: { data: YearData[] }) {
 
 // ─── YearlyTable ──────────────────────────────────────────────────────────────
 function YearlyTable({ data }: { data: YearData[] }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   const COLS = [
     { key: "year", label: "Year" },
@@ -745,6 +745,132 @@ export function CompoundInterestPage() {
 
           {/* ── Yearly Table ─────────────────────────────────────────────── */}
           <YearlyTable data={data} />
+
+          {/* ── How It Works ─────────────────────────────────────────────── */}
+          <div
+            className="rounded-xl p-8"
+            style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+          >
+            <h2
+              className="text-xl font-bold mb-6"
+              style={{ color: "var(--on-surface)", letterSpacing: "-0.01em" }}
+            >
+              How It Works
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+
+              {/* 1 — The core formula */}
+              <div>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                  >
+                    1
+                  </span>
+                  <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>
+                    The Core Formula
+                  </h3>
+                </div>
+                <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
+                  Your final balance is calculated using the standard compound interest formula:{" "}
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>
+                    FV = PV × (1 + r/n)^(n×t)
+                  </span>
+                  , where <em>PV</em> is your initial investment, <em>r</em> is the annual interest rate,{" "}
+                  <em>n</em> is how many times interest compounds per year, and <em>t</em> is time in years.
+                  Regular contributions are added on top using the future value of an annuity formula.
+                </p>
+              </div>
+
+              {/* 2 — Compounding frequency */}
+              <div>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                  >
+                    2
+                  </span>
+                  <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>
+                    Compounding Frequency
+                  </h3>
+                </div>
+                <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
+                  The more often interest is compounded, the more you earn — because each period&apos;s
+                  interest starts earning its own interest sooner. Monthly compounding (12×/yr) is standard
+                  for most savings accounts and fixed deposits, while daily (365×/yr) is used by some
+                  high-yield accounts. The difference becomes more pronounced over longer time horizons.
+                </p>
+              </div>
+
+              {/* 3 — Contribution timing */}
+              <div>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                  >
+                    3
+                  </span>
+                  <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>
+                    Start vs. End of Month
+                  </h3>
+                </div>
+                <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
+                  Contributing at the <span className="font-semibold" style={{ color: "var(--on-surface)" }}>start</span> of
+                  each month means each deposit earns one extra compounding period of interest — this is called
+                  an <em>annuity due</em>. Contributing at the{" "}
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>end</span> (ordinary annuity)
+                  is more common in practice, matching how most bank transfers and salary-linked contributions work.
+                  The gap is small per period but compounds meaningfully over decades.
+                </p>
+              </div>
+
+              {/* 4 — Reading the table */}
+              <div>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                    style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                  >
+                    4
+                  </span>
+                  <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>
+                    Reading the Table
+                  </h3>
+                </div>
+                <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>Future Value</span> is your
+                  running balance at the end of each year.{" "}
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>Total Contribution</span> is
+                  every dollar you put in (initial + all monthly deposits).{" "}
+                  <span className="font-semibold" style={{ color: "var(--primary)" }}>Interest Earned</span> shows
+                  only the interest generated in that single year, and{" "}
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>Accrued Interest</span> is the
+                  cumulative total interest earned from day one. The gap between these two numbers is compounding
+                  working in your favour.
+                </p>
+              </div>
+
+            </div>
+
+            {/* Disclaimer */}
+            <p
+              className="text-xs mt-8 pt-6"
+              style={{
+                color: "var(--on-surface-sub)",
+                borderTop: "1px solid rgba(192,201,192,0.3)",
+                lineHeight: "1.6",
+              }}
+            >
+              <span className="font-semibold">Disclaimer:</span> Results are for illustrative purposes only and
+              assume a constant interest rate throughout the investment period. Actual returns will vary based on
+              market conditions, fees, tax treatment, and the specific product you invest in. This tool does not
+              constitute financial advice.
+            </p>
+          </div>
         </div>
       </main>
     </>
