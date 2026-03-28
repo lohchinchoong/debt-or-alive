@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { useToolState } from "@/hooks/useToolState";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type CompoundingFreq = 1 | 2 | 4 | 12 | 365;
@@ -487,13 +488,29 @@ function YearlyTable({ data }: { data: YearData[] }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function CompoundInterestPage() {
-  // ── State ──
-  const [initial, setInitial] = useState(10_000);
-  const [monthly, setMonthly] = useState(500);
-  const [rate, setRate] = useState(5);
-  const [years, setYears] = useState(10);
-  const [compFreq, setCompFreq] = useState<CompoundingFreq>(12);
-  const [timing, setTiming] = useState<ContributionTiming>("end");
+  // ── Persisted state (localStorage + URL params) ──
+  const [s, set] = useToolState("tool:compound-interest", {
+    initial: 10_000,
+    monthly: 500,
+    rate: 5,
+    years: 10,
+    compFreq: 12 as number,
+    timing: "end",
+  });
+
+  const initial   = s.initial;
+  const monthly   = s.monthly;
+  const rate      = s.rate;
+  const years     = s.years;
+  const compFreq  = s.compFreq as CompoundingFreq;
+  const timing    = s.timing as ContributionTiming;
+
+  const setInitial  = (v: number) => set({ initial: v });
+  const setMonthly  = (v: number) => set({ monthly: v });
+  const setRate     = (v: number) => set({ rate: v });
+  const setYears    = (v: number) => set({ years: v });
+  const setCompFreq = (v: number) => set({ compFreq: v });
+  const setTiming   = (v: string) => set({ timing: v });
 
   // ── Derived ──
   const data = useMemo(

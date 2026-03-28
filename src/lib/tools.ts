@@ -7,79 +7,11 @@ export type Tool = {
   category: ToolCategory;
   icon: string; // lucide icon name
   accent?: "primary" | "tertiary";
+  comingSoon?: boolean;
 };
 
 export const tools: Tool[] = [
-  // Property
-  {
-    slug: "mortgage-calculator",
-    name: "Mortgage Calculator",
-    tagline: "Estimate monthly repayments for HDB or private property loans.",
-    category: "Property",
-    icon: "House",
-  },
-  {
-    slug: "rent-vs-buy",
-    name: "Rent vs Buy",
-    tagline: "Is buying really cheaper? Model the true cost over time.",
-    category: "Property",
-    icon: "Scale",
-  },
-  // CPF
-  {
-    slug: "cpf-sa-contribution",
-    name: "CPF SA Contribution",
-    tagline: "Project your Special Account balance with top-ups and interest.",
-    category: "CPF",
-    icon: "PiggyBank",
-  },
-  {
-    slug: "cpf-oa-to-sa",
-    name: "CPF OA → SA Transfer",
-    tagline: "Model the long-term effect of transferring OA funds to SA.",
-    category: "CPF",
-    icon: "ArrowRightLeft",
-  },
-  {
-    slug: "srs-calculator",
-    name: "SRS Tax Savings",
-    tagline: "Calculate your annual tax relief from SRS contributions.",
-    category: "CPF",
-    icon: "Receipt",
-  },
-  // Debt
-  {
-    slug: "debt-repayment",
-    name: "Debt Repayment Planner",
-    tagline: "Avalanche or snowball — find your fastest path to debt-free.",
-    category: "Debt",
-    icon: "TrendingDown",
-    accent: "tertiary",
-  },
-  {
-    slug: "loan-comparison",
-    name: "Loan Comparison",
-    tagline: "Compare multiple loan offers side-by-side on total cost.",
-    category: "Debt",
-    icon: "GitCompare",
-    accent: "tertiary",
-  },
-  // Savings
-  {
-    slug: "emergency-fund",
-    name: "Emergency Fund",
-    tagline: "How many months do you need? Build your safety net target.",
-    category: "Savings",
-    icon: "ShieldCheck",
-  },
-  {
-    slug: "savings-goal",
-    name: "Savings Goal",
-    tagline: "Work backwards from a target amount to a monthly savings plan.",
-    category: "Savings",
-    icon: "Target",
-  },
-  // Investment
+  // ── Live tools (shown first) ──────────────────────────────────────────────
   {
     slug: "compound-interest",
     name: "Compound Interest",
@@ -88,19 +20,94 @@ export const tools: Tool[] = [
     icon: "TrendingUp",
   },
   {
+    slug: "cpf-sa-calculator",
+    name: "CPF Special Account (SA) Calculator",
+    tagline: "Project your Special Account balance with tiered interest and annual crediting.",
+    category: "CPF",
+    icon: "PiggyBank",
+  },
+  // ── Coming soon ───────────────────────────────────────────────────────────
+  {
+    slug: "mortgage-calculator",
+    name: "Mortgage Calculator",
+    tagline: "Estimate monthly repayments for HDB or private property loans.",
+    category: "Property",
+    icon: "House",
+    comingSoon: true,
+  },
+  {
+    slug: "rent-vs-buy",
+    name: "Rent vs Buy",
+    tagline: "Is buying really cheaper? Model the true cost over time.",
+    category: "Property",
+    icon: "Scale",
+    comingSoon: true,
+  },
+  {
+    slug: "cpf-oa-to-sa",
+    name: "CPF OA → SA Transfer",
+    tagline: "Model the long-term effect of transferring OA funds to SA.",
+    category: "CPF",
+    icon: "ArrowRightLeft",
+    comingSoon: true,
+  },
+  {
+    slug: "srs-calculator",
+    name: "SRS Tax Savings",
+    tagline: "Calculate your annual tax relief from SRS contributions.",
+    category: "CPF",
+    icon: "Receipt",
+    comingSoon: true,
+  },
+  {
+    slug: "debt-repayment",
+    name: "Debt Repayment Planner",
+    tagline: "Avalanche or snowball — find your fastest path to debt-free.",
+    category: "Debt",
+    icon: "TrendingDown",
+    accent: "tertiary",
+    comingSoon: true,
+  },
+  {
+    slug: "loan-comparison",
+    name: "Loan Comparison",
+    tagline: "Compare multiple loan offers side-by-side on total cost.",
+    category: "Debt",
+    icon: "GitCompare",
+    accent: "tertiary",
+    comingSoon: true,
+  },
+  {
+    slug: "emergency-fund",
+    name: "Emergency Fund",
+    tagline: "How many months do you need? Build your safety net target.",
+    category: "Savings",
+    icon: "ShieldCheck",
+    comingSoon: true,
+  },
+  {
+    slug: "savings-goal",
+    name: "Savings Goal",
+    tagline: "Work backwards from a target amount to a monthly savings plan.",
+    category: "Savings",
+    icon: "Target",
+    comingSoon: true,
+  },
+  {
     slug: "fire-calculator",
     name: "FIRE Calculator",
     tagline: "When can you retire? Project your FIRE number and timeline.",
     category: "Investment",
     icon: "Flame",
+    comingSoon: true,
   },
-  // Planning
   {
     slug: "budget-planner",
     name: "Budget Planner",
     tagline: "Allocate income across needs, wants, and savings with clarity.",
     category: "Planning",
     icon: "LayoutList",
+    comingSoon: true,
   },
   {
     slug: "net-worth",
@@ -108,6 +115,7 @@ export const tools: Tool[] = [
     tagline: "Sum your assets and liabilities to find your true financial position.",
     category: "Planning",
     icon: "Wallet",
+    comingSoon: true,
   },
 ];
 

@@ -51,9 +51,57 @@ function ToolIcon({ name, color }: { name: string; color: string }) {
   );
 }
 
-export function ToolCard({ slug, name, tagline, category, icon, accent }: ToolCardProps) {
+export function ToolCard({ slug, name, tagline, category, icon, accent, comingSoon }: ToolCardProps) {
   const accentColor = accent === "tertiary" ? "var(--tertiary)" : "var(--primary)";
   const categoryColor = categoryColors[category];
+
+  if (comingSoon) {
+    return (
+      <div
+        className="block rounded-xl p-5"
+        style={{
+          backgroundColor: "var(--surface-container-lowest)",
+          boxShadow: "var(--shadow-botanical)",
+          cursor: "default",
+        }}
+      >
+        {/* Top row: icon + coming soon pill */}
+        <div className="flex items-start justify-between mb-4">
+          <div
+            className="w-10 h-10 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: `${categoryColor}0d` }}
+          >
+            <ToolIcon name={icon} color="var(--on-surface-sub)" />
+          </div>
+          <span
+            className="text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full"
+            style={{
+              backgroundColor: "var(--surface-container-high)",
+              color: "var(--on-surface-sub)",
+            }}
+          >
+            Coming soon
+          </span>
+        </div>
+
+        {/* Name */}
+        <h3
+          className="font-bold text-[15px] leading-snug mb-2"
+          style={{ color: "var(--on-surface)", letterSpacing: "-0.01em", opacity: 0.55 }}
+        >
+          {name}
+        </h3>
+
+        {/* Tagline */}
+        <p
+          className="text-xs leading-relaxed"
+          style={{ color: "var(--on-surface-sub)", lineHeight: "1.6", opacity: 0.7 }}
+        >
+          {tagline}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <Link
@@ -64,7 +112,6 @@ export function ToolCard({ slug, name, tagline, category, icon, accent }: ToolCa
         boxShadow: "var(--shadow-botanical)",
         textDecoration: "none",
       }}
-      // Hover is handled via CSS below; inline style fallback for non-JS
     >
       <style>{`
         a[href="/tools/${slug}"]:hover {

@@ -29,14 +29,15 @@
 - Utility functions in `src/lib/`
 
 ## Commits
-Follow conventional commit format:
-- `feat:` new feature
-- `fix:` bug fix
-- `chore:` tooling, deps, config
-- `refactor:` code change with no behavior change
-- `docs:` documentation only
-- `style:` formatting, lint fixes
-- `test:` adding or updating tests
+- **Never commit automatically.** Only run `git commit` (and `git push`) when explicitly asked.
+- When asked to commit, follow conventional commit format:
+  - `feat:` new feature
+  - `fix:` bug fix
+  - `chore:` tooling, deps, config
+  - `refactor:` code change with no behavior change
+  - `docs:` documentation only
+  - `style:` formatting, lint fixes
+  - `test:` adding or updating tests
 
 ## General
 - Do not add libraries without discussing trade-offs first.
