@@ -26,6 +26,13 @@ export const tools: Tool[] = [
     category: "CPF",
     icon: "PiggyBank",
   },
+  {
+    slug: "fire-calculator",
+    name: "FIRE Calculator",
+    tagline: "When can you retire? Project your FIRE number and timeline.",
+    category: "Planning",
+    icon: "Flame",
+  },
   // ── Coming soon ───────────────────────────────────────────────────────────
   {
     slug: "mortgage-calculator",
@@ -91,14 +98,6 @@ export const tools: Tool[] = [
     tagline: "Work backwards from a target amount to a monthly savings plan.",
     category: "Savings",
     icon: "Target",
-    comingSoon: true,
-  },
-  {
-    slug: "fire-calculator",
-    name: "FIRE Calculator",
-    tagline: "When can you retire? Project your FIRE number and timeline.",
-    category: "Investment",
-    icon: "Flame",
     comingSoon: true,
   },
   {

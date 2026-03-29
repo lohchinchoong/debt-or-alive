@@ -14,12 +14,6 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           {/* Section header — asymmetric */}
           <div className="mb-10 max-w-xl">
-            <p
-              className="text-xs font-semibold tracking-widest uppercase mb-3"
-              style={{ color: "var(--primary)" }}
-            >
-              The Workstation
-            </p>
             <h2
               className="text-3xl sm:text-4xl font-bold leading-tight"
               style={{ color: "var(--on-surface)", letterSpacing: "-0.02em" }}
@@ -31,6 +25,14 @@ export default function HomePage() {
               style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}
             >
               No account required. Every calculator runs in your browser — your numbers stay yours.
+            </p>
+            <p
+              className="mt-3 text-xs leading-relaxed"
+              style={{ color: "var(--outline-variant)" }}
+            >
+              All tools are provided without warranty and are intended for estimation purposes only.
+              Results should not be construed as financial advice. Please consult a qualified financial
+              adviser before making any financial decisions.
             </p>
           </div>
 

@@ -1,0 +1,1146 @@
+"use client";
+
+import { useState, useMemo, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { SiteHeader } from "@/components/SiteHeader";
+import { useToolState } from "@/hooks/useToolState";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type YieldSource = {
+  id: string;
+  name: string;
+  value: number;
+  yieldRate: number; // annual %
+};
+
+type DrawdownSource = {
+  id: string;
+  name: string;
+  value: number;
+  drawdownRate: number; // annual %, default 4
+};
+
+type YearRow = {
+  age: number;
+  year: number;
+  phase: "accumulation" | "retirement";
+  yieldPortfolio: number;
+  drawdownPortfolio: number;
+  totalPortfolio: number;
+  yieldIncome: number;
+  drawdownWithdrawal: number;
+  totalIncome: number;
+  annualExpense: number;
+  surplus: number;
+};
+
+type FireTier = {
+  label: string;
+  color: string;
+  bgColor: string;
+  description: string;
+};
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const FIRE_TIERS: { min: number; tier: FireTier }[] = [
+  {
+    min: 200,
+    tier: {
+      label: "Fat FIRE",
+      color: "#00351f",
+      bgColor: "rgba(0,53,31,0.12)",
+      description: "Double your target — retire in luxury with a wide margin of safety.",
+    },
+  },
+  {
+    min: 150,
+    tier: {
+      label: "Comfortable FIRE",
+      color: "#0e4d31",
+      bgColor: "rgba(14,77,49,0.10)",
+      description: "Substantial surplus above your needs — you can weather market downturns with ease.",
+    },
+  },
+  {
+    min: 100,
+    tier: {
+      label: "FIRE Achieved",
+      color: "#1a6b42",
+      bgColor: "rgba(26,107,66,0.10)",
+      description: "Your passive income covers your retirement expenses. Financial independence unlocked.",
+    },
+  },
+  {
+    min: 80,
+    tier: {
+      label: "Almost There",
+      color: "#b8860b",
+      bgColor: "rgba(184,134,11,0.10)",
+      description: "Within striking distance. A few more years of contributions or a spending trim closes the gap.",
+    },
+  },
+  {
+    min: 50,
+    tier: {
+      label: "Coast FIRE",
+      color: "#cc7a00",
+      bgColor: "rgba(204,122,0,0.10)",
+      description: "Your existing assets can grow to your FIRE number by retirement — keep contributions steady.",
+    },
+  },
+  {
+    min: 25,
+    tier: {
+      label: "Building Momentum",
+      color: "#c05621",
+      bgColor: "rgba(192,86,33,0.10)",
+      description: "Solid foundation in place. Focus on increasing savings rate and growing your yield sources.",
+    },
+  },
+  {
+    min: 0,
+    tier: {
+      label: "Early Days",
+      color: "#4f1b1f",
+      bgColor: "rgba(79,27,31,0.10)",
+      description: "Everyone starts here. The most powerful step is the first one — keep building.",
+    },
+  },
+];
+
+function getFireTier(score: number): FireTier {
+  for (const { min, tier } of FIRE_TIERS) {
+    if (score >= min) return tier;
+  }
+  return FIRE_TIERS[FIRE_TIERS.length - 1].tier;
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n);
+
+const fmtAxis = (n: number): string => {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return `${Math.round(n)}`;
+};
+
+function niceMax(rawMax: number): number {
+  if (rawMax <= 0) return 1000;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
+  const niceFactors = [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10];
+  const nice = niceFactors.find((f) => f * mag >= rawMax) ?? 10;
+  return nice * mag;
+}
+
+let idCounter = 0;
+function genId(): string {
+  return `src_${Date.now()}_${++idCounter}`;
+}
+
+// ─── localStorage persistence for dynamic arrays ─────────────────────────────
+
+function loadArray<T>(key: string, fallback: T[]): T[] {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveArray<T>(key: string, data: T[]): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    // storage full — fail silently
+  }
+}
+
+// ─── Calculation Engine ──────────────────────────────────────────────────────
+
+function calculateFireProjection(
+  currentAge: number,
+  retirementAge: number,
+  deathAge: number,
+  monthlyExpense: number,
+  yieldSources: YieldSource[],
+  drawdownSources: DrawdownSource[],
+): YearRow[] {
+  const rows: YearRow[] = [];
+  const annualExpense = monthlyExpense * 12;
+  const currentYear = new Date().getFullYear();
+
+  // Track each source individually
+  let yieldValues = yieldSources.map((s) => s.value);
+  let drawdownValues = drawdownSources.map((s) => s.value);
+
+  for (let age = currentAge; age <= deathAge; age++) {
+    const year = currentYear + (age - currentAge);
+    const isRetired = age >= retirementAge;
+    const phase = isRetired ? "retirement" as const : "accumulation" as const;
+
+    const yieldPortfolio = yieldValues.reduce((a, b) => a + b, 0);
+    const drawdownPortfolio = drawdownValues.reduce((a, b) => a + Math.max(0, b), 0);
+    const totalPortfolio = yieldPortfolio + drawdownPortfolio;
+
+    // Annual yield income (always generated, but only "used" in retirement)
+    const yieldIncome = yieldSources.reduce(
+      (sum, s, i) => sum + yieldValues[i] * (s.yieldRate / 100),
+      0,
+    );
+
+    let drawdownWithdrawal = 0;
+    let totalIncome = 0;
+    let surplus = 0;
+
+    if (isRetired) {
+      // Each drawdown source withdraws at its own specified rate
+      drawdownWithdrawal = drawdownSources.reduce(
+        (sum, s, i) => sum + Math.max(0, drawdownValues[i]) * (s.drawdownRate / 100),
+        0,
+      );
+      // Deplete each drawdown source at its rate
+      drawdownValues = drawdownValues.map(
+        (v, i) => Math.max(0, v - v * (drawdownSources[i].drawdownRate / 100)),
+      );
+      totalIncome = yieldIncome + drawdownWithdrawal;
+      surplus = totalIncome - annualExpense;
+    } else {
+      // During accumulation: yield is reinvested (grows the source)
+      totalIncome = 0;
+      surplus = 0;
+    }
+
+    rows.push({
+      age,
+      year,
+      phase,
+      yieldPortfolio,
+      drawdownPortfolio,
+      totalPortfolio,
+      yieldIncome,
+      drawdownWithdrawal,
+      totalIncome,
+      annualExpense: isRetired ? annualExpense : 0,
+      surplus,
+    });
+
+    // Grow yield sources by their yield rate (reinvested during accumulation, stays flat in retirement since income is withdrawn)
+    if (!isRetired) {
+      yieldValues = yieldValues.map((v, i) => v * (1 + yieldSources[i].yieldRate / 100));
+    }
+    // Drawdown sources don't grow (not yield-bearing per user spec)
+  }
+
+  return rows;
+}
+
+// ─── FocusInput ──────────────────────────────────────────────────────────────
+
+function FocusInput({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step = 1,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div>
+      <p className="text-[0.8125rem] font-medium mb-1.5" style={{ color: "var(--on-surface-sub)" }}>
+        {label}
+      </p>
+      <input
+        type="number"
+        value={value}
+        min={min}
+        max={max}
+        step={step}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          width: "100%",
+          background: "var(--surface-container-highest)",
+          border: "none",
+          borderBottom: `2px solid ${focused ? "var(--primary)" : "var(--outline-variant)"}`,
+          borderRadius: "0.25rem 0.25rem 0 0",
+          padding: "0.625rem 0.5rem",
+          fontSize: "0.9375rem",
+          fontFamily: "Manrope, sans-serif",
+          fontWeight: 500,
+          color: "var(--on-surface)",
+          outline: "none",
+          transition: "border-color 0.15s ease",
+        }}
+      />
+    </div>
+  );
+}
+
+// ─── Inline Text Input (for source rows) ─────────────────────────────────────
+
+function InlineInput({
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  min,
+  step,
+  style: extraStyle,
+}: {
+  value: string | number;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  min?: number;
+  step?: number;
+  style?: React.CSSProperties;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <input
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      min={min}
+      step={step}
+      onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        width: "100%",
+        background: "var(--surface-container-highest)",
+        border: "none",
+        borderBottom: `2px solid ${focused ? "var(--primary)" : "var(--outline-variant)"}`,
+        borderRadius: "0.25rem 0.25rem 0 0",
+        padding: "0.5rem 0.4rem",
+        fontSize: "0.8125rem",
+        fontFamily: "Manrope, sans-serif",
+        fontWeight: 500,
+        color: "var(--on-surface)",
+        outline: "none",
+        transition: "border-color 0.15s ease",
+        ...extraStyle,
+      }}
+    />
+  );
+}
+
+// ─── FIRE Chart ──────────────────────────────────────────────────────────────
+
+function FireChart({
+  data,
+  retirementAge,
+  fireNumber,
+}: {
+  data: YearRow[];
+  retirementAge: number;
+  fireNumber: number;
+}) {
+  if (data.length < 2) return null;
+
+  const W = 640;
+  const H = 260;
+  const PAD = { top: 28, right: 24, bottom: 44, left: 62 };
+  const CW = W - PAD.left - PAD.right;
+  const CH = H - PAD.top - PAD.bottom;
+
+  const rawMax = Math.max(...data.map((d) => d.totalPortfolio), fireNumber);
+  const yMax = niceMax(rawMax);
+  const ageMin = data[0].age;
+  const ageMax = data[data.length - 1].age;
+  const ageRange = ageMax - ageMin || 1;
+
+  const xOf = (age: number) => PAD.left + ((age - ageMin) / ageRange) * CW;
+  const yOf = (v: number) => PAD.top + CH - (v / yMax) * CH;
+
+  // Portfolio line
+  const pts = data.map((d) => `${xOf(d.age).toFixed(1)},${yOf(d.totalPortfolio).toFixed(1)}`);
+  const line = `M ${pts.join(" L ")}`;
+  const area = `${line} L ${xOf(ageMax).toFixed(1)},${(PAD.top + CH).toFixed(1)} L ${PAD.left.toFixed(1)},${(PAD.top + CH).toFixed(1)} Z`;
+
+  // Yield-only line
+  const yieldPts = data.map((d) => `${xOf(d.age).toFixed(1)},${yOf(d.yieldPortfolio).toFixed(1)}`);
+  const yieldLine = `M ${yieldPts.join(" L ")}`;
+
+  // Y ticks
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => t * yMax);
+
+  // X labels — age markers
+  const xStep = ageRange <= 20 ? 5 : 10;
+  const xLabels: number[] = [ageMin];
+  for (let a = Math.ceil(ageMin / xStep) * xStep; a <= ageMax; a += xStep) {
+    if (a > ageMin) xLabels.push(a);
+  }
+  if (xLabels[xLabels.length - 1] !== ageMax) xLabels.push(ageMax);
+
+  // Retirement vertical line
+  const retX = xOf(retirementAge);
+
+  return (
+    <div
+      className="rounded-xl p-5"
+      style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+    >
+      <p className="text-[0.9375rem] font-semibold mb-4" style={{ color: "var(--on-surface)" }}>
+        Portfolio Projection
+      </p>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: "100%", height: "auto", overflow: "visible" }}
+        aria-label="FIRE portfolio projection chart"
+      >
+        <defs>
+          <linearGradient id="fire-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#00351f" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#00351f" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+
+        {/* Grid lines */}
+        {ticks.map((v) => (
+          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="#c0c9c0" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+        ))}
+
+        {/* Y-axis labels */}
+        {ticks.map((v) => (
+          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            {fmtAxis(v)}
+          </text>
+        ))}
+
+        {/* X-axis labels */}
+        {xLabels.map((a) => (
+          <text key={a} x={xOf(a)} y={H - 6} textAnchor="middle" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            {a}
+          </text>
+        ))}
+
+        {/* FIRE number horizontal line */}
+        {fireNumber > 0 && fireNumber <= yMax && (
+          <>
+            <line x1={PAD.left} y1={yOf(fireNumber)} x2={W - PAD.right} y2={yOf(fireNumber)} stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" opacity="0.6" />
+            <text x={W - PAD.right + 4} y={yOf(fireNumber) + 3} fontSize="9" fill="#c05621" fontFamily="Manrope, sans-serif" fontWeight="600">
+              FIRE
+            </text>
+          </>
+        )}
+
+        {/* Retirement vertical line */}
+        {retirementAge > ageMin && retirementAge < ageMax && (
+          <>
+            <line x1={retX} y1={PAD.top} x2={retX} y2={PAD.top + CH} stroke="#b8860b" strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+            <text x={retX} y={PAD.top - 6} textAnchor="middle" fontSize="9" fill="#b8860b" fontFamily="Manrope, sans-serif" fontWeight="600">
+              Retire
+            </text>
+          </>
+        )}
+
+        {/* Area fill */}
+        <path d={area} fill="url(#fire-fill)" />
+
+        {/* Yield-only dashed line */}
+        <path d={yieldLine} fill="none" stroke="#1a6b42" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.6" />
+
+        {/* Total portfolio line */}
+        <path d={line} fill="none" stroke="#00351f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Legend */}
+        <g transform={`translate(${PAD.left}, 12)`}>
+          <line x1="0" y1="0" x2="18" y2="0" stroke="#00351f" strokeWidth="2" />
+          <text x="23" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Total portfolio</text>
+          <line x1="130" y1="0" x2="148" y2="0" stroke="#1a6b42" strokeWidth="1.5" strokeDasharray="5 4" />
+          <text x="153" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Yield sources only</text>
+          <line x1="275" y1="0" x2="293" y2="0" stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" />
+          <text x="298" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">FIRE number</text>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+// ─── Yearly Table ────────────────────────────────────────────────────────────
+
+function FireTable({ data }: { data: YearRow[] }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-botanical)" }}>
+      <button
+        className="w-full flex items-center justify-between px-6 py-5 text-left"
+        style={{ backgroundColor: "var(--surface-container-lowest)", border: "none", cursor: "pointer", fontFamily: "Manrope, sans-serif" }}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>
+          Year-by-Year Projection (Table)
+        </span>
+        <svg
+          width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-sub)" strokeWidth="2" strokeLinecap="round"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", flexShrink: 0 }}
+        >
+          <path d="M18 15l-6-6-6 6" />
+        </svg>
+      </button>
+
+      {open && (
+        <div style={{ backgroundColor: "var(--surface-container-lowest)" }}>
+          <div style={{ height: "1px", backgroundColor: "var(--outline-variant)", opacity: 0.25 }} />
+          <div className="overflow-x-auto">
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "800px" }}>
+              <thead>
+                <tr style={{ backgroundColor: "var(--surface-container-low)" }}>
+                  {["Age", "Year", "Phase", "Yield Portfolio", "Drawdown Portfolio", "Total Portfolio", "Yield Income", "Drawdown", "Surplus/Deficit"].map((col) => (
+                    <th key={col} className="px-4 py-3 text-left text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>
+                      {col}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((row, i) => (
+                  <tr key={row.age} style={{ backgroundColor: i % 2 === 0 ? "var(--surface-container-lowest)" : "var(--surface-container-low)" }}>
+                    <td className="px-4 py-3 text-sm font-semibold" style={{ color: "var(--on-surface)" }}>{row.age}</td>
+                    <td className="px-4 py-3 text-sm" style={{ color: "var(--on-surface)" }}>{row.year}</td>
+                    <td className="px-4 py-3 text-xs font-medium">
+                      <span
+                        className="px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: row.phase === "retirement" ? "rgba(184,134,11,0.12)" : "rgba(0,53,31,0.08)",
+                          color: row.phase === "retirement" ? "#b8860b" : "var(--primary)",
+                          fontSize: "0.6875rem",
+                        }}
+                      >
+                        {row.phase === "retirement" ? "Drawdown" : "Growth"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm" style={{ color: "var(--on-surface)" }}>{fmt(row.yieldPortfolio)}</td>
+                    <td className="px-4 py-3 text-sm" style={{ color: "var(--on-surface)" }}>{fmt(row.drawdownPortfolio)}</td>
+                    <td className="px-4 py-3 text-sm font-semibold" style={{ color: "var(--on-surface)" }}>{fmt(row.totalPortfolio)}</td>
+                    <td className="px-4 py-3 text-sm" style={{ color: row.yieldIncome > 0 ? "var(--primary)" : "var(--on-surface)" }}>
+                      {row.phase === "retirement" ? fmt(row.yieldIncome) : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm" style={{ color: row.drawdownWithdrawal > 0 ? "var(--tertiary)" : "var(--on-surface)" }}>
+                      {row.phase === "retirement" && row.drawdownWithdrawal > 0 ? `-${fmt(row.drawdownWithdrawal)}` : "—"}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold" style={{ color: row.surplus >= 0 ? "var(--primary)" : "var(--tertiary)" }}>
+                      {row.phase === "retirement" ? (row.surplus >= 0 ? `+${fmt(row.surplus)}` : fmt(row.surplus)) : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── FIRE Score Badge ────────────────────────────────────────────────────────
+
+function FireScoreBadge({ score }: { score: number }) {
+  const tier = getFireTier(score);
+  const clampedScore = Math.min(score, 250);
+  const barWidth = Math.max(0, Math.min(100, (clampedScore / 200) * 100));
+
+  return (
+    <div
+      className="rounded-xl p-5"
+      style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+    >
+      <p className="text-[0.6875rem] font-semibold tracking-widest uppercase mb-3" style={{ color: "var(--on-surface-sub)" }}>
+        FIRE Score
+      </p>
+
+      {/* Score + label */}
+      <div className="flex items-baseline gap-3 mb-2">
+        <span className="text-3xl font-bold" style={{ color: tier.color, letterSpacing: "-0.02em" }}>
+          {Math.round(score)}%
+        </span>
+        <span
+          className="text-sm font-semibold px-2.5 py-1 rounded-full"
+          style={{ backgroundColor: tier.bgColor, color: tier.color }}
+        >
+          {tier.label}
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="rounded-full h-2 mb-3" style={{ backgroundColor: "var(--surface-container-high)" }}>
+        <div
+          className="rounded-full h-2 transition-all duration-500"
+          style={{ width: `${barWidth}%`, backgroundColor: tier.color }}
+        />
+      </div>
+
+      {/* Tier markers */}
+      <div className="flex justify-between text-[0.625rem] font-medium mb-4" style={{ color: "var(--on-surface-sub)" }}>
+        <span>0%</span>
+        <span>50%</span>
+        <span>100%</span>
+        <span>200%+</span>
+      </div>
+
+      <p className="text-sm" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
+        {tier.description}
+      </p>
+    </div>
+  );
+}
+
+// ─── Source Row Component ────────────────────────────────────────────────────
+
+function SourceRow({
+  name,
+  value,
+  rate,
+  rateLabel,
+  onChangeName,
+  onChangeValue,
+  onChangeRate,
+  onDelete,
+}: {
+  name: string;
+  value: number;
+  rate: number;
+  rateLabel: string;
+  onChangeName: (v: string) => void;
+  onChangeValue: (v: number) => void;
+  onChangeRate: (v: number) => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="grid grid-cols-12 gap-2 items-end">
+      <div className="col-span-4">
+        <InlineInput value={name} onChange={onChangeName} placeholder="Name" />
+      </div>
+      <div className="col-span-4">
+        <InlineInput
+          value={value}
+          onChange={(v) => onChangeValue(parseFloat(v) || 0)}
+          type="number"
+          placeholder="Value ($)"
+          min={0}
+          step={1000}
+        />
+      </div>
+      <div className="col-span-3">
+        <InlineInput
+          value={rate}
+          onChange={(v) => onChangeRate(parseFloat(v) || 0)}
+          type="number"
+          placeholder={rateLabel}
+          min={0}
+          step={0.1}
+        />
+      </div>
+      <div className="col-span-1 flex justify-center pb-1">
+        <button
+          type="button"
+          onClick={onDelete}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem" }}
+          title="Remove source"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tertiary)" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+
+export function FireCalculatorPage() {
+  // ── Persisted scalar state ──
+  const [s, set] = useToolState("tool:fire-calculator", {
+    monthlyExpense: 3000,
+    currentAge: 30,
+    retirementAge: 55,
+    deathAge: 80,
+  });
+
+  const { monthlyExpense, currentAge, retirementAge, deathAge } = s;
+
+  // ── Persisted dynamic arrays (localStorage only) ──
+  const [yieldSources, setYieldSourcesRaw] = useState<YieldSource[]>([]);
+  const [drawdownSources, setDrawdownSourcesRaw] = useState<DrawdownSource[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  // Load from localStorage after mount
+  useEffect(() => {
+    setYieldSourcesRaw(
+      loadArray<YieldSource>("fire:yield-sources", [
+        { id: genId(), name: "Dividend ETF", value: 50000, yieldRate: 5 },
+      ]),
+    );
+    setDrawdownSourcesRaw(
+      loadArray<DrawdownSource>("fire:drawdown-sources", [
+        { id: genId(), name: "Growth Portfolio", value: 100000, drawdownRate: 4 },
+      ]),
+    );
+    setMounted(true);
+  }, []);
+
+  // Persist arrays on change
+  const setYieldSources = useCallback((fn: (prev: YieldSource[]) => YieldSource[]) => {
+    setYieldSourcesRaw((prev) => {
+      const next = fn(prev);
+      saveArray("fire:yield-sources", next);
+      return next;
+    });
+  }, []);
+
+  const setDrawdownSources = useCallback((fn: (prev: DrawdownSource[]) => DrawdownSource[]) => {
+    setDrawdownSourcesRaw((prev) => {
+      const next = fn(prev);
+      saveArray("fire:drawdown-sources", next);
+      return next;
+    });
+  }, []);
+
+  // ── Derived calculations ──
+  const projection = useMemo(
+    () => calculateFireProjection(currentAge, retirementAge, deathAge, monthlyExpense, yieldSources, drawdownSources),
+    [currentAge, retirementAge, deathAge, monthlyExpense, yieldSources, drawdownSources],
+  );
+
+  const annualExpense = monthlyExpense * 12;
+  const fireNumber = annualExpense * 25; // 4% rule: 1/0.04 = 25x
+
+  // Projected values at retirement
+  const retirementRow = projection.find((r) => r.age === retirementAge);
+  const portfolioAtRetirement = retirementRow?.totalPortfolio ?? 0;
+  const yieldIncomeAtRetirement = retirementRow?.yieldIncome ?? 0;
+  const drawdownWithdrawalAtRetirement = retirementRow?.drawdownWithdrawal ?? 0;
+  const totalIncomeAtRetirement = yieldIncomeAtRetirement + drawdownWithdrawalAtRetirement;
+
+  // FIRE Score = total passive income at retirement / annual expense * 100
+  // Both yield rate AND drawdown rate directly affect this score
+  const fireScore = annualExpense > 0 ? (totalIncomeAtRetirement / annualExpense) * 100 : 0;
+
+  // Income sustainability — first retirement year where income falls short of expenses
+  const shortfallRow = projection.find((r) => r.phase === "retirement" && r.surplus < 0);
+  const shortfallAge = shortfallRow?.age ?? null;
+  const incomeSustained = shortfallAge === null;
+
+  // Years of retirement income covered
+  const retirementYears = deathAge - retirementAge;
+
+  const totalYieldValue = yieldSources.reduce((sum, s) => sum + s.value, 0);
+  const totalDrawdownValue = drawdownSources.reduce((sum, s) => sum + s.value, 0);
+  const totalCurrentPortfolio = totalYieldValue + totalDrawdownValue;
+
+  if (!mounted) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="min-h-screen" style={{ backgroundColor: "var(--surface-container-low)" }} />
+      </>
+    );
+  }
+
+  return (
+    <>
+      <SiteHeader />
+      <main
+        className="min-h-screen px-5 sm:px-8 lg:px-16 py-10"
+        style={{ backgroundColor: "var(--surface-container-low)" }}
+      >
+        <div className="max-w-7xl mx-auto space-y-8">
+
+          {/* ── Page Header ─────────────────────────────────────────────── */}
+          <div>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
+              style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 5l-7 7 7 7" />
+              </svg>
+              Back to Home
+            </Link>
+
+            <div className="flex items-start gap-4">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                style={{
+                  background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+                  boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+                </svg>
+              </div>
+
+              <div>
+                <h1
+                  className="text-3xl sm:text-4xl font-bold"
+                  style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
+                >
+                  FIRE Calculator
+                </h1>
+                <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
+                  Model your path to Financial Independence, Retire Early. Add your income sources and see when your passive income covers your lifestyle.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Main Grid ─────────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            {/* Left — Parameters */}
+            <div className="lg:col-span-5 space-y-5">
+              {/* Basic parameters */}
+              <div
+                className="rounded-xl p-6"
+                style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+              >
+                <p className="font-bold text-[1rem]" style={{ color: "var(--on-surface)" }}>
+                  Retirement Profile
+                </p>
+                <p className="text-sm mt-0.5 mb-6" style={{ color: "var(--on-surface-sub)" }}>
+                  Your age, target retirement, and monthly spending
+                </p>
+
+                <div className="space-y-5">
+                  <FocusInput label="Monthly Expense in Retirement ($)" value={monthlyExpense} onChange={(v) => set({ monthlyExpense: v })} min={0} step={100} />
+                  <div className="grid grid-cols-3 gap-4">
+                    <FocusInput label="Current Age" value={currentAge} onChange={(v) => set({ currentAge: v })} min={18} max={80} />
+                    <FocusInput label="Retire At" value={retirementAge} onChange={(v) => set({ retirementAge: v })} min={currentAge + 1} max={90} />
+                    <FocusInput label="Plan To" value={deathAge} onChange={(v) => set({ deathAge: v })} min={retirementAge + 1} max={120} />
+                  </div>
+                </div>
+
+                {/* Summary strip */}
+                <div className="mt-6 rounded-lg px-4 py-3.5" style={{ backgroundColor: "var(--surface-container-low)" }}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-[0.75rem] font-medium mb-0.5" style={{ color: "var(--on-surface-sub)" }}>FIRE Number (4% Rule)</p>
+                      <p className="text-xl font-bold" style={{ color: "var(--on-surface)", letterSpacing: "-0.01em" }}>{fmt(fireNumber)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[0.75rem] font-medium mb-0.5" style={{ color: "var(--on-surface-sub)" }}>Retirement Span</p>
+                      <p className="text-xl font-bold" style={{ color: "var(--on-surface)", letterSpacing: "-0.01em" }}>{retirementYears} yrs</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Yield sources */}
+              <div
+                className="rounded-xl p-6"
+                style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-bold text-[1rem]" style={{ color: "var(--on-surface)" }}>
+                    Yield Sources
+                  </p>
+                  <span className="text-xs font-semibold" style={{ color: "var(--primary)" }}>
+                    {fmt(totalYieldValue)}
+                  </span>
+                </div>
+                <p className="text-xs mb-4" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
+                  Dividend stocks, REITs, bonds — capital stays intact, yield provides income.
+                </p>
+
+                {/* Column headers */}
+                <div className="grid grid-cols-12 gap-2 mb-2">
+                  <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Name</p>
+                  <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Value ($)</p>
+                  <p className="col-span-3 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Yield %</p>
+                  <p className="col-span-1" />
+                </div>
+
+                <div className="space-y-2">
+                  {yieldSources.map((src) => (
+                    <SourceRow
+                      key={src.id}
+                      name={src.name}
+                      value={src.value}
+                      rate={src.yieldRate}
+                      rateLabel="Yield %"
+                      onChangeName={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, name: v } : s)))}
+                      onChangeValue={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, value: v } : s)))}
+                      onChangeRate={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, yieldRate: v } : s)))}
+                      onDelete={() => setYieldSources((prev) => prev.filter((s) => s.id !== src.id))}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setYieldSources((prev) => [...prev, { id: genId(), name: "", value: 0, yieldRate: 5 }])}
+                  className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Add yield source
+                </button>
+              </div>
+
+              {/* Drawdown sources */}
+              <div
+                className="rounded-xl p-6"
+                style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-bold text-[1rem]" style={{ color: "var(--on-surface)" }}>
+                    Drawdown Sources
+                  </p>
+                  <span className="text-xs font-semibold" style={{ color: "var(--tertiary)" }}>
+                    {fmt(totalDrawdownValue)}
+                  </span>
+                </div>
+                <p className="text-xs mb-4" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
+                  Growth stocks, cash savings — capital is consumed during retirement at your specified withdrawal rate.
+                </p>
+
+                {/* Column headers */}
+                <div className="grid grid-cols-12 gap-2 mb-2">
+                  <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Name</p>
+                  <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Value ($)</p>
+                  <p className="col-span-3 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Withdraw %</p>
+                  <p className="col-span-1" />
+                </div>
+
+                <div className="space-y-2">
+                  {drawdownSources.map((src) => (
+                    <SourceRow
+                      key={src.id}
+                      name={src.name}
+                      value={src.value}
+                      rate={src.drawdownRate}
+                      rateLabel="Withdraw %"
+                      onChangeName={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, name: v } : s)))}
+                      onChangeValue={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, value: v } : s)))}
+                      onChangeRate={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, drawdownRate: v } : s)))}
+                      onDelete={() => setDrawdownSources((prev) => prev.filter((s) => s.id !== src.id))}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDrawdownSources((prev) => [...prev, { id: genId(), name: "", value: 0, drawdownRate: 4 }])}
+                  className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  Add drawdown source
+                </button>
+              </div>
+            </div>
+
+            {/* Right — Results */}
+            <div className="lg:col-span-7 space-y-5">
+              {/* FIRE Score */}
+              <FireScoreBadge score={fireScore} />
+
+              {/* Stat cards */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Portfolio at Retirement */}
+                <div
+                  className="rounded-xl p-5 flex flex-col justify-between"
+                  style={{
+                    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                    boxShadow: "0 12px 32px rgba(0,53,31,0.20)",
+                    minHeight: "7.5rem",
+                  }}
+                >
+                  <p className="text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.65)" }}>
+                    Portfolio at Retirement
+                  </p>
+                  <div>
+                    <p className="text-2xl sm:text-3xl font-bold leading-none mt-3" style={{ color: "#fff", letterSpacing: "-0.02em" }}>
+                      {fmt(portfolioAtRetirement)}
+                    </p>
+                    <p className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.55)" }}>
+                      At age {retirementAge}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Monthly Available */}
+                <div
+                  className="rounded-xl p-5 flex flex-col justify-between"
+                  style={{
+                    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                    boxShadow: "0 12px 32px rgba(0,53,31,0.20)",
+                    minHeight: "7.5rem",
+                  }}
+                >
+                  <p className="text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.65)" }}>
+                    Monthly Available
+                  </p>
+                  <div>
+                    <p className="text-2xl sm:text-3xl font-bold leading-none mt-3" style={{ color: "#fff", letterSpacing: "-0.02em" }}>
+                      {fmt(totalIncomeAtRetirement / 12)}
+                    </p>
+                    <p className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.55)" }}>
+                      Yield: {fmt(yieldIncomeAtRetirement / 12)} · Drawdown: {fmt(drawdownWithdrawalAtRetirement / 12)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Secondary stat cards */}
+              <div className="grid grid-cols-2 gap-4">
+                <div
+                  className="rounded-xl p-5"
+                  style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+                >
+                  <p className="text-[0.6875rem] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--on-surface-sub)" }}>
+                    Current Portfolio
+                  </p>
+                  <p className="text-xl font-bold" style={{ color: "var(--on-surface)", letterSpacing: "-0.01em" }}>
+                    {fmt(totalCurrentPortfolio)}
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: "var(--on-surface-sub)" }}>
+                    Yield: {fmt(totalYieldValue)} · Drawdown: {fmt(totalDrawdownValue)}
+                  </p>
+                </div>
+
+                <div
+                  className="rounded-xl p-5"
+                  style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+                >
+                  <p className="text-[0.6875rem] font-semibold tracking-widest uppercase mb-2" style={{ color: "var(--on-surface-sub)" }}>
+                    Income Covers Expenses
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span
+                      className="text-lg font-bold"
+                      style={{ color: incomeSustained ? "var(--primary)" : "var(--tertiary)", letterSpacing: "-0.01em" }}
+                    >
+                      {incomeSustained ? "✓ Sustained" : "✗ Shortfall"}
+                    </span>
+                  </div>
+                  <p className="text-xs mt-1" style={{ color: "var(--on-surface-sub)" }}>
+                    {incomeSustained
+                      ? `Income covers expenses through age ${deathAge}`
+                      : `Income falls short from age ${shortfallAge} — ${deathAge - shortfallAge!} yrs before plan end`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Chart */}
+              <FireChart data={projection} retirementAge={retirementAge} fireNumber={fireNumber} />
+            </div>
+          </div>
+
+          {/* ── Table ─────────────────────────────────────────────────── */}
+          <FireTable data={projection} />
+
+          {/* ── How It Works ──────────────────────────────────────────── */}
+          <div
+            className="rounded-xl p-8"
+            style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+          >
+            <h2 className="text-xl font-bold mb-6" style={{ color: "var(--on-surface)", letterSpacing: "-0.01em" }}>
+              How It Works
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+              {/* 1 */}
+              <div>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>1</span>
+                  <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>The 4% Rule (Trinity Study)</h3>
+                </div>
+                <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
+                  Your <span className="font-semibold" style={{ color: "var(--on-surface)" }}>FIRE Number</span> is calculated as
+                  annual expenses ÷ 4%, or equivalently, annual expenses × 25. This comes from the 1998 Trinity Study, which found that a
+                  diversified portfolio withdrawn at 4% annually had a high probability of lasting 30+ years. It remains the most widely
+                  referenced benchmark in the FIRE community.
+                </p>
+              </div>
+
+              {/* 2 */}
+              <div>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>2</span>
+                  <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Yield vs. Drawdown Sources</h3>
+                </div>
+                <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>Yield sources</span> (dividend stocks, REITs, bonds) generate
+                  recurring income without depleting capital — during accumulation, yields are reinvested and compound.{" "}
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>Drawdown sources</span> (growth stocks, cash) are consumed
+                  during retirement at your specified withdrawal rate, filling the gap between yield income and expenses.
+                </p>
+              </div>
+
+              {/* 3 */}
+              <div>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>3</span>
+                  <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>The FIRE Score</h3>
+                </div>
+                <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
+                  Your FIRE Score = (projected portfolio at retirement ÷ FIRE number) × 100%. At{" "}
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>100%</span>, your portfolio matches your FIRE number.
+                  The tiers — from <em>Early Days</em> to <em>Fat FIRE</em> — are inspired by the FIRE community&apos;s widely used categories:
+                  Coast FIRE (on track without further contributions), Lean FIRE (basic coverage), and Fat FIRE (2×+ your target).
+                </p>
+              </div>
+
+              {/* 4 */}
+              <div>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>4</span>
+                  <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Income Sustainability</h3>
+                </div>
+                <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>✓ Sustained</span> means your combined yield income
+                  and drawdown withdrawals cover your expenses every year through to your planned end age.{" "}
+                  <span className="font-semibold" style={{ color: "var(--tertiary)" }}>✗ Shortfall</span> means income drops below expenses
+                  at a specific age — typically because drawdown sources have shrunk too much. If you see a shortfall, consider increasing
+                  yield sources, reducing expenses, or extending your accumulation period.
+                </p>
+              </div>
+            </div>
+
+            <p
+              className="text-xs mt-8 pt-6"
+              style={{ color: "var(--on-surface-sub)", borderTop: "1px solid rgba(192,201,192,0.3)", lineHeight: "1.6" }}
+            >
+              <span className="font-semibold">Disclaimer:</span> This calculator is for illustrative purposes only. It assumes constant yield
+              rates, no inflation adjustment, and simplified withdrawal mechanics. Actual investment returns vary based on market conditions,
+              fees, and tax treatment. The FIRE tiers are community-derived benchmarks, not financial advice. Consult a qualified financial
+              adviser for personalised retirement planning.
+            </p>
+          </div>
+        </div>
+      </main>
+    </>
+  );
+}
+
+export default FireCalculatorPage;
