@@ -18,7 +18,8 @@ type DrawdownSource = {
   id: string;
   name: string;
   value: number;
-  drawdownRate: number; // annual %, default 4
+  startAge: number;
+  endAge: number;
 };
 
 type YearRow = {
@@ -203,20 +204,30 @@ function calculateFireProjection(
     let totalIncome = 0;
     let surplus = 0;
 
+    // Drawdown: each source is active between its own startAge and endAge
+    drawdownWithdrawal = drawdownSources.reduce((sum, s, i) => {
+      const span = s.endAge - s.startAge;
+      if (span <= 0) return sum;
+      const annual = s.value / span;
+      if (age >= s.startAge && age < s.endAge) {
+        return sum + Math.min(annual, Math.max(0, drawdownValues[i]));
+      }
+      return sum;
+    }, 0);
+
+    // Deplete each active drawdown source by its fixed annual slice
+    drawdownValues = drawdownValues.map((v, i) => {
+      const s = drawdownSources[i];
+      const span = s.endAge - s.startAge;
+      if (span <= 0 || age < s.startAge || age >= s.endAge) return v;
+      return Math.max(0, v - s.value / span);
+    });
+
     if (isRetired) {
-      // Each drawdown source withdraws at its own specified rate
-      drawdownWithdrawal = drawdownSources.reduce(
-        (sum, s, i) => sum + Math.max(0, drawdownValues[i]) * (s.drawdownRate / 100),
-        0,
-      );
-      // Deplete each drawdown source at its rate
-      drawdownValues = drawdownValues.map(
-        (v, i) => Math.max(0, v - v * (drawdownSources[i].drawdownRate / 100)),
-      );
       totalIncome = yieldIncome + drawdownWithdrawal;
       surplus = totalIncome - annualExpense;
     } else {
-      // During accumulation: yield is reinvested (grows the source)
+      drawdownWithdrawal = 0; // don't show drawdown in accumulation phase rows
       totalIncome = 0;
       surplus = 0;
     }
@@ -614,6 +625,7 @@ function SourceRow({
   value,
   rate,
   rateLabel,
+  annualAmount,
   onChangeName,
   onChangeValue,
   onChangeRate,
@@ -623,17 +635,22 @@ function SourceRow({
   value: number;
   rate: number;
   rateLabel: string;
+  annualAmount: number;
   onChangeName: (v: string) => void;
   onChangeValue: (v: number) => void;
   onChangeRate: (v: number) => void;
   onDelete: () => void;
 }) {
   return (
-    <div className="grid grid-cols-12 gap-2 items-end">
-      <div className="col-span-4">
+    <div className="grid grid-cols-12 gap-2 items-start">
+      {/* Name */}
+      <div className="col-span-4 flex flex-col">
         <InlineInput value={name} onChange={onChangeName} placeholder="Name" />
+        <div className="h-[1.25rem]" />
       </div>
-      <div className="col-span-4">
+
+      {/* Value */}
+      <div className="col-span-4 flex flex-col">
         <InlineInput
           value={value}
           onChange={(v) => onChangeValue(parseFloat(v) || 0)}
@@ -642,8 +659,11 @@ function SourceRow({
           min={0}
           step={1000}
         />
+        <div className="h-[1.25rem]" />
       </div>
-      <div className="col-span-3">
+
+      {/* Rate + annual amount */}
+      <div className="col-span-3 flex flex-col">
         <InlineInput
           value={rate}
           onChange={(v) => onChangeRate(parseFloat(v) || 0)}
@@ -652,15 +672,23 @@ function SourceRow({
           min={0}
           step={0.1}
         />
+        <p
+          className="text-[0.625rem] mt-1 font-semibold tracking-wide"
+          style={{ color: "var(--primary)", lineHeight: "1.25rem" }}
+        >
+          = {fmt(annualAmount / 12)} / mth
+        </p>
       </div>
-      <div className="col-span-1 flex justify-center pb-1">
+
+      {/* Delete — aligned with input */}
+      <div className="col-span-1 flex justify-center pt-[0.35rem]">
         <button
           type="button"
           onClick={onDelete}
           style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem" }}
           title="Remove source"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--tertiary)" strokeWidth="2" strokeLinecap="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tertiary)" strokeWidth="2" strokeLinecap="round">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
@@ -695,8 +723,8 @@ export function FireCalculatorPage() {
       ]),
     );
     setDrawdownSourcesRaw(
-      loadArray<DrawdownSource>("fire:drawdown-sources", [
-        { id: genId(), name: "Growth Portfolio", value: 100000, drawdownRate: 4 },
+      loadArray<DrawdownSource>("fire:drawdown-sources-v2", [
+        { id: genId(), name: "Growth Portfolio", value: 100000, startAge: 55, endAge: 80 },
       ]),
     );
     setMounted(true);
@@ -714,7 +742,7 @@ export function FireCalculatorPage() {
   const setDrawdownSources = useCallback((fn: (prev: DrawdownSource[]) => DrawdownSource[]) => {
     setDrawdownSourcesRaw((prev) => {
       const next = fn(prev);
-      saveArray("fire:drawdown-sources", next);
+      saveArray("fire:drawdown-sources-v2", next);
       return next;
     });
   }, []);
@@ -871,7 +899,7 @@ export function FireCalculatorPage() {
                 <div className="grid grid-cols-12 gap-2 mb-2">
                   <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Name</p>
                   <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Value ($)</p>
-                  <p className="col-span-3 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Yield %</p>
+                  <p className="col-span-3 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Yield % p.a.</p>
                   <p className="col-span-1" />
                 </div>
 
@@ -882,7 +910,8 @@ export function FireCalculatorPage() {
                       name={src.name}
                       value={src.value}
                       rate={src.yieldRate}
-                      rateLabel="Yield %"
+                      rateLabel="% p.a."
+                      annualAmount={src.value * (src.yieldRate / 100)}
                       onChangeName={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, name: v } : s)))}
                       onChangeValue={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, value: v } : s)))}
                       onChangeRate={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, yieldRate: v } : s)))}
@@ -924,30 +953,80 @@ export function FireCalculatorPage() {
                 {/* Column headers */}
                 <div className="grid grid-cols-12 gap-2 mb-2">
                   <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Name</p>
-                  <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Value ($)</p>
-                  <p className="col-span-3 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Withdraw %</p>
+                  <p className="col-span-3 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Value ($)</p>
+                  <p className="col-span-2 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Start Age</p>
+                  <p className="col-span-2 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>End Age</p>
                   <p className="col-span-1" />
                 </div>
 
-                <div className="space-y-2">
-                  {drawdownSources.map((src) => (
-                    <SourceRow
-                      key={src.id}
-                      name={src.name}
-                      value={src.value}
-                      rate={src.drawdownRate}
-                      rateLabel="Withdraw %"
-                      onChangeName={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, name: v } : s)))}
-                      onChangeValue={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, value: v } : s)))}
-                      onChangeRate={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, drawdownRate: v } : s)))}
-                      onDelete={() => setDrawdownSources((prev) => prev.filter((s) => s.id !== src.id))}
-                    />
-                  ))}
+                <div className="space-y-3">
+                  {drawdownSources.map((src) => {
+                    const span = src.endAge - src.startAge;
+                    const annualWithdrawal = span > 0 ? src.value / span : 0;
+                    return (
+                      <div key={src.id} className="grid grid-cols-12 gap-2 items-start">
+                        {/* Name */}
+                        <div className="col-span-4 flex flex-col">
+                          <InlineInput value={src.name} onChange={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, name: v } : s)))} placeholder="Name" />
+                          <div className="h-[1.25rem]" />
+                        </div>
+
+                        {/* Value + annual withdrawal */}
+                        <div className="col-span-3 flex flex-col">
+                          <InlineInput
+                            value={src.value}
+                            onChange={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, value: parseFloat(v) || 0 } : s)))}
+                            type="number" placeholder="Value ($)" min={0} step={1000}
+                          />
+                          <p
+                            className="text-[0.625rem] mt-1 font-semibold tracking-wide"
+                            style={{ color: "var(--primary)", lineHeight: "1.25rem" }}
+                          >
+                            = {fmt(annualWithdrawal / 12)} / mth
+                          </p>
+                        </div>
+
+                        {/* Start Age */}
+                        <div className="col-span-2 flex flex-col">
+                          <InlineInput
+                            value={src.startAge}
+                            onChange={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, startAge: parseInt(v) || 0 } : s)))}
+                            type="number" placeholder="Start" min={0} step={1}
+                          />
+                          <div className="h-[1.25rem]" />
+                        </div>
+
+                        {/* End Age */}
+                        <div className="col-span-2 flex flex-col">
+                          <InlineInput
+                            value={src.endAge}
+                            onChange={(v) => setDrawdownSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, endAge: parseInt(v) || 0 } : s)))}
+                            type="number" placeholder="End" min={0} step={1}
+                          />
+                          <div className="h-[1.25rem]" />
+                        </div>
+
+                        {/* Delete — aligned with input */}
+                        <div className="col-span-1 flex justify-center pt-[0.35rem]">
+                          <button
+                            type="button"
+                            onClick={() => setDrawdownSources((prev) => prev.filter((s) => s.id !== src.id))}
+                            style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem" }}
+                            title="Remove source"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--tertiary)" strokeWidth="2" strokeLinecap="round">
+                              <path d="M18 6L6 18M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setDrawdownSources((prev) => [...prev, { id: genId(), name: "", value: 0, drawdownRate: 4 }])}
+                  onClick={() => setDrawdownSources((prev) => [...prev, { id: genId(), name: "", value: 0, startAge: retirementAge, endAge: deathAge }])}
                   className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
                 >
