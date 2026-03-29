@@ -763,9 +763,10 @@ export function FireCalculatorPage() {
   const drawdownWithdrawalAtRetirement = retirementRow?.drawdownWithdrawal ?? 0;
   const totalIncomeAtRetirement = yieldIncomeAtRetirement + drawdownWithdrawalAtRetirement;
 
-  // FIRE Score = total passive income at retirement / annual expense * 100
-  // Both yield rate AND drawdown rate directly affect this score
-  const fireScore = annualExpense > 0 ? (totalIncomeAtRetirement / annualExpense) * 100 : 0;
+  // FIRE Score = yield income only / annual expense * 100
+  // Drawdown is excluded — it's finite capital depletion, not perpetual passive income.
+  // Including drawdown would inflate the score even when money runs out in 5 years.
+  const fireScore = annualExpense > 0 ? (yieldIncomeAtRetirement / annualExpense) * 100 : 0;
 
   // Income sustainability — first retirement year where income falls short of expenses
   const shortfallRow = projection.find((r) => r.phase === "retirement" && r.surplus < 0);
