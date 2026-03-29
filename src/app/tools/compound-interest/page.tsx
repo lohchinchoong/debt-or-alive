@@ -262,6 +262,7 @@ function RadioPill({
 
 // ─── GrowthChart ─────────────────────────────────────────────────────────────
 function GrowthChart({ data }: { data: YearData[] }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   if (data.length < 2) return null;
 
   const W = 600;
@@ -289,11 +290,27 @@ function GrowthChart({ data }: { data: YearData[] }) {
   // Y-axis ticks (0, 25%, 50%, 75%, 100%)
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => t * yMax);
 
-  // X-axis labels — intelligently spaced
+  // X-axis labels — evenly spaced multiples of a nice step
   const xStep = totalYears <= 10 ? 2 : totalYears <= 20 ? 5 : 10;
   const xLabels: number[] = [];
   for (let y = 0; y <= totalYears; y += xStep) xLabels.push(y);
-  if (xLabels[xLabels.length - 1] !== totalYears) xLabels.push(totalYears);
+  // Add final year only if it's meaningfully far from last tick
+  const lastTick = xLabels[xLabels.length - 1];
+  if (lastTick !== totalYears && totalYears - lastTick > xStep * 0.4) xLabels.push(totalYears);
+
+  // Hover
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * W;
+    const fraction = Math.max(0, Math.min(1, (svgX - PAD.left) / CW));
+    setHoveredIdx(Math.round(fraction * (data.length - 1)));
+  };
+
+  const hd = hoveredIdx !== null ? data[hoveredIdx] : null;
+  const hx = hd ? xOf(hd.year) : 0;
+  const TW = 180;
+  const TH = 78;
+  const tooltipX = hd ? (hx < PAD.left + CW / 2 ? hx + 10 : hx - TW - 10) : 0;
 
   return (
     <div
@@ -305,8 +322,10 @@ function GrowthChart({ data }: { data: YearData[] }) {
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height: "auto", overflow: "visible" }}
+        style={{ width: "100%", height: "auto", overflow: "visible", cursor: "crosshair" }}
         aria-label="Compound interest growth projection chart"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredIdx(null)}
       >
         <defs>
           <linearGradient id="cic-fill" x1="0" y1="0" x2="0" y2="1">
@@ -387,6 +406,20 @@ function GrowthChart({ data }: { data: YearData[] }) {
             Principal only
           </text>
         </g>
+
+        {/* Hover crosshair + tooltip */}
+        {hd && (
+          <g pointerEvents="none">
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.totalContribution)} r="3.5" fill="#c0c9c0" stroke="white" strokeWidth="1.5" />
+            <circle cx={hx} cy={yOf(hd.futureValue)} r="4" fill="#00351f" stroke="white" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`Year ${hd.year}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Balance: $${fmtAxis(hd.futureValue)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Principal: $${fmtAxis(hd.totalContribution)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="#1a6b42" fontFamily="Manrope, sans-serif">{`Interest: $${fmtAxis(hd.accruedInterest)}`}</text>
+          </g>
+        )}
       </svg>
     </div>
   );

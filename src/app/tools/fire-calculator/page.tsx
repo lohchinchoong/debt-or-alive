@@ -367,6 +367,7 @@ function FireChart({
   retirementAge: number;
   fireNumber: number;
 }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   if (data.length < 2) return null;
 
   const W = 640;
@@ -396,16 +397,28 @@ function FireChart({
   // Y ticks
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => t * yMax);
 
-  // X labels — age markers
-  const xStep = ageRange <= 20 ? 5 : 10;
-  const xLabels: number[] = [ageMin];
-  for (let a = Math.ceil(ageMin / xStep) * xStep; a <= ageMax; a += xStep) {
-    if (a > ageMin) xLabels.push(a);
-  }
-  if (xLabels[xLabels.length - 1] !== ageMax) xLabels.push(ageMax);
+  // X labels — clean multiples of step (equal visual spacing)
+  const xStep = ageRange <= 15 ? 2 : ageRange <= 30 ? 5 : 10;
+  const firstLabel = Math.ceil(ageMin / xStep) * xStep;
+  const xLabels: number[] = [];
+  for (let a = firstLabel; a <= ageMax; a += xStep) xLabels.push(a);
 
   // Retirement vertical line
   const retX = xOf(retirementAge);
+
+  // Hover
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * W;
+    const fraction = Math.max(0, Math.min(1, (svgX - PAD.left) / CW));
+    setHoveredIdx(Math.round(fraction * (data.length - 1)));
+  };
+
+  const hd = hoveredIdx !== null ? data[hoveredIdx] : null;
+  const hx = hd ? xOf(hd.age) : 0;
+  const TW = 178;
+  const TH = 78;
+  const tooltipX = hd ? (hx < PAD.left + CW / 2 ? hx + 10 : hx - TW - 10) : 0;
 
   return (
     <div
@@ -417,8 +430,10 @@ function FireChart({
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height: "auto", overflow: "visible" }}
+        style={{ width: "100%", height: "auto", overflow: "visible", cursor: "crosshair" }}
         aria-label="FIRE portfolio projection chart"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredIdx(null)}
       >
         <defs>
           <linearGradient id="fire-fill" x1="0" y1="0" x2="0" y2="1">
@@ -484,6 +499,20 @@ function FireChart({
           <line x1="275" y1="0" x2="293" y2="0" stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" />
           <text x="298" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">FIRE number</text>
         </g>
+
+        {/* Hover crosshair + tooltip */}
+        {hd && (
+          <g pointerEvents="none">
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.yieldPortfolio)} r="3.5" fill="#1a6b42" stroke="white" strokeWidth="1.5" />
+            <circle cx={hx} cy={yOf(hd.totalPortfolio)} r="4" fill="#00351f" stroke="white" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`Age ${hd.age} · ${hd.year}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Total: $${fmtAxis(hd.totalPortfolio)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="#1a6b42" fontFamily="Manrope, sans-serif">{`Yield: $${fmtAxis(hd.yieldPortfolio)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="#b8860b" fontFamily="Manrope, sans-serif">{`Drawdown: $${fmtAxis(hd.drawdownPortfolio)}`}</text>
+          </g>
+        )}
       </svg>
     </div>
   );
@@ -500,6 +529,7 @@ function IncomeChart({
   retirementAge: number;
   monthlyExpense: number;
 }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const retirementData = data.filter((r) => r.phase === "retirement");
   if (retirementData.length < 2) return null;
 
@@ -529,15 +559,28 @@ function IncomeChart({
 
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => t * yMax);
 
-  const xStep = ageRange <= 20 ? 5 : 10;
-  const xLabels: number[] = [ageMin];
-  for (let a = Math.ceil(ageMin / xStep) * xStep; a <= ageMax; a += xStep) {
-    if (a > ageMin) xLabels.push(a);
-  }
-  if (xLabels[xLabels.length - 1] !== ageMax) xLabels.push(ageMax);
+  // X labels — clean multiples of step (equal visual spacing)
+  const xStep = ageRange <= 15 ? 2 : ageRange <= 30 ? 5 : 10;
+  const firstLabel = Math.ceil(ageMin / xStep) * xStep;
+  const xLabels: number[] = [];
+  for (let a = firstLabel; a <= ageMax; a += xStep) xLabels.push(a);
 
   const expenseY = yOf(monthlyExpense);
   const expenseInRange = monthlyExpense <= yMax;
+
+  // Hover
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * W;
+    const fraction = Math.max(0, Math.min(1, (svgX - PAD.left) / CW));
+    setHoveredIdx(Math.round(fraction * (retirementData.length - 1)));
+  };
+
+  const hd = hoveredIdx !== null ? retirementData[hoveredIdx] : null;
+  const hx = hd ? xOf(hd.age) : 0;
+  const TW = 200;
+  const TH = 94;
+  const tooltipX = hd ? (hx < PAD.left + CW / 2 ? hx + 10 : hx - TW - 10) : 0;
 
   return (
     <div
@@ -549,8 +592,10 @@ function IncomeChart({
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height: "auto", overflow: "visible" }}
+        style={{ width: "100%", height: "auto", overflow: "visible", cursor: "crosshair" }}
         aria-label="Monthly income projection chart"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredIdx(null)}
       >
         <defs>
           <linearGradient id="income-total-fill" x1="0" y1="0" x2="0" y2="1">
@@ -613,6 +658,21 @@ function IncomeChart({
           <line x1="355" y1="0" x2="373" y2="0" stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" />
           <text x="378" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Monthly expense</text>
         </g>
+
+        {/* Hover crosshair + tooltip */}
+        {hd && (
+          <g pointerEvents="none">
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.yieldIncome / 12)} r="3.5" fill="#00351f" stroke="white" strokeWidth="1.5" />
+            <circle cx={hx} cy={yOf(hd.totalIncome / 12)} r="4" fill="#1a6b42" stroke="white" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`Age ${hd.age}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Total: $${fmtAxis(hd.totalIncome / 12)}/mth`}</text>
+            <text x={tooltipX + 20} y={PAD.top + 51} fontSize="9" fill="#1a6b42" fontFamily="Manrope, sans-serif">{`Yield: $${fmtAxis(hd.yieldIncome / 12)}/mth`}</text>
+            <text x={tooltipX + 20} y={PAD.top + 65} fontSize="9" fill="#b8860b" fontFamily="Manrope, sans-serif">{`Drawdown: $${fmtAxis(hd.drawdownWithdrawal / 12)}/mth`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 81} fontSize="9" fill="#c05621" fontFamily="Manrope, sans-serif">{`Target: $${fmtAxis(monthlyExpense)}/mth`}</text>
+          </g>
+        )}
       </svg>
     </div>
   );

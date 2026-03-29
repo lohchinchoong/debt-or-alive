@@ -241,6 +241,7 @@ function CpfChart({
   startYear: number;
   endContribYear: number;
 }) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   if (rows.length < 2) return null;
 
   const W = 700;
@@ -272,14 +273,28 @@ function CpfChart({
   // Y-axis ticks
   const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => t * yMax);
 
-  // X-axis labels — show every 2 or 5 years depending on span
-  const step = span <= 15 ? 2 : 5;
+  // X-axis labels — clean multiples of step (equal visual spacing)
+  const xStep = span <= 15 ? 2 : 5;
+  const firstLabel = Math.ceil(minYear / xStep) * xStep;
   const xLabels: number[] = [];
-  for (let y = minYear; y <= maxYear; y += step) xLabels.push(y);
-  if (xLabels[xLabels.length - 1] !== maxYear) xLabels.push(maxYear);
+  for (let y = firstLabel; y <= maxYear; y += xStep) xLabels.push(y);
 
   // Contribution cutoff marker
   const cutoffX = xOf(endContribYear);
+
+  // Hover
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * W;
+    const fraction = Math.max(0, Math.min(1, (svgX - PAD.left) / CW));
+    setHoveredIdx(Math.round(fraction * (rows.length - 1)));
+  };
+
+  const hd = hoveredIdx !== null ? rows[hoveredIdx] : null;
+  const hx = hd ? xOf(hd.year) : 0;
+  const TW = 192;
+  const TH = 62;
+  const tooltipX = hd ? (hx < PAD.left + CW / 2 ? hx + 10 : hx - TW - 10) : 0;
 
   return (
     <div
@@ -291,8 +306,10 @@ function CpfChart({
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", height: "auto", overflow: "visible" }}
+        style={{ width: "100%", height: "auto", overflow: "visible", cursor: "crosshair" }}
         aria-label="CPF SA balance projection chart"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredIdx(null)}
       >
         <defs>
           <linearGradient id="cpf-fill" x1="0" y1="0" x2="0" y2="1">
@@ -395,6 +412,19 @@ function CpfChart({
             Total Contributions
           </text>
         </g>
+
+        {/* Hover crosshair + tooltip */}
+        {hd && (
+          <g pointerEvents="none">
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.totalContributions)} r="3.5" fill="#c0c9c0" stroke="white" strokeWidth="1.5" />
+            <circle cx={hx} cy={yOf(hd.balance)} r="4" fill="#00351f" stroke="white" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`${hd.year}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Balance: $${fmtAxis(hd.balance)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Contributions: $${fmtAxis(hd.totalContributions)}`}</text>
+          </g>
+        )}
       </svg>
     </div>
   );
