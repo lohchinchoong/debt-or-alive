@@ -489,6 +489,135 @@ function FireChart({
   );
 }
 
+// ─── Monthly Income Chart ────────────────────────────────────────────────────
+
+function IncomeChart({
+  data,
+  retirementAge,
+  monthlyExpense,
+}: {
+  data: YearRow[];
+  retirementAge: number;
+  monthlyExpense: number;
+}) {
+  const retirementData = data.filter((r) => r.phase === "retirement");
+  if (retirementData.length < 2) return null;
+
+  const W = 640;
+  const H = 240;
+  const PAD = { top: 28, right: 24, bottom: 44, left: 62 };
+  const CW = W - PAD.left - PAD.right;
+  const CH = H - PAD.top - PAD.bottom;
+
+  const maxIncome = Math.max(...retirementData.map((d) => d.totalIncome / 12), monthlyExpense);
+  const yMax = niceMax(maxIncome);
+  const ageMin = retirementData[0].age;
+  const ageMax = retirementData[retirementData.length - 1].age;
+  const ageRange = ageMax - ageMin || 1;
+
+  const xOf = (age: number) => PAD.left + ((age - ageMin) / ageRange) * CW;
+  const yOf = (v: number) => PAD.top + CH - (v / yMax) * CH;
+
+  // Yield income area
+  const yieldPts = retirementData.map((d) => `${xOf(d.age).toFixed(1)},${yOf(d.yieldIncome / 12).toFixed(1)}`);
+  const yieldArea = `M ${yieldPts.join(" L ")} L ${xOf(ageMax).toFixed(1)},${(PAD.top + CH).toFixed(1)} L ${PAD.left.toFixed(1)},${(PAD.top + CH).toFixed(1)} Z`;
+
+  // Total income line (yield + drawdown)
+  const totalPts = retirementData.map((d) => `${xOf(d.age).toFixed(1)},${yOf(d.totalIncome / 12).toFixed(1)}`);
+  const totalLine = `M ${totalPts.join(" L ")}`;
+  const totalArea = `${totalLine} L ${xOf(ageMax).toFixed(1)},${(PAD.top + CH).toFixed(1)} L ${PAD.left.toFixed(1)},${(PAD.top + CH).toFixed(1)} Z`;
+
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => t * yMax);
+
+  const xStep = ageRange <= 20 ? 5 : 10;
+  const xLabels: number[] = [ageMin];
+  for (let a = Math.ceil(ageMin / xStep) * xStep; a <= ageMax; a += xStep) {
+    if (a > ageMin) xLabels.push(a);
+  }
+  if (xLabels[xLabels.length - 1] !== ageMax) xLabels.push(ageMax);
+
+  const expenseY = yOf(monthlyExpense);
+  const expenseInRange = monthlyExpense <= yMax;
+
+  return (
+    <div
+      className="rounded-xl p-5"
+      style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+    >
+      <p className="text-[0.9375rem] font-semibold mb-4" style={{ color: "var(--on-surface)" }}>
+        Monthly Income Projection
+      </p>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: "100%", height: "auto", overflow: "visible" }}
+        aria-label="Monthly income projection chart"
+      >
+        <defs>
+          <linearGradient id="income-total-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#1a6b42" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#1a6b42" stopOpacity="0.02" />
+          </linearGradient>
+          <linearGradient id="income-yield-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#00351f" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="#00351f" stopOpacity="0.04" />
+          </linearGradient>
+        </defs>
+
+        {/* Grid lines */}
+        {ticks.map((v) => (
+          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="#c0c9c0" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+        ))}
+
+        {/* Y-axis labels */}
+        {ticks.map((v) => (
+          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            {fmtAxis(v)}
+          </text>
+        ))}
+
+        {/* X-axis labels */}
+        {xLabels.map((a) => (
+          <text key={a} x={xOf(a)} y={H - 6} textAnchor="middle" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            {a}
+          </text>
+        ))}
+
+        {/* Monthly expense line */}
+        {expenseInRange && (
+          <>
+            <line x1={PAD.left} y1={expenseY} x2={W - PAD.right} y2={expenseY} stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" opacity="0.6" />
+            <text x={W - PAD.right + 4} y={expenseY + 3} fontSize="9" fill="#c05621" fontFamily="Manrope, sans-serif" fontWeight="600">
+              Target
+            </text>
+          </>
+        )}
+
+        {/* Total income area (behind yield) */}
+        <path d={totalArea} fill="url(#income-total-fill)" />
+
+        {/* Yield-only area (on top) */}
+        <path d={yieldArea} fill="url(#income-yield-fill)" />
+
+        {/* Yield income line */}
+        <path d={`M ${yieldPts.join(" L ")}`} fill="none" stroke="#00351f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Total income line */}
+        <path d={totalLine} fill="none" stroke="#1a6b42" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.85" />
+
+        {/* Legend */}
+        <g transform={`translate(${PAD.left}, 12)`}>
+          <line x1="0" y1="0" x2="18" y2="0" stroke="#00351f" strokeWidth="2" />
+          <text x="23" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Yield income</text>
+          <line x1="130" y1="0" x2="148" y2="0" stroke="#1a6b42" strokeWidth="1.5" strokeDasharray="5 4" />
+          <text x="153" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Total income (incl. drawdown)</text>
+          <line x1="355" y1="0" x2="373" y2="0" stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" />
+          <text x="378" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Monthly expense</text>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
 // ─── Yearly Table ────────────────────────────────────────────────────────────
 
 function FireTable({ data }: { data: YearRow[] }) {
@@ -1131,8 +1260,11 @@ export function FireCalculatorPage() {
                 </div>
               </div>
 
-              {/* Chart */}
+              {/* Portfolio chart */}
               <FireChart data={projection} retirementAge={retirementAge} fireNumber={fireNumber} />
+
+              {/* Monthly income chart */}
+              <IncomeChart data={projection} retirementAge={retirementAge} monthlyExpense={monthlyExpense} />
             </div>
           </div>
 
