@@ -12,6 +12,7 @@ type YieldSource = {
   name: string;
   value: number;
   yieldRate: number; // annual %
+  startAge: number;  // age at which yield income begins (compounds before this)
 };
 
 type DrawdownSource = {
@@ -194,9 +195,12 @@ function calculateFireProjection(
     const drawdownPortfolio = drawdownValues.reduce((a, b) => a + Math.max(0, b), 0);
     const totalPortfolio = yieldPortfolio + drawdownPortfolio;
 
-    // Annual yield income (always generated, but only "used" in retirement)
+    // Annual yield income — only from sources where age >= startAge
     const yieldIncome = yieldSources.reduce(
-      (sum, s, i) => sum + yieldValues[i] * (s.yieldRate / 100),
+      (sum, s, i) => {
+        if (age < s.startAge) return sum; // not yet active
+        return sum + yieldValues[i] * (s.yieldRate / 100);
+      },
       0,
     );
 
@@ -246,10 +250,16 @@ function calculateFireProjection(
       surplus,
     });
 
-    // Grow yield sources by their yield rate (reinvested during accumulation, stays flat in retirement since income is withdrawn)
-    if (!isRetired) {
-      yieldValues = yieldValues.map((v, i) => v * (1 + yieldSources[i].yieldRate / 100));
-    }
+    // Grow yield sources by their yield rate
+    // - During accumulation: all sources compound (yield reinvested)
+    // - During retirement: sources before startAge still compound; active sources stay flat (income withdrawn)
+    yieldValues = yieldValues.map((v, i) => {
+      const s = yieldSources[i];
+      if (!isRetired || age < s.startAge) {
+        return v * (1 + s.yieldRate / 100); // compound
+      }
+      return v; // flat — income being withdrawn
+    });
     // Drawdown sources don't grow (not yield-bearing per user spec)
   }
 
@@ -815,9 +825,11 @@ function SourceRow({
   rate,
   rateLabel,
   annualAmount,
+  startAge,
   onChangeName,
   onChangeValue,
   onChangeRate,
+  onChangeStartAge,
   onDelete,
 }: {
   name: string;
@@ -825,21 +837,25 @@ function SourceRow({
   rate: number;
   rateLabel: string;
   annualAmount: number;
+  startAge?: number;
   onChangeName: (v: string) => void;
   onChangeValue: (v: number) => void;
   onChangeRate: (v: number) => void;
+  onChangeStartAge?: (v: number) => void;
   onDelete: () => void;
 }) {
+  const hasStartAge = startAge !== undefined && onChangeStartAge !== undefined;
+
   return (
-    <div className="grid grid-cols-12 gap-2 items-start">
+    <div className={`grid ${hasStartAge ? "grid-cols-[3fr_3fr_3fr_2fr_auto]" : "grid-cols-12"} gap-2 items-start`}>
       {/* Name */}
-      <div className="col-span-4 flex flex-col">
+      <div className={`${hasStartAge ? "" : "col-span-4"} flex flex-col`}>
         <InlineInput value={name} onChange={onChangeName} placeholder="Name" />
         <div className="h-[1.25rem]" />
       </div>
 
       {/* Value */}
-      <div className="col-span-4 flex flex-col">
+      <div className={`${hasStartAge ? "" : "col-span-4"} flex flex-col`}>
         <InlineInput
           value={value}
           onChange={(v) => onChangeValue(parseFloat(v) || 0)}
@@ -852,7 +868,7 @@ function SourceRow({
       </div>
 
       {/* Rate + annual amount */}
-      <div className="col-span-3 flex flex-col">
+      <div className={`${hasStartAge ? "" : "col-span-3"} flex flex-col`}>
         <InlineInput
           value={rate}
           onChange={(v) => onChangeRate(parseFloat(v) || 0)}
@@ -869,8 +885,23 @@ function SourceRow({
         </p>
       </div>
 
+      {/* Start Age (optional) */}
+      {hasStartAge && (
+        <div className="flex flex-col">
+          <InlineInput
+            value={startAge}
+            onChange={(v) => onChangeStartAge(parseInt(v) || 0)}
+            type="number"
+            placeholder="Age"
+            min={0}
+            step={1}
+          />
+          <div className="h-[1.25rem]" />
+        </div>
+      )}
+
       {/* Delete — aligned with input */}
-      <div className="col-span-1 flex justify-center pt-[0.35rem]">
+      <div className={`${hasStartAge ? "" : "col-span-1"} flex justify-center pt-[0.35rem]`} style={hasStartAge ? { width: "1.75rem" } : undefined}>
         <button
           type="button"
           onClick={onDelete}
@@ -907,8 +938,8 @@ export function FireCalculatorPage() {
   // Load from localStorage after mount
   useEffect(() => {
     setYieldSourcesRaw(
-      loadArray<YieldSource>("fire:yield-sources", [
-        { id: genId(), name: "Dividend ETF", value: 50000, yieldRate: 5 },
+      loadArray<YieldSource>("fire:yield-sources-v2", [
+        { id: genId(), name: "Dividend ETF", value: 50000, yieldRate: 5, startAge: 30 },
       ]),
     );
     setDrawdownSourcesRaw(
@@ -923,7 +954,7 @@ export function FireCalculatorPage() {
   const setYieldSources = useCallback((fn: (prev: YieldSource[]) => YieldSource[]) => {
     setYieldSourcesRaw((prev) => {
       const next = fn(prev);
-      saveArray("fire:yield-sources", next);
+      saveArray("fire:yield-sources-v2", next);
       return next;
     });
   }, []);
@@ -1086,11 +1117,12 @@ export function FireCalculatorPage() {
                 </p>
 
                 {/* Column headers */}
-                <div className="grid grid-cols-12 gap-2 mb-2">
-                  <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Name</p>
-                  <p className="col-span-4 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Value ($)</p>
-                  <p className="col-span-3 text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Yield % p.a.</p>
-                  <p className="col-span-1" />
+                <div className="grid grid-cols-[3fr_3fr_3fr_2fr_auto] gap-2 mb-2">
+                  <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Name</p>
+                  <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Value ($)</p>
+                  <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Yield % p.a.</p>
+                  <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>From Age</p>
+                  <p style={{ width: "1.75rem" }} />
                 </div>
 
                 <div className="space-y-2">
@@ -1102,9 +1134,11 @@ export function FireCalculatorPage() {
                       rate={src.yieldRate}
                       rateLabel="% p.a."
                       annualAmount={src.value * (src.yieldRate / 100)}
+                      startAge={src.startAge}
                       onChangeName={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, name: v } : s)))}
                       onChangeValue={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, value: v } : s)))}
                       onChangeRate={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, yieldRate: v } : s)))}
+                      onChangeStartAge={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, startAge: v } : s)))}
                       onDelete={() => setYieldSources((prev) => prev.filter((s) => s.id !== src.id))}
                     />
                   ))}
@@ -1112,7 +1146,7 @@ export function FireCalculatorPage() {
 
                 <button
                   type="button"
-                  onClick={() => setYieldSources((prev) => [...prev, { id: genId(), name: "", value: 0, yieldRate: 5 }])}
+                  onClick={() => setYieldSources((prev) => [...prev, { id: genId(), name: "", value: 0, yieldRate: 5, startAge: currentAge }])}
                   className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
                 >
