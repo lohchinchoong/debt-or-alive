@@ -33,15 +33,14 @@ export const tools: Tool[] = [
     category: "Planning",
     icon: "Flame",
   },
-  // ── Coming soon ───────────────────────────────────────────────────────────
   {
     slug: "mortgage-calculator",
     name: "Mortgage Calculator",
     tagline: "Estimate monthly repayments for HDB or private property loans.",
     category: "Property",
     icon: "House",
-    comingSoon: true,
   },
+  // ── Coming soon ───────────────────────────────────────────────────────────
   {
     slug: "rent-vs-buy",
     name: "Rent vs Buy",
