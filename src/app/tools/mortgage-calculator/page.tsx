@@ -658,6 +658,7 @@ export function MortgageCalculatorPage() {
   // ── Partial repayments (localStorage only, like FIRE's dynamic arrays) ──
   const [partialRepayments, setPartialRepaymentsRaw] = useState<PartialRepayment[]>([]);
   const [mounted, setMounted] = useState(false);
+  const [paymentRegimeIndex, setPaymentRegimeIndex] = useState(0);
 
   useEffect(() => {
     setPartialRepaymentsRaw(loadArray<PartialRepayment>("mortgage:partial-repayments", []));
@@ -699,6 +700,47 @@ export function MortgageCalculatorPage() {
   const lastActiveYear = [...yearly].reverse().find((yr) => yr.payment > 0);
   const currentMonthlyPayment = lastActiveYear ? lastActiveYear.payment / 12 : 0;
   const monthlyPaymentChanged = partialRepayments.length > 0 && Math.abs(currentMonthlyPayment - initialMonthlyPayment) > 0.01;
+
+  // Extract distinct payment regimes (consecutive years with same monthly payment)
+  type PaymentRegime = { startYear: number; endYear: number; monthlyPayment: number };
+  const paymentRegimes: PaymentRegime[] = useMemo(() => {
+    if (yearly.length === 0) return [];
+
+    const regimes: PaymentRegime[] = [];
+    let currentStart = yearly[0].year;
+    let currentPayment = yearly[0].payment / 12;
+
+    for (let i = 1; i < yearly.length; i++) {
+      const yearlyPayment = yearly[i].payment / 12;
+      if (Math.abs(yearlyPayment - currentPayment) > 0.01) {
+        // Payment changed, save the current regime
+        regimes.push({
+          startYear: currentStart,
+          endYear: yearly[i - 1].year,
+          monthlyPayment: currentPayment,
+        });
+        currentStart = yearly[i].year;
+        currentPayment = yearlyPayment;
+      }
+    }
+
+    // Add the final regime
+    regimes.push({
+      startYear: currentStart,
+      endYear: yearly[yearly.length - 1].year,
+      monthlyPayment: currentPayment,
+    });
+
+    return regimes;
+  }, [yearly]);
+
+  // Reset regime index when regimes change
+  useEffect(() => {
+    setPaymentRegimeIndex(0);
+  }, [paymentRegimes.length]);
+
+  const currentRegime = paymentRegimes[paymentRegimeIndex] ?? paymentRegimes[0];
+  const hasMultipleRegimes = paymentRegimes.length > 1;
 
   if (!mounted) {
     return (
@@ -910,7 +952,7 @@ export function MortgageCalculatorPage() {
               <div className="grid grid-cols-2 gap-4">
                 {/* Monthly Payment — gradient */}
                 <div
-                  className="rounded-xl p-5 flex flex-col justify-between"
+                  className="rounded-xl p-5 flex flex-col justify-between relative"
                   style={{
                     background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
                     boxShadow: "0 12px 32px rgba(0,53,31,0.20)",
@@ -918,18 +960,52 @@ export function MortgageCalculatorPage() {
                   }}
                 >
                   <p className="text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.65)" }}>
-                    Initial Monthly Repayment
+                    Monthly Repayment
                   </p>
-                  <div>
-                    <p className="text-2xl sm:text-3xl font-bold leading-none mt-3" style={{ color: "#fff", letterSpacing: "-0.02em" }}>
-                      {fmt(initialMonthlyPayment)}
-                    </p>
-                    <p className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.55)" }}>
-                      {monthlyPaymentChanged
-                        ? `Reduces after each partial repayment`
-                        : `Over ${tenureYears} year${tenureYears !== 1 ? "s" : ""}`}
-                    </p>
+                  <div className="flex items-center justify-between pr-8">
+                    <div>
+                      <p className="text-2xl sm:text-3xl font-bold leading-none mt-3" style={{ color: "#fff", letterSpacing: "-0.02em" }}>
+                        {currentRegime ? fmt(currentRegime.monthlyPayment) : fmt(initialMonthlyPayment)}
+                      </p>
+                      <p className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.55)" }}>
+                        {currentRegime && paymentRegimes.length > 1
+                          ? `Year ${currentRegime.startYear}${currentRegime.endYear > currentRegime.startYear ? `–${currentRegime.endYear}` : ""}`
+                          : monthlyPaymentChanged
+                            ? `Reduces after each partial repayment`
+                            : `Over ${tenureYears} year${tenureYears !== 1 ? "s" : ""}`}
+                      </p>
+                    </div>
                   </div>
+
+                  {/* Navigation arrows — only show if multiple regimes */}
+                  {hasMultipleRegimes && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentRegimeIndex((i) => Math.max(0, i - 1))}
+                        disabled={paymentRegimeIndex === 0}
+                        className="p-1 rounded transition-opacity hover:opacity-75 disabled:opacity-30 disabled:cursor-not-allowed"
+                        style={{ color: "#fff" }}
+                        aria-label="Previous payment"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="18 15 12 9 6 15" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPaymentRegimeIndex((i) => Math.min(paymentRegimes.length - 1, i + 1))}
+                        disabled={paymentRegimeIndex === paymentRegimes.length - 1}
+                        className="p-1 rounded transition-opacity hover:opacity-75 disabled:opacity-30 disabled:cursor-not-allowed"
+                        style={{ color: "#fff" }}
+                        aria-label="Next payment"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Total Interest */}
