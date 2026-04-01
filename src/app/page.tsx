@@ -1,6 +1,7 @@
 import { ToolCard } from "@/components/ToolCard";
 import { HeroSection } from "@/components/HeroSection";
 import { SiteHeader } from "@/components/SiteHeader";
+import { DataPortability } from "@/components/DataPortability";
 import { tools } from "@/lib/tools";
 
 export default function HomePage() {
@@ -34,6 +35,11 @@ export default function HomePage() {
               Results should not be construed as financial advice. Please consult a qualified financial
               adviser before making any financial decisions.
             </p>
+
+            {/* Export / Import */}
+            <div className="mt-5">
+              <DataPortability />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
