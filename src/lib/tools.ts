@@ -40,6 +40,13 @@ export const tools: Tool[] = [
     category: "Property",
     icon: "House",
   },
+  {
+    slug: "emergency-fund",
+    name: "Savings / Emergency Fund",
+    tagline: "Track multiple savings sources. See how interest grows your safety net over time.",
+    category: "Savings",
+    icon: "ShieldCheck",
+  },
   // ── Coming soon ───────────────────────────────────────────────────────────
   {
     slug: "rent-vs-buy",
@@ -81,14 +88,6 @@ export const tools: Tool[] = [
     category: "Debt",
     icon: "GitCompare",
     accent: "tertiary",
-    comingSoon: true,
-  },
-  {
-    slug: "emergency-fund",
-    name: "Emergency Fund",
-    tagline: "How many months do you need? Build your safety net target.",
-    category: "Savings",
-    icon: "ShieldCheck",
     comingSoon: true,
   },
   {

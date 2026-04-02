@@ -8,9 +8,11 @@ const STORAGE_KEYS = [
   "tool:cpf-sa-calculator",
   "tool:fire-calculator",
   "tool:mortgage-calculator",
+  "tool:emergency-fund",
   "fire:yield-sources-v2",
   "fire:drawdown-sources-v2",
   "mortgage:partial-repayments",
+  "emergency-fund:sources",
 ];
 
 const APP_ID = "debtoralive";
