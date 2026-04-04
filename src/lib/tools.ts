@@ -51,7 +51,7 @@ export const tools: Tool[] = [
     slug: "srs-calculator",
     name: "SRS Fund",
     tagline: "Track SRS deposits, investments, and plan your tax-efficient drawdown.",
-    category: "CPF",
+    category: "Savings",
     icon: "Receipt",
   },
   // ── Coming soon ───────────────────────────────────────────────────────────
