@@ -581,7 +581,7 @@ export function EmergencyFundPage() {
   });
 
   const { monthlyExpenses, targetMonths } = s;
-  const projectionYears = 5;
+  const projectionYears: number = 5;
 
   // ── Savings sources (dynamic array, localStorage) ──
   const [sources, setSourcesRaw] = useState<SavingsSource[]>([]);
