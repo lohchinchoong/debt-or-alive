@@ -264,6 +264,7 @@ function DepositRow({
 
   const inputStyle = (focused: boolean) => ({
     width: "100%",
+    minWidth: 0,
     background: "var(--surface-container-highest)",
     border: "none",
     borderBottom: `2px solid ${focused ? "var(--primary)" : "var(--outline-variant)"}`,
@@ -278,7 +279,7 @@ function DepositRow({
   });
 
   return (
-    <div className="grid grid-cols-[3fr_3fr_3fr_2fr_auto] gap-2 items-end">
+    <div className="grid grid-cols-[4fr_3fr_3fr_2fr_28px] gap-2 items-end">
       {/* Name */}
       <div>
         <input
@@ -293,7 +294,7 @@ function DepositRow({
       </div>
 
       {/* Amount */}
-      <div>
+      <div className="min-w-0">
         <input
           type="number"
           value={deposit.amount}
@@ -307,7 +308,7 @@ function DepositRow({
       </div>
 
       {/* Start Date */}
-      <div>
+      <div className="min-w-0">
         <input
           type="date"
           value={deposit.startDate}
@@ -319,7 +320,7 @@ function DepositRow({
       </div>
 
       {/* Interest Rate */}
-      <div>
+      <div className="min-w-0">
         <input
           type="number"
           value={deposit.interestRate}
@@ -723,7 +724,7 @@ export function SRSCalculatorPage() {
         </div>
 
         {/* Main grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[560px_1fr] gap-6">
           {/* ── Left: Inputs ── */}
           <div className="flex flex-col gap-5">
 
@@ -747,10 +748,10 @@ export function SRSCalculatorPage() {
               {deposits.length > 0 && (
                 <div className="mb-2">
                   {/* Column headers */}
-                  <div className="grid grid-cols-[3fr_3fr_3fr_2fr_auto] gap-2 mb-1.5 px-0.5">
+                  <div className="grid grid-cols-[4fr_3fr_3fr_2fr_28px] gap-2 mb-1.5">
                     {["Name", "Amount ($)", "Start Date", "Rate %", ""].map((h) => (
                       <p key={h} className="text-[0.7rem] font-semibold uppercase tracking-wide"
-                        style={{ color: "var(--on-surface-sub)" }}>
+                        style={{ color: "var(--on-surface-sub)", paddingLeft: "0.375rem" }}>
                         {h}
                       </p>
                     ))}
