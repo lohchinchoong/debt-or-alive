@@ -578,10 +578,10 @@ export function EmergencyFundPage() {
   const [s, set] = useToolState("tool:emergency-fund", {
     monthlyExpenses: 3000,
     targetMonths: 6,
-    projectionYears: 5,
   });
 
-  const { monthlyExpenses, targetMonths, projectionYears } = s;
+  const { monthlyExpenses, targetMonths } = s;
+  const projectionYears = 5;
 
   // ── Savings sources (dynamic array, localStorage) ──
   const [sources, setSourcesRaw] = useState<SavingsSource[]>([]);
@@ -634,8 +634,8 @@ export function EmergencyFundPage() {
 
   // Projection data
   const projectionData = useMemo(
-    () => projectSavings(sources, Math.round(projectionYears * 12)),
-    [sources, projectionYears],
+    () => projectSavings(sources, projectionYears * 12),
+    [sources],
   );
 
   // Projected interest earned
@@ -725,23 +725,14 @@ export function EmergencyFundPage() {
                     step={100}
                     hint={`Annual: ${fmt(monthlyExpenses * 12)}`}
                   />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FocusInput
-                      label="Target (Months)"
-                      value={targetMonths}
-                      onChange={(v) => set({ targetMonths: v })}
-                      min={1}
-                      max={36}
-                      hint="Recommended: 3–6 months"
-                    />
-                    <FocusInput
-                      label="Projection (Years)"
-                      value={projectionYears}
-                      onChange={(v) => set({ projectionYears: v })}
-                      min={1}
-                      max={20}
-                    />
-                  </div>
+                  <FocusInput
+                    label="Target (Months)"
+                    value={targetMonths}
+                    onChange={(v) => set({ targetMonths: v })}
+                    min={1}
+                    max={36}
+                    hint="Recommended: 3–6 months"
+                  />
                 </div>
 
                 {/* Target amount strip */}

@@ -13,6 +13,9 @@ const STORAGE_KEYS = [
   "fire:drawdown-sources-v2",
   "mortgage:partial-repayments",
   "emergency-fund:sources",
+  "tool:srs-calculator",
+  "srs:deposits",
+  "srs:withdrawal",
 ];
 
 const APP_ID = "debtoralive";
