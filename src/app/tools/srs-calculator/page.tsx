@@ -739,12 +739,6 @@ export function SRSCalculatorPage() {
                 <h2 className="text-base font-bold" style={{ color: "var(--on-surface)", fontFamily: "Manrope, sans-serif" }}>
                   SRS Deposits & Investments
                 </h2>
-                {deposits.length > 0 && (
-                  <span className="text-xs px-2 py-0.5 rounded-full font-medium"
-                    style={{ background: "var(--primary-container)", color: "var(--on-primary-container)" }}>
-                    Avg {avgRate.toFixed(2)}% p.a.
-                  </span>
-                )}
               </div>
               <p className="text-xs mb-4" style={{ color: "var(--on-surface-sub)" }}>
                 Add each SRS-funded account or instrument with its balance, start date, and interest rate.
@@ -785,14 +779,8 @@ export function SRSCalculatorPage() {
               <button
                 type="button"
                 onClick={addDeposit}
-                className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-lg transition-opacity hover:opacity-80"
-                style={{
-                  background: "var(--primary-container)",
-                  color: "var(--on-primary-container)",
-                  border: "none",
-                  cursor: "pointer",
-                  fontFamily: "Manrope, sans-serif",
-                }}
+                className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -1097,7 +1085,6 @@ export function SRSCalculatorPage() {
                           {fmt(totalDeposits)}
                         </td>
                         <td colSpan={2} style={{ padding: "0.5rem 0.75rem", color: "var(--on-surface-sub)", fontFamily: "Manrope, sans-serif" }}>
-                          Avg {avgRate.toFixed(2)}% p.a.
                         </td>
                         <td style={{ padding: "0.5rem 0.75rem", color: "var(--on-surface-sub)", fontFamily: "Manrope, sans-serif" }}>
                           100%
