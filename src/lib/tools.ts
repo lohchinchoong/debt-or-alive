@@ -47,6 +47,13 @@ export const tools: Tool[] = [
     category: "Savings",
     icon: "ShieldCheck",
   },
+  {
+    slug: "srs-calculator",
+    name: "SRS Fund",
+    tagline: "Track SRS deposits, investments, and plan your tax-efficient drawdown.",
+    category: "CPF",
+    icon: "Receipt",
+  },
   // ── Coming soon ───────────────────────────────────────────────────────────
   {
     slug: "rent-vs-buy",
@@ -62,14 +69,6 @@ export const tools: Tool[] = [
     tagline: "Model the long-term effect of transferring OA funds to SA.",
     category: "CPF",
     icon: "ArrowRightLeft",
-    comingSoon: true,
-  },
-  {
-    slug: "srs-calculator",
-    name: "SRS Tax Savings",
-    tagline: "Calculate your annual tax relief from SRS contributions.",
-    category: "CPF",
-    icon: "Receipt",
     comingSoon: true,
   },
   {

@@ -677,10 +677,10 @@ function IncomeChart({
             <circle cx={hx} cy={yOf(hd.totalIncome / 12)} r="4" fill="#1a6b42" stroke="white" strokeWidth="1.5" />
             <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
             <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`Age ${hd.age}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Total: $${fmtAxis(hd.totalIncome / 12)}/mth`}</text>
-            <text x={tooltipX + 20} y={PAD.top + 51} fontSize="9" fill="#1a6b42" fontFamily="Manrope, sans-serif">{`Yield: $${fmtAxis(hd.yieldIncome / 12)}/mth`}</text>
-            <text x={tooltipX + 20} y={PAD.top + 65} fontSize="9" fill="#b8860b" fontFamily="Manrope, sans-serif">{`Drawdown: $${fmtAxis(hd.drawdownWithdrawal / 12)}/mth`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 81} fontSize="9" fill="#c05621" fontFamily="Manrope, sans-serif">{`Target: $${fmtAxis(monthlyExpense)}/mth`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Total: ${fmt(hd.totalIncome / 12)}/mth`}</text>
+            <text x={tooltipX + 20} y={PAD.top + 51} fontSize="9" fill="#1a6b42" fontFamily="Manrope, sans-serif">{`Yield: ${fmt(hd.yieldIncome / 12)}/mth`}</text>
+            <text x={tooltipX + 20} y={PAD.top + 65} fontSize="9" fill="#b8860b" fontFamily="Manrope, sans-serif">{`Drawdown: ${fmt(hd.drawdownWithdrawal / 12)}/mth`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 81} fontSize="9" fill="#c05621" fontFamily="Manrope, sans-serif">{`Target: ${fmt(monthlyExpense)}/mth`}</text>
           </g>
         )}
       </svg>
@@ -1133,7 +1133,11 @@ export function FireCalculatorPage() {
                       value={src.value}
                       rate={src.yieldRate}
                       rateLabel="% p.a."
-                      annualAmount={src.value * (src.yieldRate / 100)}
+                      annualAmount={
+                        src.value *
+                        Math.pow(1 + src.yieldRate / 100, Math.max(0, retirementAge - currentAge)) *
+                        (src.yieldRate / 100)
+                      }
                       startAge={src.startAge}
                       onChangeName={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, name: v } : s)))}
                       onChangeValue={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, value: v } : s)))}
