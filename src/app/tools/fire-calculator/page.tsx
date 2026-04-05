@@ -831,6 +831,8 @@ function SourceRow({
   onChangeRate,
   onChangeStartAge,
   onDelete,
+  onMoveUp,
+  onMoveDown,
 }: {
   name: string;
   value: number;
@@ -843,6 +845,8 @@ function SourceRow({
   onChangeRate: (v: number) => void;
   onChangeStartAge?: (v: number) => void;
   onDelete: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   const hasStartAge = startAge !== undefined && onChangeStartAge !== undefined;
 
@@ -900,8 +904,32 @@ function SourceRow({
         </div>
       )}
 
-      {/* Delete — aligned with input */}
-      <div className={`${hasStartAge ? "" : "col-span-1"} flex justify-center pt-[0.35rem]`} style={hasStartAge ? { width: "1.75rem" } : undefined}>
+      {/* Reorder + Delete — aligned with input */}
+      <div className={`${hasStartAge ? "" : "col-span-1"} flex items-center gap-0.5 pt-[0.35rem]`} style={hasStartAge ? { width: "auto" } : undefined}>
+        <div className="flex flex-col">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={!onMoveUp}
+            style={{ background: "none", border: "none", cursor: onMoveUp ? "pointer" : "default", padding: "0 0.125rem", opacity: onMoveUp ? 1 : 0.25 }}
+            title="Move up"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-sub)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 15l-6-6-6 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={!onMoveDown}
+            style={{ background: "none", border: "none", cursor: onMoveDown ? "pointer" : "default", padding: "0 0.125rem", opacity: onMoveDown ? 1 : 0.25 }}
+            title="Move down"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-sub)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        </div>
         <button
           type="button"
           onClick={onDelete}
@@ -1126,7 +1154,7 @@ export function FireCalculatorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  {yieldSources.map((src) => (
+                  {yieldSources.map((src, i) => (
                     <SourceRow
                       key={src.id}
                       name={src.name}
@@ -1144,6 +1172,8 @@ export function FireCalculatorPage() {
                       onChangeRate={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, yieldRate: v } : s)))}
                       onChangeStartAge={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, startAge: v } : s)))}
                       onDelete={() => setYieldSources((prev) => prev.filter((s) => s.id !== src.id))}
+                      onMoveUp={i > 0 ? () => setYieldSources((prev) => { const a = [...prev]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; }) : undefined}
+                      onMoveDown={i < yieldSources.length - 1 ? () => setYieldSources((prev) => { const a = [...prev]; [a[i], a[i + 1]] = [a[i + 1], a[i]]; return a; }) : undefined}
                     />
                   ))}
                 </div>
@@ -1188,7 +1218,7 @@ export function FireCalculatorPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {drawdownSources.map((src) => {
+                  {drawdownSources.map((src, i) => {
                     const span = src.endAge - src.startAge;
                     const annualWithdrawal = span > 0 ? src.value / span : 0;
                     return (
@@ -1234,8 +1264,32 @@ export function FireCalculatorPage() {
                           <div className="h-[1.25rem]" />
                         </div>
 
-                        {/* Delete — aligned with input */}
-                        <div className="col-span-1 flex justify-center pt-[0.35rem]">
+                        {/* Reorder + Delete — aligned with input */}
+                        <div className="col-span-1 flex items-center gap-0.5 justify-center pt-[0.35rem]">
+                          <div className="flex flex-col">
+                            <button
+                              type="button"
+                              onClick={i > 0 ? () => setDrawdownSources((prev) => { const a = [...prev]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; }) : undefined}
+                              disabled={i === 0}
+                              style={{ background: "none", border: "none", cursor: i > 0 ? "pointer" : "default", padding: "0 0.125rem", opacity: i > 0 ? 1 : 0.25 }}
+                              title="Move up"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-sub)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M18 15l-6-6-6 6" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={i < drawdownSources.length - 1 ? () => setDrawdownSources((prev) => { const a = [...prev]; [a[i], a[i + 1]] = [a[i + 1], a[i]]; return a; }) : undefined}
+                              disabled={i === drawdownSources.length - 1}
+                              style={{ background: "none", border: "none", cursor: i < drawdownSources.length - 1 ? "pointer" : "default", padding: "0 0.125rem", opacity: i < drawdownSources.length - 1 ? 1 : 0.25 }}
+                              title="Move down"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-sub)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M6 9l6 6 6-6" />
+                              </svg>
+                            </button>
+                          </div>
                           <button
                             type="button"
                             onClick={() => setDrawdownSources((prev) => prev.filter((s) => s.id !== src.id))}

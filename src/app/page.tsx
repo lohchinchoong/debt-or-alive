@@ -11,7 +11,7 @@ export default function HomePage() {
       <HeroSection />
 
       {/* Tool Grid */}
-      <section style={{ backgroundColor: "var(--surface-container-low)" }} className="px-5 pb-24 sm:px-8 lg:px-16">
+      <section id="tools" style={{ backgroundColor: "var(--surface-container-low)" }} className="px-5 pb-24 sm:px-8 lg:px-16">
         <div className="max-w-7xl mx-auto">
           {/* Section header — asymmetric */}
           <div className="mb-10 max-w-xl">

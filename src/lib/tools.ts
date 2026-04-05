@@ -54,6 +54,13 @@ export const tools: Tool[] = [
     category: "Savings",
     icon: "Receipt",
   },
+  {
+    slug: "dividend-calculator",
+    name: "Dividend Calculator",
+    tagline: "Track your dividend portfolio. See annual and monthly income from every yield source.",
+    category: "Investment",
+    icon: "Coins",
+  },
   // ── Coming soon ───────────────────────────────────────────────────────────
   {
     slug: "rent-vs-buy",

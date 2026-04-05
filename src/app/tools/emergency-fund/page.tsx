@@ -181,10 +181,14 @@ function SourceRow({
   source,
   onUpdate,
   onDelete,
+  onMoveUp,
+  onMoveDown,
 }: {
   source: SavingsSource;
   onUpdate: (id: string, field: keyof SavingsSource, value: string | number) => void;
   onDelete: (id: string) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   const [nameFocused, setNameFocused] = useState(false);
   const [balanceFocused, setBalanceFocused] = useState(false);
@@ -262,19 +266,45 @@ function SourceRow({
         />
       </div>
 
-      {/* Delete */}
-      <button
-        type="button"
-        onClick={() => onDelete(source.id)}
-        className="p-1.5 rounded-md transition-colors hover:bg-red-50"
-        style={{ color: "var(--on-surface-sub)", lineHeight: 1 }}
-        aria-label="Remove source"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
+      {/* Reorder + Delete */}
+      <div className="flex items-center gap-0.5">
+        <div className="flex flex-col">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={!onMoveUp}
+            style={{ background: "none", border: "none", cursor: onMoveUp ? "pointer" : "default", padding: "0 0.125rem", opacity: onMoveUp ? 1 : 0.25 }}
+            title="Move up"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-sub)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 15l-6-6-6 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={!onMoveDown}
+            style={{ background: "none", border: "none", cursor: onMoveDown ? "pointer" : "default", padding: "0 0.125rem", opacity: onMoveDown ? 1 : 0.25 }}
+            title="Move down"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-sub)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => onDelete(source.id)}
+          className="p-1.5 rounded-md transition-colors hover:bg-red-50"
+          style={{ color: "var(--on-surface-sub)", lineHeight: 1 }}
+          aria-label="Remove source"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
@@ -784,12 +814,14 @@ export function EmergencyFundPage() {
 
                 {/* Source rows */}
                 <div className="space-y-2.5">
-                  {sources.map((src) => (
+                  {sources.map((src, i) => (
                     <SourceRow
                       key={src.id}
                       source={src}
                       onUpdate={updateSource}
                       onDelete={deleteSource}
+                      onMoveUp={i > 0 ? () => setSources((prev) => { const a = [...prev]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; }) : undefined}
+                      onMoveDown={i < sources.length - 1 ? () => setSources((prev) => { const a = [...prev]; [a[i], a[i + 1]] = [a[i + 1], a[i]]; return a; }) : undefined}
                     />
                   ))}
                 </div>

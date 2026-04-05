@@ -252,10 +252,14 @@ function DepositRow({
   deposit,
   onUpdate,
   onDelete,
+  onMoveUp,
+  onMoveDown,
 }: {
   deposit: Deposit;
   onUpdate: (id: string, field: keyof Deposit, value: string | number) => void;
   onDelete: (id: string) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   const [nameFocused, setNameFocused] = useState(false);
   const [amountFocused, setAmountFocused] = useState(false);
@@ -279,7 +283,7 @@ function DepositRow({
   });
 
   return (
-    <div className="grid grid-cols-[4fr_3fr_3fr_2fr_28px] gap-2 items-end">
+    <div className="grid grid-cols-[4fr_3fr_3fr_2fr_auto] gap-2 items-end">
       {/* Name */}
       <div>
         <input
@@ -334,19 +338,45 @@ function DepositRow({
         />
       </div>
 
-      {/* Delete */}
-      <button
-        type="button"
-        onClick={() => onDelete(deposit.id)}
-        className="p-1.5 rounded-md transition-colors hover:bg-red-50"
-        style={{ color: "var(--on-surface-sub)", lineHeight: 1 }}
-        aria-label="Remove deposit"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
+      {/* Reorder + Delete */}
+      <div className="flex items-center gap-0.5">
+        <div className="flex flex-col">
+          <button
+            type="button"
+            onClick={onMoveUp}
+            disabled={!onMoveUp}
+            style={{ background: "none", border: "none", cursor: onMoveUp ? "pointer" : "default", padding: "0 0.125rem", opacity: onMoveUp ? 1 : 0.25 }}
+            title="Move up"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-sub)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 15l-6-6-6 6" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={onMoveDown}
+            disabled={!onMoveDown}
+            style={{ background: "none", border: "none", cursor: onMoveDown ? "pointer" : "default", padding: "0 0.125rem", opacity: onMoveDown ? 1 : 0.25 }}
+            title="Move down"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--on-surface-sub)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={() => onDelete(deposit.id)}
+          className="p-1.5 rounded-md transition-colors hover:bg-red-50"
+          style={{ color: "var(--on-surface-sub)", lineHeight: 1 }}
+          aria-label="Remove deposit"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
@@ -748,7 +778,7 @@ export function SRSCalculatorPage() {
               {deposits.length > 0 && (
                 <div className="mb-2">
                   {/* Column headers */}
-                  <div className="grid grid-cols-[4fr_3fr_3fr_2fr_28px] gap-2 mb-1.5">
+                  <div className="grid grid-cols-[4fr_3fr_3fr_2fr_auto] gap-2 mb-1.5">
                     {["Name", "Amount ($)", "Start Date", "Rate %", ""].map((h) => (
                       <p key={h} className="text-[0.7rem] font-semibold uppercase tracking-wide"
                         style={{ color: "var(--on-surface-sub)", paddingLeft: "0.375rem" }}>
@@ -759,12 +789,14 @@ export function SRSCalculatorPage() {
 
                   {/* Rows */}
                   <div className="flex flex-col gap-3">
-                    {deposits.map((d) => (
+                    {deposits.map((d, i) => (
                       <DepositRow
                         key={d.id}
                         deposit={d}
                         onUpdate={updateDeposit}
                         onDelete={deleteDeposit}
+                        onMoveUp={i > 0 ? () => setDeposits((prev) => { const a = [...prev]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; }) : undefined}
+                        onMoveDown={i < deposits.length - 1 ? () => setDeposits((prev) => { const a = [...prev]; [a[i], a[i + 1]] = [a[i + 1], a[i]]; return a; }) : undefined}
                       />
                     ))}
                   </div>
