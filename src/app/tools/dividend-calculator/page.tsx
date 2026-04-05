@@ -481,11 +481,14 @@ export function DividendCalculatorPage() {
   ];
 
   const chartSources = useMemo(
-    () => sources.map((src, i) => ({
-      name: src.name || "Untitled",
-      annualIncome: src.value * (src.yieldRate / 100),
-      color: barColors[i % barColors.length],
-    })),
+    () =>
+      sources
+        .map((src, i) => ({
+          name: src.name || "Untitled",
+          annualIncome: src.value * (src.yieldRate / 100),
+          color: barColors[i % barColors.length],
+        }))
+        .sort((a, b) => b.annualIncome - a.annualIncome),
     [sources],
   );
 
