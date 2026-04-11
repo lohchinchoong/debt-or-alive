@@ -719,7 +719,7 @@ export function DividendCalculatorPage() {
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface)" }}>{fmt(src.annual)}</p>
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>{fmt(src.annual / 12)}</p>
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>
-                              {src.yieldRate > 0 ? fmt(600 / (src.yieldRate / 100)) : "—"}
+                              {src.yieldRate > 0 ? fmt(Math.max(0, 600 / (src.yieldRate / 100) - src.value)) : "—"}
                             </p>
                           </React.Fragment>
                         ))}
