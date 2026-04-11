@@ -702,7 +702,7 @@ export function DividendCalculatorPage() {
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Source</p>
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Annual</p>
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Monthly</p>
-                      <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Need for $50/mo</p>
+                      <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Invest this to get $50/mth</p>
                       {sources
                         .map((src, i) => ({
                           ...src,
