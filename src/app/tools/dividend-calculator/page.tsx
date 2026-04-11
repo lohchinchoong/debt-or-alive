@@ -231,14 +231,13 @@ function BreakdownChart({
 
   const xOf = (v: number) => pad.left + (v / maxVal) * plotW;
 
-  // Grid lines
-  const gridCount = 4;
-  const gridLines = Array.from({ length: gridCount + 1 }, (_, i) => (maxVal / gridCount) * i);
+  // Fixed reference lines at income milestones
+  const refLines = [600, 1200, 2400, 6000].filter((v) => v <= maxVal);
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ fontFamily: "Manrope, sans-serif" }}>
-      {/* Grid lines */}
-      {gridLines.map((v, i) => (
+      {/* Reference lines */}
+      {refLines.map((v, i) => (
         <g key={i}>
           <line
             x1={xOf(v)} y1={pad.top - 8}
@@ -698,19 +697,23 @@ export function DividendCalculatorPage() {
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Source</p>
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Annual</p>
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Monthly</p>
-                      {sources.map((src, i) => {
-                        const annual = src.value * (src.yieldRate / 100);
-                        return (
+                      {sources
+                        .map((src, i) => ({
+                          ...src,
+                          annual: src.value * (src.yieldRate / 100),
+                          color: barColors[i % barColors.length],
+                        }))
+                        .sort((a, b) => b.annual - a.annual)
+                        .map((src) => (
                           <React.Fragment key={src.id}>
                             <p className="text-sm font-medium flex items-center gap-2" style={{ color: "var(--on-surface)" }}>
-                              <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ backgroundColor: barColors[i % barColors.length] }} />
+                              <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ backgroundColor: src.color }} />
                               {src.name || "Untitled"}
                             </p>
-                            <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface)" }}>{fmt(annual)}</p>
-                            <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>{fmt(annual / 12)}</p>
+                            <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface)" }}>{fmt(src.annual)}</p>
+                            <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>{fmt(src.annual / 12)}</p>
                           </React.Fragment>
-                        );
-                      })}
+                        ))}
                     </div>
                   </div>
 
