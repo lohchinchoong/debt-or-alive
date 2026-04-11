@@ -684,19 +684,25 @@ export function DividendCalculatorPage() {
                   className="rounded-xl p-6"
                   style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
                 >
-                  <p className="font-bold text-[1rem] mb-1" style={{ color: "var(--on-surface)" }}>
-                    Income Breakdown
-                  </p>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <p className="font-bold text-[1rem]" style={{ color: "var(--on-surface)" }}>
+                      Income Breakdown
+                    </p>
+                    <p className="text-xs font-medium" style={{ color: "var(--on-surface-sub)" }}>
+                      {sources.length} {sources.length === 1 ? "source" : "sources"}
+                    </p>
+                  </div>
                   <p className="text-xs mb-4" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                     Annual dividend income from each source.
                   </p>
 
                   {/* Per-source table */}
                   <div className="mb-4">
-                    <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-1.5 text-sm">
+                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 gap-y-1.5 text-sm">
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Source</p>
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Annual</p>
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Monthly</p>
+                      <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Need for $50/mo</p>
                       {sources
                         .map((src, i) => ({
                           ...src,
@@ -712,6 +718,9 @@ export function DividendCalculatorPage() {
                             </p>
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface)" }}>{fmt(src.annual)}</p>
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>{fmt(src.annual / 12)}</p>
+                            <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>
+                              {src.yieldRate > 0 ? fmt(600 / (src.yieldRate / 100)) : "—"}
+                            </p>
                           </React.Fragment>
                         ))}
                     </div>
