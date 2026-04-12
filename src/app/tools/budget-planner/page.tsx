@@ -42,19 +42,19 @@ const STORAGE_KEY_ITEMS = "budget:items";
 const STORAGE_KEY_STATE = "tool:budget-planner";
 
 const CATEGORIES: BudgetCategory[] = [
-  "Insurance",
-  "Utilities",
-  "Food",
-  "Education",
-  "Tuition",
   "Allowance",
   "Car",
-  "Home",
-  "Holiday",
-  "Saving",
-  "Investment",
-  "Grocery",
+  "Education",
   "Entertainment",
+  "Food",
+  "Grocery",
+  "Holiday",
+  "Home",
+  "Insurance",
+  "Investment",
+  "Saving",
+  "Tuition",
+  "Utilities",
 ];
 
 const MANDATORY_CATEGORIES = new Set<BudgetCategory>([
