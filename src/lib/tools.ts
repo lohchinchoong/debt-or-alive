@@ -61,6 +61,13 @@ export const tools: Tool[] = [
     category: "Investment",
     icon: "Coins",
   },
+  {
+    slug: "budget-planner",
+    name: "Budget Planner",
+    tagline: "Allocate income across needs, wants, and savings with clarity.",
+    category: "Planning",
+    icon: "LayoutList",
+  },
   // ── Coming soon ───────────────────────────────────────────────────────────
   {
     slug: "rent-vs-buy",
@@ -102,14 +109,6 @@ export const tools: Tool[] = [
     tagline: "Work backwards from a target amount to a monthly savings plan.",
     category: "Savings",
     icon: "Target",
-    comingSoon: true,
-  },
-  {
-    slug: "budget-planner",
-    name: "Budget Planner",
-    tagline: "Allocate income across needs, wants, and savings with clarity.",
-    category: "Planning",
-    icon: "LayoutList",
     comingSoon: true,
   },
   {

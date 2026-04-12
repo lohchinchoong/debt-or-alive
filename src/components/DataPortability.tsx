@@ -16,6 +16,8 @@ const STORAGE_KEYS = [
   "tool:srs-calculator",
   "srs:deposits",
   "srs:withdrawal",
+  "tool:budget-planner",
+  "budget:items",
 ];
 
 const APP_ID = "debtoralive";
