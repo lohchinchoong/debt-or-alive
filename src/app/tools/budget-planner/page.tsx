@@ -20,7 +20,8 @@ type BudgetCategory =
   | "Saving"
   | "Investment"
   | "Grocery"
-  | "Entertainment";
+  | "Entertainment"
+  | "Tax";
 
 type BudgetItem = {
   id: string;
@@ -53,6 +54,7 @@ const CATEGORIES: BudgetCategory[] = [
   "Insurance",
   "Investment",
   "Saving",
+  "Tax",
   "Tuition",
   "Utilities",
 ];
@@ -65,6 +67,7 @@ const MANDATORY_CATEGORIES = new Set<BudgetCategory>([
   "Car",
   "Home",
   "Grocery",
+  "Tax",
 ]);
 
 const CATEGORY_COLORS: Record<BudgetCategory, string> = {
@@ -81,6 +84,7 @@ const CATEGORY_COLORS: Record<BudgetCategory, string> = {
   Investment:    "#0891b2",
   Grocery:       "#b45309",
   Entertainment: "#be185d",
+  Tax:           "#6b2d2d",
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -697,7 +701,7 @@ function SpendingSplitChart({
       {/* Legend */}
       <div className="space-y-3 mb-5">
         {[
-          { label: "Mandatory",     color: "#00351f", value: mandatoryTotal,     desc: "Insurance, Utilities, Food, Education, Car, Home, Grocery" },
+          { label: "Mandatory",     color: "#00351f", value: mandatoryTotal,     desc: "Insurance, Utilities, Food, Education, Car, Home, Grocery, Tax" },
           { label: "Discretionary", color: "#c05621", value: discretionaryTotal, desc: "Tuition, Allowance, Holiday, Saving, Investment, Entertainment" },
         ].map((row) => (
           <div key={row.label}>
@@ -1179,7 +1183,7 @@ export default function BudgetPlannerPage() {
                 {
                   n: 2,
                   title: "Mandatory vs Discretionary",
-                  body: "Mandatory categories are fixed obligations that cannot easily be cut: Insurance, Utilities, Food, Education, Car, Home, and Grocery. Everything else is discretionary — spending you can adjust freely.",
+                  body: "Mandatory categories are fixed obligations that cannot easily be cut: Insurance, Utilities, Food, Education, Car, Home, Grocery, and Tax. Everything else is discretionary — spending you can adjust freely.",
                 },
                 {
                   n: 3,
