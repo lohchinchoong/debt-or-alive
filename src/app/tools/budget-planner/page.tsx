@@ -771,6 +771,7 @@ export default function BudgetPlannerPage() {
   const monthlyIncome = s.annualSalary / 12;
 
   const [items, setItemsRaw] = useState<BudgetItem[]>([]);
+  const [itemsExpanded, setItemsExpanded] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -921,57 +922,88 @@ export default function BudgetPlannerPage() {
                 />
               </div>
 
-              {/* Budget Items Card */}
+              {/* Budget Items Card — collapsible */}
               <div
-                className="rounded-xl p-6"
+                className="rounded-xl"
                 style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
               >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="font-bold text-[1rem]" style={{ color: "var(--on-surface)" }}>
-                    Budget Items
-                  </p>
-                  <span className="text-xs font-semibold" style={{ color: "var(--primary)" }}>
-                    {fmt(totalMonthly)} / mo
-                  </span>
-                </div>
-                <p className="text-xs mb-4" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
-                  Add each spending item with a label, category, and monthly amount.
-                </p>
-
-                {/* Column headers */}
-                <div className="grid grid-cols-[3fr_3fr_3fr_auto] gap-2 mb-2">
-                  <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Label</p>
-                  <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Category</p>
-                  <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Monthly (S$)</p>
-                  <p style={{ width: "2.75rem" }} />
-                </div>
-
-                <div className="space-y-2">
-                  {items.map((item, i) => (
-                    <BudgetItemRow
-                      key={item.id}
-                      item={item}
-                      onChangeLabel={updateLabel}
-                      onChangeCategory={updateCategory}
-                      onChangePlanned={updatePlanned}
-                      onDelete={deleteItem}
-                      onMoveUp={i > 0 ? () => moveItem(i, -1) : undefined}
-                      onMoveDown={i < items.length - 1 ? () => moveItem(i, 1) : undefined}
-                    />
-                  ))}
-                </div>
-
+                {/* Accordion header — always visible */}
                 <button
                   type="button"
-                  onClick={addItem}
-                  className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
+                  onClick={() => setItemsExpanded((v) => !v)}
+                  className="w-full flex items-center justify-between p-6 text-left"
+                  style={{ background: "none", border: "none", cursor: "pointer", borderRadius: "0.75rem" }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  Add budget item
+                  <div>
+                    <p className="font-bold text-[1rem]" style={{ color: "var(--on-surface)" }}>
+                      Budget Items
+                      {items.length > 0 && (
+                        <span className="ml-2 text-xs font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "var(--surface-container-high)", color: "var(--on-surface-sub)" }}>
+                          {items.length}
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--on-surface-sub)" }}>
+                      {itemsExpanded ? "Add each spending item with a label, category, and monthly amount." : `${fmt(totalMonthly)} / mo budgeted`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                    {!itemsExpanded && (
+                      <span className="text-xs font-semibold" style={{ color: "var(--primary)" }}>
+                        {fmt(totalMonthly)} / mo
+                      </span>
+                    )}
+                    <svg
+                      width="16" height="16" viewBox="0 0 24 24" fill="none"
+                      stroke="var(--on-surface-sub)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                      style={{ transition: "transform 0.2s ease", transform: itemsExpanded ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }}
+                    >
+                      <path d="M6 9l6 6 6-6" />
+                    </svg>
+                  </div>
                 </button>
+
+                {/* Accordion body */}
+                {itemsExpanded && (
+                  <div className="px-6 pb-6">
+                    <div style={{ borderTop: "1px solid var(--outline-variant)", marginBottom: "1rem" }} />
+
+                    {/* Column headers */}
+                    <div className="grid grid-cols-[3fr_3fr_3fr_auto] gap-2 mb-2">
+                      <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Label</p>
+                      <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Category</p>
+                      <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Monthly (S$)</p>
+                      <p style={{ width: "2.75rem" }} />
+                    </div>
+
+                    <div className="space-y-2">
+                      {items.map((item, i) => (
+                        <BudgetItemRow
+                          key={item.id}
+                          item={item}
+                          onChangeLabel={updateLabel}
+                          onChangeCategory={updateCategory}
+                          onChangePlanned={updatePlanned}
+                          onDelete={deleteItem}
+                          onMoveUp={i > 0 ? () => moveItem(i, -1) : undefined}
+                          onMoveDown={i < items.length - 1 ? () => moveItem(i, 1) : undefined}
+                        />
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={addItem}
+                      className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <path d="M12 5v14M5 12h14" />
+                      </svg>
+                      Add budget item
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1041,6 +1073,13 @@ export default function BudgetPlannerPage() {
                   </p>
                   <p className="text-xs mt-1" style={{ color: "var(--on-surface-sub)" }}>
                     {remainingMonthly >= 0 ? "Unallocated this month" : "Budget exceeds income"}
+                  </p>
+                  <p
+                    className="text-xs mt-2 font-semibold"
+                    style={{ color: remainingMonthly >= 0 ? "var(--primary)" : "var(--tertiary)" }}
+                  >
+                    {fmt(remainingMonthly * 12)}
+                    <span className="font-normal ml-1" style={{ color: "var(--on-surface-sub)" }}>/ yr</span>
                   </p>
                 </div>
 
