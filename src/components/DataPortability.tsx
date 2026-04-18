@@ -5,7 +5,7 @@ import { useState, useRef } from "react";
 // ─── All localStorage keys managed by the app ────────────────────────────────
 const STORAGE_KEYS = [
   "tool:compound-interest",
-  "tool:cpf-sa-calculator",
+  "cpf-sa:profiles",
   "tool:fire-calculator",
   "tool:mortgage-calculator",
   "tool:emergency-fund",
