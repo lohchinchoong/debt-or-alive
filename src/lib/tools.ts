@@ -59,7 +59,7 @@ export const tools: Tool[] = [
     name: "Dividend Calculator",
     tagline: "Track your dividend portfolio. See annual and monthly income from every yield source.",
     category: "Investment",
-    icon: "Coins",
+    icon: "Percent",
   },
   {
     slug: "budget-planner",

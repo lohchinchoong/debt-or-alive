@@ -531,10 +531,9 @@ export function DividendCalculatorPage() {
                 }}
               >
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" />
-                  <path d="M2 20a6 6 0 0 1 12 0" />
-                  <path d="M15 4a4 4 0 1 1 0 8" />
-                  <path d="M22 20a6 6 0 0 0-6-6" />
+                  <path d="M19 5 5 19" />
+                  <path d="M7 5a2 2 0 1 1-4 0 2 2 0 0 1 4 0" />
+                  <path d="M21 19a2 2 0 1 1-4 0 2 2 0 0 1 4 0" />
                 </svg>
               </div>
 
