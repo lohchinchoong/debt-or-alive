@@ -869,19 +869,19 @@ export default function SavingsGoalDetailPage() {
             </div>
           </div>
 
-          {/* ── Chart ─────────────────────────────────────────────────────── */}
-          <SavingsChart items={items} targetAmount={targetAmount} targetDate={targetDate} />
+          {/* ── Items + Chart Grid ────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-          {/* ── Items Section ─────────────────────────────────────────────── */}
-          <div
-            className="rounded-xl px-5 pb-5 pt-4"
-            style={{
-              backgroundColor: "var(--surface-container-lowest)",
-              boxShadow: "var(--shadow-botanical)",
-            }}
-          >
+            {/* Left — Savings Items */}
+            <div
+              className="lg:col-span-5 rounded-xl px-5 pb-5 pt-4"
+              style={{
+                backgroundColor: "var(--surface-container-lowest)",
+                boxShadow: "var(--shadow-botanical)",
+              }}
+            >
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-base font-bold" style={{ color: "var(--on-surface)" }}>
+              <h2 className="text-[0.9375rem] font-semibold" style={{ color: "var(--on-surface)" }}>
                 Savings Items
               </h2>
               {editing?.mode !== "add" && (
@@ -959,6 +959,13 @@ export default function SavingsGoalDetailPage() {
                 </span>
               </div>
             )}
+            </div>
+
+            {/* Right — Chart */}
+            <div className="lg:col-span-7">
+              <SavingsChart items={items} targetAmount={targetAmount} targetDate={targetDate} />
+            </div>
+
           </div>
 
           {/* ── How It Works ──────────────────────────────────────────────── */}
