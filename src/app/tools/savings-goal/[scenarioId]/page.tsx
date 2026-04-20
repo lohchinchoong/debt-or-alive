@@ -462,190 +462,134 @@ function SavingsChart({
   );
 }
 
-// ─── ItemForm ─────────────────────────────────────────────────────────────────
+// ─── InlineInput ──────────────────────────────────────────────────────────────
 
-type ItemDraft = { name: string; amount: string; date: string };
-
-function ItemForm({
-  initial,
-  onSave,
-  onCancel,
+function InlineInput({
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  min,
+  step,
+  style: extraStyle,
 }: {
-  initial: ItemDraft;
-  onSave: (draft: ItemDraft) => void;
-  onCancel: () => void;
+  value: string | number;
+  onChange: (v: string) => void;
+  type?: "text" | "number" | "date";
+  placeholder?: string;
+  min?: number;
+  step?: number;
+  style?: React.CSSProperties;
 }) {
-  const [draft, setDraft] = useState<ItemDraft>(initial);
-  const [errors, setErrors] = useState<{ name?: string; amount?: string }>({});
-
-  const handleSave = () => {
-    const errs: { name?: string; amount?: string } = {};
-    if (!draft.name.trim()) errs.name = "Name is required";
-    const amt = parseFloat(draft.amount);
-    if (draft.amount === "" || isNaN(amt) || amt < 0) errs.amount = "Enter a valid amount";
-    if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    onSave(draft);
-  };
-
-  const inputStyle = {
-    width: "100%",
-    padding: "0.5rem 0.75rem",
-    borderRadius: "0.5rem",
-    border: "1px solid var(--outline-variant)",
-    background: "var(--surface-container-lowest)",
-    color: "var(--on-surface)",
-    fontFamily: "Manrope, sans-serif",
-    fontSize: "0.875rem",
-    outline: "none",
-  } as React.CSSProperties;
-
-  const labelStyle = {
-    display: "block",
-    fontSize: "0.75rem",
-    fontWeight: 600,
-    color: "var(--on-surface-sub)",
-    marginBottom: "0.3rem",
-    letterSpacing: "0.02em",
-  } as React.CSSProperties;
-
+  const [focused, setFocused] = useState(false);
   return (
-    <div
-      className="rounded-xl p-4 space-y-3"
+    <input
+      type={type}
+      value={value}
+      placeholder={placeholder}
+      min={min}
+      step={step}
+      onChange={(e) => onChange(e.target.value)}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
       style={{
-        backgroundColor: "var(--surface-container-low)",
-        border: "1px solid var(--outline-variant)",
+        width: "100%",
+        background: "var(--surface-container-highest)",
+        border: "none",
+        borderBottom: `2px solid ${focused ? "var(--primary)" : "var(--outline-variant)"}`,
+        borderRadius: "0.25rem 0.25rem 0 0",
+        padding: "0.5rem 0.4rem",
+        fontSize: "0.8125rem",
+        fontFamily: "Manrope, sans-serif",
+        fontWeight: 500,
+        color: "var(--on-surface)",
+        outline: "none",
+        transition: "border-color 0.15s ease",
+        ...extraStyle,
       }}
-    >
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="sm:col-span-1">
-          <label style={labelStyle}>Name</label>
-          <input
-            style={{ ...inputStyle, borderColor: errors.name ? "var(--error, #ba1a1a)" : "var(--outline-variant)" }}
-            placeholder="e.g. Cash savings"
-            value={draft.name}
-            onChange={(e) => { setDraft({ ...draft, name: e.target.value }); setErrors((prev) => ({ ...prev, name: undefined })); }}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onCancel(); }}
-          />
-          {errors.name && <p className="text-xs mt-1" style={{ color: "var(--error, #ba1a1a)" }}>{errors.name}</p>}
-        </div>
-
-        <div>
-          <label style={labelStyle}>Amount (S$)</label>
-          <input
-            type="number"
-            min="0"
-            step="100"
-            style={{ ...inputStyle, borderColor: errors.amount ? "var(--error, #ba1a1a)" : "var(--outline-variant)" }}
-            placeholder="0"
-            value={draft.amount}
-            onChange={(e) => { setDraft({ ...draft, amount: e.target.value }); setErrors((prev) => ({ ...prev, amount: undefined })); }}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onCancel(); }}
-          />
-          {errors.amount && <p className="text-xs mt-1" style={{ color: "var(--error, #ba1a1a)" }}>{errors.amount}</p>}
-        </div>
-
-        <div>
-          <label style={labelStyle}>Target Date</label>
-          <input
-            type="date"
-            style={inputStyle}
-            value={draft.date}
-            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onCancel(); }}
-          />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-end gap-2 pt-1">
-        <button
-          onClick={onCancel}
-          className="px-4 py-2 rounded-lg text-sm font-medium"
-          style={{
-            background: "var(--surface-container)",
-            color: "var(--on-surface-sub)",
-            border: "none",
-            cursor: "pointer",
-            fontFamily: "Manrope, sans-serif",
-          }}
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          className="px-4 py-2 rounded-lg text-sm font-semibold"
-          style={{
-            background: "var(--primary)",
-            color: "#fff",
-            border: "none",
-            cursor: "pointer",
-            fontFamily: "Manrope, sans-serif",
-          }}
-        >
-          Save
-        </button>
-      </div>
-    </div>
+    />
   );
 }
 
-// ─── ItemRow ──────────────────────────────────────────────────────────────────
+// ─── ItemSavingsRow ───────────────────────────────────────────────────────────
 
-function ItemRow({
+function ItemSavingsRow({
   item,
-  onEdit,
+  onUpdate,
   onDelete,
+  onMoveUp,
+  onMoveDown,
 }: {
   item: SavingsItem;
-  onEdit: () => void;
+  onUpdate: (changes: Partial<Omit<SavingsItem, "id">>) => void;
   onDelete: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }) {
   return (
-    <div
-      className="flex items-center gap-3 py-3 px-1"
-      style={{ borderBottom: "1px solid var(--outline-variant)" }}
-    >
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate" style={{ color: "var(--on-surface)" }}>
-          {item.name}
-        </p>
-        {item.date && (
-          <p className="text-xs mt-0.5" style={{ color: "var(--on-surface-sub)" }}>
-            {fmtDate(item.date)}
-          </p>
-        )}
-      </div>
-
-      <span className="text-sm font-semibold tabular-nums flex-shrink-0" style={{ color: "var(--on-surface)" }}>
-        {fmt(item.amount)}
-      </span>
-
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <button
-          onClick={onEdit}
-          title="Edit"
-          className="p-1.5 rounded-lg"
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--on-surface-sub)", opacity: 0.5 }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "1")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "0.5")}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-        </button>
+    <div className="grid gap-x-2 items-center" style={{ gridTemplateColumns: "3fr 2fr 2fr auto" }}>
+      <InlineInput
+        value={item.name}
+        onChange={(v) => onUpdate({ name: v })}
+        placeholder="Name"
+      />
+      <InlineInput
+        type="number"
+        value={item.amount}
+        onChange={(v) => onUpdate({ amount: parseFloat(v) || 0 })}
+        placeholder="0"
+        min={0}
+        step={100}
+      />
+      <InlineInput
+        type="date"
+        value={item.date}
+        onChange={(v) => onUpdate({ date: v })}
+      />
+      <div className="flex items-center gap-0.5">
+        <div className="flex flex-col">
+          <button
+            onClick={onMoveUp}
+            disabled={!onMoveUp}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: onMoveUp ? "pointer" : "default",
+              padding: "1px",
+              opacity: onMoveUp ? 1 : 0.25,
+              color: "var(--on-surface-sub)",
+              lineHeight: 1,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 15l-6-6-6 6" />
+            </svg>
+          </button>
+          <button
+            onClick={onMoveDown}
+            disabled={!onMoveDown}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: onMoveDown ? "pointer" : "default",
+              padding: "1px",
+              opacity: onMoveDown ? 1 : 0.25,
+              color: "var(--on-surface-sub)",
+              lineHeight: 1,
+            }}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        </div>
         <button
           onClick={onDelete}
           title="Delete"
-          className="p-1.5 rounded-lg"
-          style={{ background: "none", border: "none", cursor: "pointer", color: "var(--on-surface-sub)", opacity: 0.5 }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "1")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "0.5")}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: "0.25rem", lineHeight: 1 }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6M14 11v6" />
-            <path d="M9 6V4h6v2" />
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--tertiary, #7d5260)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -655,20 +599,13 @@ function ItemRow({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type EditingState =
-  | { mode: "edit"; id: string; name: string; amount: string; date: string }
-  | { mode: "add"; name: string; amount: string; date: string }
-  | null;
-
 export default function SavingsGoalDetailPage() {
   const params = useParams();
   const router = useRouter();
   const scenarioId = params.scenarioId as string;
 
-  const { scenarios, updateScenario, addItem, removeItem, updateItem } = useSavingsGoal();
+  const { scenarios, updateScenario, addItem, removeItem, updateItem, updateItems } = useSavingsGoal();
   const scenario = scenarios.find((s) => s.id === scenarioId);
-
-  const [editing, setEditing] = useState<EditingState>(null);
 
   useEffect(() => {
     if (scenarios.length > 0 && !scenario) {
@@ -693,29 +630,20 @@ export default function SavingsGoalDetailPage() {
   const monthsLeft = monthsBetween(todayISO(), targetDate);
   const monthlyNeeded = monthsLeft > 0 ? remaining / monthsLeft : 0;
 
-  const handleSaveNew = (draft: { name: string; amount: string; date: string }) => {
-    addItem(scenarioId, {
-      name: draft.name.trim(),
-      amount: parseFloat(draft.amount),
-      date: draft.date,
-    });
-    setEditing(null);
+  const handleAddItem = () => {
+    addItem(scenarioId, { name: "", amount: 0, date: todayISO() });
   };
 
-  const handleSaveEdit = (id: string, draft: { name: string; amount: string; date: string }) => {
-    updateItem(scenarioId, id, {
-      name: draft.name.trim(),
-      amount: parseFloat(draft.amount),
-      date: draft.date,
-    });
-    setEditing(null);
+  const handleDelete = (itemId: string) => {
+    removeItem(scenarioId, itemId);
   };
 
-  const handleDelete = (itemId: string, itemName: string) => {
-    if (confirm(`Delete "${itemName}"? This cannot be undone.`)) {
-      removeItem(scenarioId, itemId);
-      if (editing && editing.mode === "edit" && editing.id === itemId) setEditing(null);
-    }
+  const handleMove = (index: number, direction: -1 | 1) => {
+    const newItems = [...items];
+    const target = index + direction;
+    if (target < 0 || target >= newItems.length) return;
+    [newItems[index], newItems[target]] = [newItems[target], newItems[index]];
+    updateItems(scenarioId, newItems);
   };
 
   const statusCaption = targetAmount === 0
@@ -880,85 +808,64 @@ export default function SavingsGoalDetailPage() {
                 boxShadow: "var(--shadow-botanical)",
               }}
             >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-3">
               <h2 className="text-[0.9375rem] font-semibold" style={{ color: "var(--on-surface)" }}>
                 Savings Items
               </h2>
-              {editing?.mode !== "add" && (
-                <button
-                  onClick={() => setEditing({ mode: "add", name: "", amount: "", date: "" })}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold"
-                  style={{
-                    background: "var(--primary)",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    fontFamily: "Manrope, sans-serif",
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  Add Item
-                </button>
+              {items.length > 0 && (
+                <span className="text-xs font-semibold" style={{ color: "var(--primary)" }}>
+                  {fmt(total)}
+                </span>
               )}
             </div>
 
-            {items.length === 0 && editing?.mode !== "add" && (
-              <div className="py-10 text-center">
-                <p className="text-sm" style={{ color: "var(--on-surface-sub)" }}>
-                  No items yet. Add a line item to get started.
-                </p>
+            {items.length > 0 && (
+              <div
+                className="grid gap-x-2 mb-2"
+                style={{ gridTemplateColumns: "3fr 2fr 2fr auto" }}
+              >
+                {["Name", "Amount (S$)", "Date", ""].map((h) => (
+                  <p
+                    key={h}
+                    className="text-[0.625rem] font-semibold tracking-widest uppercase"
+                    style={{ color: "var(--on-surface-sub)" }}
+                  >
+                    {h}
+                  </p>
+                ))}
               </div>
             )}
 
-            {items.map((item) =>
-              editing?.mode === "edit" && editing.id === item.id ? (
-                <div key={item.id} className="py-2">
-                  <ItemForm
-                    initial={{ name: editing.name, amount: editing.amount, date: editing.date }}
-                    onSave={(draft) => handleSaveEdit(item.id, draft)}
-                    onCancel={() => setEditing(null)}
-                  />
-                </div>
-              ) : (
-                <ItemRow
+            <div className="space-y-2">
+              {items.map((item, idx) => (
+                <ItemSavingsRow
                   key={item.id}
                   item={item}
-                  onEdit={() =>
-                    setEditing({
-                      mode: "edit",
-                      id: item.id,
-                      name: item.name,
-                      amount: String(item.amount),
-                      date: item.date,
-                    })
-                  }
-                  onDelete={() => handleDelete(item.id, item.name)}
+                  onUpdate={(changes) => updateItem(scenarioId, item.id, changes)}
+                  onDelete={() => handleDelete(item.id)}
+                  onMoveUp={idx > 0 ? () => handleMove(idx, -1) : undefined}
+                  onMoveDown={idx < items.length - 1 ? () => handleMove(idx, 1) : undefined}
                 />
-              )
-            )}
+              ))}
+            </div>
 
-            {editing?.mode === "add" && (
-              <div className="pt-3">
-                <ItemForm
-                  initial={{ name: editing.name, amount: editing.amount, date: editing.date }}
-                  onSave={handleSaveNew}
-                  onCancel={() => setEditing(null)}
-                />
-              </div>
-            )}
-
-            {items.length > 0 && (
-              <div className="flex items-center justify-between pt-4 mt-2">
-                <span className="text-sm font-semibold" style={{ color: "var(--on-surface-sub)" }}>
-                  Total
-                </span>
-                <span className="text-base font-bold tabular-nums" style={{ color: "var(--on-surface)" }}>
-                  {fmt(total)}
-                </span>
-              </div>
-            )}
+            <button
+              onClick={handleAddItem}
+              className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "var(--primary)",
+                fontFamily: "Manrope, sans-serif",
+                padding: 0,
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Add item
+            </button>
             </div>
 
             {/* Right — Chart */}

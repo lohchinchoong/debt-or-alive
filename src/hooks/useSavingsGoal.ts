@@ -68,6 +68,7 @@ export type UseSavingsGoalReturn = {
   addItem:        (scenarioId: string, item: Omit<SavingsItem, "id">) => void;
   removeItem:     (scenarioId: string, itemId: string) => void;
   updateItem:     (scenarioId: string, itemId: string, changes: Partial<Omit<SavingsItem, "id">>) => void;
+  updateItems:    (scenarioId: string, items: SavingsItem[]) => void;
 };
 
 export function useSavingsGoal(): UseSavingsGoalReturn {
@@ -156,6 +157,14 @@ export function useSavingsGoal(): UseSavingsGoalReturn {
     []
   );
 
+  const updateItems = useCallback((scenarioId: string, items: SavingsItem[]): void => {
+    setScenarios((prev) => {
+      const next = prev.map((s) => (s.id === scenarioId ? { ...s, items } : s));
+      writeScenarios(next);
+      return next;
+    });
+  }, []);
+
   return {
     scenarios,
     addScenario,
@@ -164,5 +173,6 @@ export function useSavingsGoal(): UseSavingsGoalReturn {
     addItem,
     removeItem,
     updateItem,
+    updateItems,
   };
 }
