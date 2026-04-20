@@ -68,6 +68,13 @@ export const tools: Tool[] = [
     category: "Planning",
     icon: "LayoutList",
   },
+  {
+    slug: "savings-goal",
+    name: "Savings Goal",
+    tagline: "Work backwards from a target amount to a monthly savings plan.",
+    category: "Planning",
+    icon: "Target",
+  },
   // ── Coming soon ───────────────────────────────────────────────────────────
   {
     slug: "rent-vs-buy",
@@ -101,14 +108,6 @@ export const tools: Tool[] = [
     category: "Debt",
     icon: "GitCompare",
     accent: "tertiary",
-    comingSoon: true,
-  },
-  {
-    slug: "savings-goal",
-    name: "Savings Goal",
-    tagline: "Work backwards from a target amount to a monthly savings plan.",
-    category: "Savings",
-    icon: "Target",
     comingSoon: true,
   },
   {
