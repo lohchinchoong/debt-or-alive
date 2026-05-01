@@ -27,6 +27,13 @@ export const tools: Tool[] = [
     icon: "PiggyBank",
   },
   {
+    slug: "cpf-ma-calculator",
+    name: "CPF Medisave Account (MA) Calculator",
+    tagline: "Project your Medisave balance, track the BHS ceiling, and model MediShield Life premiums.",
+    category: "CPF",
+    icon: "HeartPulse",
+  },
+  {
     slug: "fire-calculator",
     name: "FIRE Calculator",
     tagline: "When can you retire? Project your FIRE number and timeline.",
