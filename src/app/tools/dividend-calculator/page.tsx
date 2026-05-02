@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
+import { fmtAxis, niceMax, loadArray, saveArray, genId } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,42 +24,6 @@ const fmt = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-const fmtAxis = (n: number): string => {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return `${Math.round(n)}`;
-};
-
-function niceMax(rawMax: number): number {
-  if (rawMax <= 0) return 1000;
-  const mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
-  const niceFactors = [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10];
-  const nice = niceFactors.find((f) => f * mag >= rawMax) ?? 10;
-  return nice * mag;
-}
-
-let idCounter = 0;
-function genId(): string {
-  return `div_${Date.now()}_${++idCounter}`;
-}
-
-function loadArray<T>(key: string, fallback: T[]): T[] {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveArray<T>(key: string, data: T[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch {
-    // storage full — fail silently
-  }
-}
 
 // ─── InlineInput ─────────────────────────────────────────────────────────────
 
@@ -445,8 +410,8 @@ export function DividendCalculatorPage() {
   useEffect(() => {
     setSourcesRaw(
       loadArray<YieldSource>("dividend:sources", [
-        { id: genId(), name: "Dividend ETF", value: 50000, yieldRate: 5 },
-        { id: genId(), name: "REITs", value: 30000, yieldRate: 6 },
+        { id: genId("div"), name: "Dividend ETF", value: 50000, yieldRate: 5 },
+        { id: genId("div"), name: "REITs", value: 30000, yieldRate: 6 },
       ]),
     );
     const savedYears = localStorage.getItem("dividend:projection-years");
@@ -600,7 +565,7 @@ export function DividendCalculatorPage() {
 
                 <button
                   type="button"
-                  onClick={() => setSources((prev) => [...prev, { id: genId(), name: "", value: 0, yieldRate: 5 }])}
+                  onClick={() => setSources((prev) => [...prev, { id: genId("div"), name: "", value: 0, yieldRate: 5 }])}
                   className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
                 >

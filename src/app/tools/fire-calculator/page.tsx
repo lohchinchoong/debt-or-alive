@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useToolState } from "@/hooks/useToolState";
+import { fmtAxis, niceMax, loadArray, saveArray, genId } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -129,44 +130,6 @@ const fmt = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-const fmtAxis = (n: number): string => {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return `${Math.round(n)}`;
-};
-
-function niceMax(rawMax: number): number {
-  if (rawMax <= 0) return 1000;
-  const mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
-  const niceFactors = [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10];
-  const nice = niceFactors.find((f) => f * mag >= rawMax) ?? 10;
-  return nice * mag;
-}
-
-let idCounter = 0;
-function genId(): string {
-  return `src_${Date.now()}_${++idCounter}`;
-}
-
-// ─── localStorage persistence for dynamic arrays ─────────────────────────────
-
-function loadArray<T>(key: string, fallback: T[]): T[] {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveArray<T>(key: string, data: T[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch {
-    // storage full — fail silently
-  }
-}
 
 // ─── Calculation Engine ──────────────────────────────────────────────────────
 
@@ -967,12 +930,12 @@ export function FireCalculatorPage() {
   useEffect(() => {
     setYieldSourcesRaw(
       loadArray<YieldSource>("fire:yield-sources-v2", [
-        { id: genId(), name: "Dividend ETF", value: 50000, yieldRate: 5, startAge: 30 },
+        { id: genId("src"), name: "Dividend ETF", value: 50000, yieldRate: 5, startAge: 30 },
       ]),
     );
     setDrawdownSourcesRaw(
       loadArray<DrawdownSource>("fire:drawdown-sources-v2", [
-        { id: genId(), name: "Growth Portfolio", value: 100000, startAge: 55, endAge: 80 },
+        { id: genId("src"), name: "Growth Portfolio", value: 100000, startAge: 55, endAge: 80 },
       ]),
     );
     setMounted(true);
@@ -1180,7 +1143,7 @@ export function FireCalculatorPage() {
 
                 <button
                   type="button"
-                  onClick={() => setYieldSources((prev) => [...prev, { id: genId(), name: "", value: 0, yieldRate: 5, startAge: currentAge }])}
+                  onClick={() => setYieldSources((prev) => [...prev, { id: genId("src"), name: "", value: 0, yieldRate: 5, startAge: currentAge }])}
                   className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
                 >
@@ -1308,7 +1271,7 @@ export function FireCalculatorPage() {
 
                 <button
                   type="button"
-                  onClick={() => setDrawdownSources((prev) => [...prev, { id: genId(), name: "", value: 0, startAge: retirementAge, endAge: deathAge }])}
+                  onClick={() => setDrawdownSources((prev) => [...prev, { id: genId("src"), name: "", value: 0, startAge: retirementAge, endAge: deathAge }])}
                   className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
                 >

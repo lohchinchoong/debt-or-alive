@@ -104,6 +104,12 @@ export function useToolState<T extends StateSchema>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (urlDebounce.current) clearTimeout(urlDebounce.current);
+    };
+  }, []);
+
   const update = useCallback(
     (updates: Partial<T>) => {
       setStateRaw((prev) => {

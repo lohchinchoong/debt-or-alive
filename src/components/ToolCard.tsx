@@ -4,20 +4,12 @@ import { categoryColors } from "@/lib/tools";
 
 type ToolCardProps = Tool;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  Property:   "Property",
-  CPF:        "CPF",
-  Debt:       "Debt",
-  Savings:    "Savings",
-  Investment: "Investment",
-  Planning:   "Planning",
-};
-
 // Inline SVG paths for the icons we use (subset of lucide)
 const ICONS: Record<string, string> = {
   House:         "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10",
   Scale:         "M12 3v18 M3 6h18 M6 6l3 12 M18 6l-3 12",
   PiggyBank:     "M19 5c-1.5 0-2.5 1-2.5 1H5a3 3 0 0 0 0 6h.5v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1h2v1a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-3.5c1.1-.4 2-1.4 2-2.5V8c0-1.7-1.3-3-3-3z M12 5V3",
+  HeartPulse:    "M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z M3.22 12H9.5l1.5-3 2 6 1.5-3h3.28",
   ArrowRightLeft:"M21 7H3 M3 7l4-4M3 7l4 4 M3 17h18 M21 17l-4-4M21 17l-4 4",
   Receipt:       "M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z M8 10h8 M8 14h4",
   TrendingDown:  "M22 17l-8.5-8.5-5 5L2 7 M16 17h6v-6",
@@ -107,21 +99,13 @@ export function ToolCard({ slug, name, tagline, category, icon, accent, comingSo
   return (
     <Link
       href={`/tools/${slug}`}
-      className="group block rounded-xl p-5 transition-all duration-200"
+      className="group block rounded-xl p-5 transition-all duration-200 tool-card-link"
       style={{
         backgroundColor: "var(--surface-container-lowest)",
         boxShadow: "var(--shadow-botanical)",
         textDecoration: "none",
       }}
     >
-      <style>{`
-        a[href="/tools/${slug}"]:hover {
-          background-color: var(--surface-container-low) !important;
-          box-shadow: var(--shadow-botanical-hover) !important;
-          transform: translateY(-1px);
-        }
-      `}</style>
-
       {/* Top row: icon + category pill */}
       <div className="flex items-start justify-between mb-4">
         <div
@@ -137,7 +121,7 @@ export function ToolCard({ slug, name, tagline, category, icon, accent, comingSo
             color: categoryColor,
           }}
         >
-          {CATEGORY_LABELS[category]}
+          {category}
         </span>
       </div>
 

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useToolState } from "@/hooks/useToolState";
+import { loadArray, saveArray, genId } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -97,28 +98,6 @@ const fmt = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
-let idCounter = 0;
-function genId(): string {
-  return `bi_${Date.now()}_${++idCounter}`;
-}
-
-function loadArray<T>(key: string, fallback: T[]): T[] {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T[]) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveArray<T>(key: string, data: T[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch {
-    // storage full — fail silently
-  }
-}
 
 // SVG arc path for a pie/donut slice.
 // startAngle and endAngle are in radians; 0 = top, clockwise.
@@ -788,7 +767,7 @@ export default function BudgetPlannerPage() {
   }, []);
 
   const addItem = () => {
-    setItems((prev) => [...prev, { id: genId(), label: "", category: "Food", planned: 0 }]);
+    setItems((prev) => [...prev, { id: genId("bi"), label: "", category: "Food", planned: 0 }]);
   };
 
   const updateLabel = useCallback((id: string, label: string) => {

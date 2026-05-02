@@ -6,6 +6,7 @@ import { useState, useRef } from "react";
 const STORAGE_KEYS = [
   "tool:compound-interest",
   "cpf-sa:profiles",
+  "cpf-ma:profiles",
   "tool:fire-calculator",
   "tool:mortgage-calculator",
   "tool:emergency-fund",
@@ -18,6 +19,9 @@ const STORAGE_KEYS = [
   "srs:withdrawal",
   "tool:budget-planner",
   "budget:items",
+  "savings-goal:scenarios",
+  "dividend:sources",
+  "dividend:projection-years",
 ];
 
 const APP_ID = "debtoralive";

@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useToolState } from "@/hooks/useToolState";
+import { fmtAxis, niceMax, loadArray, saveArray, genId } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type MonthRow = {
@@ -38,44 +39,6 @@ const fmt = (n: number) =>
     maximumFractionDigits: 2,
   }).format(n);
 
-const fmtAxis = (n: number): string => {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return `${Math.round(n)}`;
-};
-
-function niceMax(rawMax: number): number {
-  if (rawMax <= 0) return 1000;
-  const mag = Math.pow(10, Math.floor(Math.log10(rawMax)));
-  const niceFactors = [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10];
-  const nice = niceFactors.find((f) => f * mag >= rawMax) ?? 10;
-  return nice * mag;
-}
-
-// ─── localStorage helpers for dynamic arrays ─────────────────────────────────
-
-let idCounter = 0;
-function genId(): string {
-  return `pr_${Date.now()}_${++idCounter}`;
-}
-
-function loadArray<T>(key: string, fallback: T[]): T[] {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveArray<T>(key: string, data: T[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch {
-    // storage full — fail silently
-  }
-}
 
 // ─── Monthly payment helper ──────────────────────────────────────────────────
 
@@ -934,7 +897,7 @@ export function MortgageCalculatorPage() {
 
                 <button
                   type="button"
-                  onClick={() => setPartialRepayments((prev) => [...prev, { id: genId(), year: 5, amount: 50000 }])}
+                  onClick={() => setPartialRepayments((prev) => [...prev, { id: genId("pr"), year: 5, amount: 50000 }])}
                   className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
                 >

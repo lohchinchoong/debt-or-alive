@@ -47,6 +47,12 @@ body {
   margin: 0;
 }
 
+.tool-card-link:hover {
+  background-color: var(--surface-container-low) !important;
+  box-shadow: var(--shadow-botanical-hover) !important;
+  transform: translateY(-1px);
+}
+
 @theme inline {
   --font-sans: 'Manrope', system-ui, sans-serif;
 
