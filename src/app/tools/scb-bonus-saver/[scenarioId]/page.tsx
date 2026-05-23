@@ -153,16 +153,16 @@ function ProfileNameEditor({ name, onSave }: { name: string; onSave: (name: stri
 
 // ─── FocusInput ───────────────────────────────────────────────────────────────
 
-function FocusInput({ label, value, onChange, min, step = 1, hint }: {
+function FocusInput({ label, value, onChange, min, max, step = 1, hint }: {
   label: string; value: number; onChange: (v: number) => void;
-  min?: number; step?: number; hint?: string;
+  min?: number; max?: number; step?: number; hint?: string;
 }) {
   const [focused, setFocused] = useState(false);
   return (
     <div>
       <p className="text-[0.8125rem] font-medium mb-1.5" style={{ color: "var(--on-surface-sub)" }}>{label}</p>
       <input
-        type="number" value={value} min={min} step={step}
+        type="number" value={value} min={min} max={max} step={step}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         style={{
