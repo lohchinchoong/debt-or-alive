@@ -5,69 +5,57 @@ import { loadArray, saveArray, genId } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type ScbMonthEntry = {
-  year:               number;
-  month:              number;  // 1-12
-  monthSaved:         number;  // net deposit (negative = withdrawal)
-  salaryAmount:       number;  // S$ credited as salary (≥3,000 qualifies)
-  cardSpendAmount:    number;  // S$ spent on SCB card this month
-  insureAmount:       number;  // S$ paid for eligible insurance (> 0 = active)
-  investAmount:       number;  // S$ in eligible investment (> 0 = active)
-  investmentPL:       number;  // investment portfolio P&L this month
-  investmentIncome:   number;  // dividends / interest received from investments
+export type HysaMonthEntry = {
+  year:            number;
+  month:           number; // 1-12
+  salaryAmount:    number; // salary credited this month
+  salaryInterest:  number; // interest earned from salary bonus
+  cardSpendAmount: number; // card spend this month
+  cardInterest:    number; // interest earned from card spend bonus
+  insureAmount:    number; // insurance premium / qualifying amount
+  insureInterest:  number; // interest earned from insure bonus
+  investAmount:    number; // qualifying investment amount
+  investInterest:  number; // interest earned from invest bonus
+  investmentPL:    number; // investment portfolio P&L
 };
 
-export type ScbScenario = {
-  id:             string;
-  name:           string;
-  startYear:      number;
-  startMonth:     number;      // 1-12
-  initialBalance: number;
-  entries:        ScbMonthEntry[];
+export type HysaScenario = {
+  id:      string;
+  name:    string;
+  entries: HysaMonthEntry[];
 };
 
 // ─── Storage ──────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = "scb-bonus-saver:scenarios";
+const STORAGE_KEY = "hysa-tracker:scenarios";
 
-function readScenarios(): ScbScenario[] {
-  return loadArray<ScbScenario>(STORAGE_KEY, []);
+function readScenarios(): HysaScenario[] {
+  return loadArray<HysaScenario>(STORAGE_KEY, []);
 }
 
-function writeScenarios(scenarios: ScbScenario[]): void {
+function writeScenarios(scenarios: HysaScenario[]): void {
   saveArray(STORAGE_KEY, scenarios);
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export type UseScbScenariosReturn = {
-  scenarios:       ScbScenario[];
+export type UseHysaScenariosReturn = {
+  scenarios:       HysaScenario[];
   addScenario:     () => string;
   removeScenario:  (id: string) => void;
-  updateScenario:  (id: string, changes: Partial<Omit<ScbScenario, "id" | "entries">>) => void;
-  updateEntry:     (scenarioId: string, year: number, month: number, changes: Partial<ScbMonthEntry>) => void;
+  updateScenario:  (id: string, changes: Partial<Omit<HysaScenario, "id" | "entries">>) => void;
+  updateEntry:     (scenarioId: string, year: number, month: number, changes: Partial<HysaMonthEntry>) => void;
   addMonth:        (scenarioId: string) => void;
   removeLastMonth: (scenarioId: string) => void;
 };
 
-export function useScbScenarios(): UseScbScenariosReturn {
-  const [scenarios, setScenarios] = useState<ScbScenario[]>(() => readScenarios());
+export function useHysaScenarios(): UseHysaScenariosReturn {
+  const [scenarios, setScenarios] = useState<HysaScenario[]>(() => readScenarios());
 
   const addScenario = useCallback((): string => {
-    const id = genId("scb");
-    const now = new Date();
+    const id = genId("hysa");
     setScenarios((prev) => {
-      const next: ScbScenario[] = [
-        ...prev,
-        {
-          id,
-          name:           "New Scenario",
-          startYear:      now.getFullYear(),
-          startMonth:     now.getMonth() + 1,
-          initialBalance: 10_000,
-          entries:        [],
-        },
-      ];
+      const next: HysaScenario[] = [...prev, { id, name: "New Scenario", entries: [] }];
       writeScenarios(next);
       return next;
     });
@@ -84,7 +72,7 @@ export function useScbScenarios(): UseScbScenariosReturn {
 
   const updateScenario = useCallback((
     id: string,
-    changes: Partial<Omit<ScbScenario, "id" | "entries">>
+    changes: Partial<Omit<HysaScenario, "id" | "entries">>
   ): void => {
     setScenarios((prev) => {
       const next = prev.map((s) => (s.id === id ? { ...s, ...changes } : s));
@@ -97,7 +85,7 @@ export function useScbScenarios(): UseScbScenariosReturn {
     scenarioId: string,
     year: number,
     month: number,
-    changes: Partial<ScbMonthEntry>
+    changes: Partial<HysaMonthEntry>
   ): void => {
     setScenarios((prev) => {
       const next = prev.map((s) => {
@@ -119,8 +107,9 @@ export function useScbScenarios(): UseScbScenariosReturn {
         const entries = [...s.entries];
         let year: number, month: number;
         if (entries.length === 0) {
-          year  = s.startYear;
-          month = s.startMonth;
+          const now = new Date();
+          year  = now.getFullYear();
+          month = now.getMonth() + 1;
         } else {
           const last = entries[entries.length - 1];
           year  = last.month === 12 ? last.year + 1 : last.year;
@@ -128,9 +117,11 @@ export function useScbScenarios(): UseScbScenariosReturn {
         }
         entries.push({
           year, month,
-          monthSaved: 0, salaryAmount: 0, cardSpendAmount: 0,
-          insureAmount: 0, investAmount: 0,
-          investmentPL: 0, investmentIncome: 0,
+          salaryAmount: 0, salaryInterest: 0,
+          cardSpendAmount: 0, cardInterest: 0,
+          insureAmount: 0, insureInterest: 0,
+          investAmount: 0, investInterest: 0,
+          investmentPL: 0,
         });
         return { ...s, entries };
       });

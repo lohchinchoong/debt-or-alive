@@ -34,9 +34,9 @@ export const tools: Tool[] = [
     icon: "HeartPulse",
   },
   {
-    slug: "scb-bonus-saver",
-    name: "SCB BonusSaver Tracker",
-    tagline: "Track monthly BonusSaver interest across salary, card spend, insure, and invest categories.",
+    slug: "hysa-tracker",
+    name: "High Yield Savings Account Tracker",
+    tagline: "Log monthly interest and investment gains across your high-yield savings accounts.",
     category: "Savings",
     icon: "TableProperties",
   },

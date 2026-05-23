@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useScbScenarios, ScbScenario } from "@/hooks/useScbScenarios";
+import { useHysaScenarios, HysaScenario } from "@/hooks/useHysaScenarios";
 
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -18,8 +18,7 @@ function ProfileNameEditor({ name, onSave }: { name: string; onSave: (name: stri
   if (editing) {
     return (
       <input
-        autoFocus
-        value={draft}
+        autoFocus value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
@@ -28,17 +27,10 @@ function ProfileNameEditor({ name, onSave }: { name: string; onSave: (name: stri
         }}
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "var(--surface-container-highest)",
-          border: "none",
-          borderBottom: "2px solid var(--primary)",
-          borderRadius: "0.25rem 0.25rem 0 0",
-          outline: "none",
-          fontSize: "1rem",
-          fontFamily: "Manrope, sans-serif",
-          fontWeight: 700,
-          color: "var(--on-surface)",
-          padding: "0.25rem 0.375rem",
-          width: "100%",
+          background: "var(--surface-container-highest)", border: "none",
+          borderBottom: "2px solid var(--primary)", borderRadius: "0.25rem 0.25rem 0 0",
+          outline: "none", fontSize: "1rem", fontFamily: "Manrope, sans-serif",
+          fontWeight: 700, color: "var(--on-surface)", padding: "0.25rem 0.375rem", width: "100%",
         }}
       />
     );
@@ -66,13 +58,9 @@ function ProfileNameEditor({ name, onSave }: { name: string; onSave: (name: stri
 
 // ─── ProfileCard ──────────────────────────────────────────────────────────────
 function ProfileCard({
-  scenario,
-  onDelete,
-  onRename,
+  scenario, onDelete, onRename,
 }: {
-  scenario: ScbScenario;
-  onDelete: () => void;
-  onRename: (name: string) => void;
+  scenario: HysaScenario; onDelete: () => void; onRename: (name: string) => void;
 }) {
   const router = useRouter();
 
@@ -81,16 +69,16 @@ function ProfileCard({
     if (confirm(`Delete "${scenario.name}"? This cannot be undone.`)) onDelete();
   };
 
-  const monthCount = scenario.entries.length;
-  const startLabel = `${MONTH_NAMES[scenario.startMonth - 1]} ${scenario.startYear}`;
-  const lastEntry = scenario.entries[scenario.entries.length - 1];
-  const lastLabel = lastEntry
-    ? `${MONTH_NAMES[lastEntry.month - 1]} ${lastEntry.year}`
-    : "—";
+  const first = scenario.entries[0];
+  const last  = scenario.entries[scenario.entries.length - 1];
+  const totalInterest = scenario.entries.reduce(
+    (s, e) => s + (e.salaryInterest ?? 0) + (e.cardInterest ?? 0) + (e.insureInterest ?? 0) + (e.investInterest ?? 0),
+    0
+  );
 
   return (
     <div
-      onClick={() => router.push(`/tools/scb-bonus-saver/${scenario.id}`)}
+      onClick={() => router.push(`/tools/hysa-tracker/${scenario.id}`)}
       className="rounded-xl p-5 flex flex-col gap-4 cursor-pointer transition-colors"
       style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--surface-container-low)")}
@@ -105,8 +93,7 @@ function ProfileCard({
           title="Delete scenario"
           style={{
             background: "none", border: "none", cursor: "pointer", padding: "0.25rem",
-            color: "var(--on-surface-sub)", opacity: 0.5, flexShrink: 0,
-            display: "flex", alignItems: "center",
+            color: "var(--on-surface-sub)", opacity: 0.5, flexShrink: 0, display: "flex", alignItems: "center",
           }}
           onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "1")}
           onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "0.5")}
@@ -120,9 +107,21 @@ function ProfileCard({
       </div>
 
       <div className="space-y-1.5">
-        <StatLine label="Initial Balance" value={`S$${scenario.initialBalance.toLocaleString("en-SG")}`} />
-        <StatLine label="Tracking from" value={startLabel} />
-        <StatLine label="Months logged" value={monthCount > 0 ? `${monthCount} (up to ${lastLabel})` : "None yet"} />
+        <StatLine
+          label="Period"
+          value={
+            first && last
+              ? `${MONTH_NAMES[first.month - 1]} ${first.year} – ${MONTH_NAMES[last.month - 1]} ${last.year}`
+              : "No months logged yet"
+          }
+        />
+        <StatLine label="Months logged" value={String(scenario.entries.length)} />
+        {totalInterest > 0 && (
+          <StatLine
+            label="Total interest"
+            value={`S$${totalInterest.toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          />
+        )}
       </div>
 
       <div className="flex justify-end">
@@ -166,7 +165,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
         No scenarios yet
       </h2>
       <p className="text-sm mb-8 max-w-xs" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
-        Create a scenario to start tracking your SCB BonusSaver interest month by month.
+        Create a scenario to start logging monthly interest from your high-yield savings account.
       </p>
       <button
         onClick={onAdd}
@@ -188,13 +187,13 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-export default function ScbBonusSaverLandingPage() {
+export default function HysaLandingPage() {
   const router = useRouter();
-  const { scenarios, addScenario, removeScenario, updateScenario } = useScbScenarios();
+  const { scenarios, addScenario, removeScenario, updateScenario } = useHysaScenarios();
 
   const handleAdd = () => {
     const id = addScenario();
-    router.push(`/tools/scb-bonus-saver/${id}`);
+    router.push(`/tools/hysa-tracker/${id}`);
   };
 
   return (
@@ -225,10 +224,10 @@ export default function ScbBonusSaverLandingPage() {
                 </div>
                 <div>
                   <h1 className="text-3xl sm:text-4xl font-bold" style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}>
-                    SCB BonusSaver Tracker
+                    High Yield Savings Account Tracker
                   </h1>
                   <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
-                    Track monthly BonusSaver interest across salary, card spend, insure, and invest categories.
+                    Log monthly interest and investment gains across your high-yield savings accounts.
                   </p>
                 </div>
               </div>
