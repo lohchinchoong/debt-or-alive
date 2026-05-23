@@ -34,6 +34,13 @@ export const tools: Tool[] = [
     icon: "HeartPulse",
   },
   {
+    slug: "scb-bonus-saver",
+    name: "SCB BonusSaver Tracker",
+    tagline: "Track monthly BonusSaver interest across salary, card spend, insure, and invest categories.",
+    category: "Savings",
+    icon: "TableProperties",
+  },
+  {
     slug: "fire-calculator",
     name: "FIRE Calculator",
     tagline: "When can you retire? Project your FIRE number and timeline.",
