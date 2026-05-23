@@ -174,6 +174,77 @@ function EditableCell({ value, onChange, step = 100, allowNegative = false }: {
   );
 }
 
+// ─── MonthCell ────────────────────────────────────────────────────────────────
+
+function MonthCell({ year, month, onSave }: {
+  year: number; month: number; onSave: (year: number, month: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draftYear, setDraftYear]   = useState(year);
+  const [draftMonth, setDraftMonth] = useState(month);
+
+  const open = () => { setDraftYear(year); setDraftMonth(month); setEditing(true); };
+  const commit = () => { onSave(draftYear, draftMonth); setEditing(false); };
+  const cancel = () => setEditing(false);
+
+  const inputBase: React.CSSProperties = {
+    background: "var(--surface-container-highest)",
+    border: "none", borderBottom: "2px solid var(--primary)", outline: "none",
+    fontFamily: "Manrope, sans-serif", fontSize: "0.8125rem",
+    color: "var(--on-surface)", padding: "2px 4px",
+  };
+
+  if (editing) {
+    return (
+      <div
+        style={{ display: "flex", gap: "4px", alignItems: "center" }}
+        onBlur={(e) => {
+          // Only commit when focus leaves the entire editing widget
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) commit();
+        }}
+      >
+        <select
+          autoFocus
+          value={draftMonth}
+          onChange={(e) => setDraftMonth(Number(e.target.value))}
+          onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
+          style={{ ...inputBase, width: "52px", cursor: "pointer" }}
+        >
+          {MONTH_NAMES.map((name, i) => (
+            <option key={i} value={i + 1}>{name}</option>
+          ))}
+        </select>
+        <input
+          type="number" value={draftYear} min={2000} max={2099} step={1}
+          onChange={(e) => setDraftYear(Number(e.target.value))}
+          onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") cancel(); }}
+          style={{ ...inputBase, width: "52px", textAlign: "right" }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={open}
+      title="Click to edit month"
+      style={{
+        background: "none", border: "none", cursor: "text",
+        fontFamily: "Manrope, sans-serif", fontWeight: 600, fontSize: "0.8125rem",
+        color: "var(--on-surface)", padding: "2px 4px", display: "inline-flex",
+        alignItems: "center", gap: "0.3rem", width: "100%",
+      }}
+    >
+      {MONTH_NAMES[month - 1]} {year}
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.3, flexShrink: 0 }}>
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      </svg>
+    </button>
+  );
+}
+
 // ─── GainChart ────────────────────────────────────────────────────────────────
 
 function GainChart({ rows }: { rows: Row[] }) {
@@ -464,7 +535,12 @@ function SpreadsheetTable({ rows, onUpdate }: {
                   return (
                     <tr key={`${row.year}-${row.month}`}>
                       <td style={{ ...tdMonth, backgroundColor: rowBg }}>
-                        {MONTH_NAMES[row.month - 1]} {row.year}
+                        <MonthCell
+                          year={row.year} month={row.month}
+                          onSave={(newYear, newMonth) =>
+                            onUpdate(row.year, row.month, { year: newYear, month: newMonth })
+                          }
+                        />
                       </td>
                       {/* Salary */}
                       <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid rgba(192,201,192,0.2)" }}>
