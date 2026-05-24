@@ -591,22 +591,22 @@ export function EmergencyFundPage() {
     });
   }, []);
 
-  const addSource = () => {
+  const addSource = useCallback(() => {
     setSources((prev) => [
       ...prev,
       { id: genId("sf"), name: "", balance: 0, startDate: todayISO(), interestRate: 0 },
     ]);
-  };
+  }, [setSources]);
 
-  const updateSource = (id: string, field: keyof SavingsSource, value: string | number) => {
+  const updateSource = useCallback((id: string, field: keyof SavingsSource, value: string | number) => {
     setSources((prev) =>
       prev.map((src) => (src.id === id ? { ...src, [field]: value } : src)),
     );
-  };
+  }, [setSources]);
 
-  const deleteSource = (id: string) => {
+  const deleteSource = useCallback((id: string) => {
     setSources((prev) => prev.filter((src) => src.id !== id));
-  };
+  }, [setSources]);
 
   // ── Derived ──
   const totalSavings = useMemo(

@@ -17,9 +17,9 @@ type YieldSource = {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", {
+  new Intl.NumberFormat("en-SG", {
     style: "currency",
-    currency: "USD",
+    currency: "SGD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(n);
@@ -286,6 +286,8 @@ function GrowthChart({
     return rows;
   }, [sources, years]);
 
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
   if (data.length === 0 || sources.length === 0) return null;
 
   const W = 640;
@@ -307,8 +309,6 @@ function GrowthChart({
 
   // Fill area under portfolio
   const portfolioFill = `${portfolioPath} L${xOf(years).toFixed(1)},${yOf(0).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(0).toFixed(1)} Z`;
-
-  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   return (
     <svg

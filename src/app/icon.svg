@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Chest body (lower half) -->
+  <rect x="8" y="52" width="84" height="40" rx="4" fill="#7B3200"/>
+  <!-- Chest lid (arched top) -->
+  <path d="M8,52 L8,36 Q8,8 50,8 Q92,8 92,36 L92,52 Z" fill="#9B4010"/>
+  <!-- Shadow line on lid -->
+  <path d="M8,52 L8,36 Q8,8 50,8 Q92,8 92,36 L92,52 Z" fill="none" stroke="#6B2800" stroke-width="2"/>
+  <!-- Gold horizontal band at seam -->
+  <rect x="8" y="48" width="84" height="9" rx="1" fill="#D4A017"/>
+  <!-- Gold vertical strip on lid -->
+  <rect x="44" y="8" width="12" height="43" fill="#D4A017"/>
+  <!-- Lock plate -->
+  <rect x="39" y="46" width="22" height="15" rx="3" fill="#F5C842"/>
+  <!-- Lock shackle (top arch) -->
+  <path d="M44,46 Q44,38 50,38 Q56,38 56,46" fill="none" stroke="#F5C842" stroke-width="4" stroke-linecap="round"/>
+  <!-- Lock keyhole circle -->
+  <circle cx="50" cy="52" r="4" fill="#7B3200"/>
+  <!-- Lock keyhole slot -->
+  <rect x="48.5" y="52" width="3" height="5" rx="1" fill="#7B3200"/>
+  <!-- Corner bolts -->
+  <circle cx="14" cy="58" r="3" fill="#D4A017"/>
+  <circle cx="86" cy="58" r="3" fill="#D4A017"/>
+  <circle cx="14" cy="85" r="3" fill="#D4A017"/>
+  <circle cx="86" cy="85" r="3" fill="#D4A017"/>
+</svg>

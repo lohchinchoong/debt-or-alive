@@ -745,7 +745,7 @@ function SpendingSplitChart({
 
 // ─── BudgetPlannerPage ────────────────────────────────────────────────────────
 
-export default function BudgetPlannerPage() {
+export function BudgetPlannerPage() {
   const [s, set] = useToolState(STORAGE_KEY_STATE, { annualSalary: 72000 });
   const monthlyIncome = s.annualSalary / 12;
 
@@ -766,9 +766,9 @@ export default function BudgetPlannerPage() {
     });
   }, []);
 
-  const addItem = () => {
+  const addItem = useCallback(() => {
     setItems((prev) => [...prev, { id: genId("bi"), label: "", category: "Food", planned: 0 }]);
-  };
+  }, [setItems]);
 
   const updateLabel = useCallback((id: string, label: string) => {
     setItems((prev) => prev.map((item) => item.id === id ? { ...item, label } : item));
@@ -1239,3 +1239,5 @@ export default function BudgetPlannerPage() {
     </>
   );
 }
+
+export default BudgetPlannerPage;

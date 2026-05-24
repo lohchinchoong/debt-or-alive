@@ -3,7 +3,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useToolState } from "@/hooks/useToolState";
 import { fmtAxis, niceMax, loadArray, saveArray, genId, todayISO } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -565,9 +564,6 @@ const DEFAULT_DEPOSITS: Deposit[] = [
 ];
 
 export function SRSCalculatorPage() {
-  // ── Persisted settings ──
-  const [s] = useToolState("srs-calculator", {});
-
   // ── Deposits array ──
   const [deposits, setDeposits] = useState<Deposit[]>([]);
   const [hydrated, setHydrated] = useState(false);

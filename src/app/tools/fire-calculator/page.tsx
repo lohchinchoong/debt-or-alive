@@ -1431,8 +1431,8 @@ export function FireCalculatorPage() {
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>The FIRE Score</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
-                  Your FIRE Score = (projected portfolio at retirement ÷ FIRE number) × 100%. At{" "}
-                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>100%</span>, your portfolio matches your FIRE number.
+                  Your FIRE Score = (yield income at retirement ÷ annual expenses) × 100%. At{" "}
+                  <span className="font-semibold" style={{ color: "var(--on-surface)" }}>100%</span>, your passive yield income fully covers your annual expenses — no drawdown needed.
                   The tiers — from <em>Early Days</em> to <em>Fat FIRE</em> — are inspired by the FIRE community&apos;s widely used categories:
                   Coast FIRE (on track without further contributions), Lean FIRE (basic coverage), and Fat FIRE (2×+ your target).
                 </p>
