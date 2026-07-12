@@ -19,7 +19,7 @@ const fmt = (n: number) =>
   new Intl.NumberFormat("en-SG", { style: "currency", currency: "SGD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 const fmtCompact = (n: number) =>
-  new Intl.NumberFormat("en-SG", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
 function toRows(entries: HysaMonthEntry[]): Row[] {
   return entries.map((e) => {
