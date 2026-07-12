@@ -662,11 +662,16 @@ export function DividendCalculatorPage() {
 
                   {/* Per-source table */}
                   <div className="mb-4">
-                    <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 gap-y-1.5 text-sm">
+                    <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-4 gap-y-1.5 text-sm">
+                      <div />
+                      <div />
+                      <div />
+                      <p className="col-span-2 text-[0.625rem] font-semibold tracking-widest uppercase text-center" style={{ color: "var(--on-surface-sub)" }}>Invest this to get...</p>
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Source</p>
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Annual</p>
                       <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Monthly</p>
-                      <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>Invest this to get $50/mth</p>
+                      <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>$50/mth</p>
+                      <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-right" style={{ color: "var(--on-surface-sub)" }}>$100/mth</p>
                       {sources
                         .map((src, i) => ({
                           ...src,
@@ -684,6 +689,9 @@ export function DividendCalculatorPage() {
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>{fmt(src.annual / 12)}</p>
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>
                               {src.yieldRate > 0 ? fmt(Math.max(0, 600 / (src.yieldRate / 100) - src.value)) : "—"}
+                            </p>
+                            <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>
+                              {src.yieldRate > 0 ? fmt(Math.max(0, 1200 / (src.yieldRate / 100) - src.value)) : "—"}
                             </p>
                           </React.Fragment>
                         ))}
