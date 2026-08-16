@@ -12,6 +12,7 @@ type YieldSource = {
   name: string;
   value: number;
   yieldRate: number; // annual %
+  withholdingTax?: boolean; // subject to 30% dividend withholding tax
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -23,6 +24,13 @@ const fmt = (n: number) =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(n);
+
+/** Dividend withholding tax rate applied to flagged sources. */
+const WITHHOLDING_TAX_RATE = 0.3;
+
+/** Yield actually received, after withholding tax where applicable. */
+const netYieldRate = (src: YieldSource): number =>
+  src.withholdingTax ? src.yieldRate * (1 - WITHHOLDING_TAX_RATE) : src.yieldRate;
 
 
 // ─── InlineInput ─────────────────────────────────────────────────────────────
@@ -77,10 +85,13 @@ function SourceRow({
   name,
   value,
   rate,
+  withholdingTax,
+  netRate,
   annualIncome,
   onChangeName,
   onChangeValue,
   onChangeRate,
+  onToggleWithholdingTax,
   onDelete,
   onMoveUp,
   onMoveDown,
@@ -88,55 +99,44 @@ function SourceRow({
   name: string;
   value: number;
   rate: number;
+  withholdingTax: boolean;
+  netRate: number;
   annualIncome: number;
   onChangeName: (v: string) => void;
   onChangeValue: (v: number) => void;
   onChangeRate: (v: number) => void;
+  onToggleWithholdingTax: (v: boolean) => void;
   onDelete: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
 }) {
   return (
-    <div className="grid grid-cols-[3fr_3fr_3fr_auto] gap-2 items-start">
+    <div className="grid grid-cols-[3fr_3fr_3fr_auto] gap-x-2 gap-y-1 items-start">
       {/* Name */}
-      <div className="flex flex-col">
-        <InlineInput value={name} onChange={onChangeName} placeholder="Name" />
-        <div className="h-[1.25rem]" />
-      </div>
+      <InlineInput value={name} onChange={onChangeName} placeholder="Name" />
 
       {/* Value */}
-      <div className="flex flex-col">
-        <InlineInput
-          value={value}
-          onChange={(v) => onChangeValue(parseFloat(v) || 0)}
-          type="number"
-          placeholder="Value ($)"
-          min={0}
-          step={1000}
-        />
-        <div className="h-[1.25rem]" />
-      </div>
+      <InlineInput
+        value={value}
+        onChange={(v) => onChangeValue(parseFloat(v) || 0)}
+        type="number"
+        placeholder="Value ($)"
+        min={0}
+        step={1000}
+      />
 
-      {/* Yield Rate + monthly income */}
-      <div className="flex flex-col">
-        <InlineInput
-          value={rate}
-          onChange={(v) => onChangeRate(parseFloat(v) || 0)}
-          type="number"
-          placeholder="% p.a."
-          min={0}
-          step={0.1}
-        />
-        <p
-          className="text-[0.625rem] mt-1 font-semibold tracking-wide"
-          style={{ color: "var(--primary)", lineHeight: "1.25rem" }}
-        >
-          = {fmt(annualIncome / 12)} / mth
-        </p>
-      </div>
+      {/* Yield Rate */}
+      <InlineInput
+        value={rate}
+        onChange={(v) => onChangeRate(parseFloat(v) || 0)}
+        type="number"
+        placeholder="% p.a."
+        min={0}
+        step={0.1}
+      />
 
       {/* Reorder + Delete */}
-      <div className="flex items-center gap-0.5 pt-[0.35rem]">
+      <div className="row-span-2 flex items-center gap-0.5 pt-[0.35rem]">
         <div className="flex flex-col">
           <button
             type="button"
@@ -172,6 +172,41 @@ function SourceRow({
           </svg>
         </button>
       </div>
+
+      {/* 30% withholding tax toggle */}
+      <label
+        className="col-span-2 flex items-center gap-1.5 cursor-pointer select-none"
+        style={{ lineHeight: "1.25rem" }}
+        title="Subject to 30% dividend withholding tax (e.g. US-domiciled stocks)"
+      >
+        <input
+          type="checkbox"
+          checked={withholdingTax}
+          onChange={(e) => onToggleWithholdingTax(e.target.checked)}
+          style={{
+            width: "0.875rem",
+            height: "0.875rem",
+            accentColor: "var(--primary)",
+            cursor: "pointer",
+            flexShrink: 0,
+            margin: 0,
+          }}
+        />
+        <span
+          className="text-[0.625rem] font-semibold tracking-wide truncate"
+          style={{ color: withholdingTax ? "var(--tertiary)" : "var(--on-surface-sub)" }}
+        >
+          30% WHT{withholdingTax ? ` · ${netRate.toFixed(2)}% net` : ""}
+        </span>
+      </label>
+
+      {/* Monthly income (net of withholding tax) */}
+      <p
+        className="text-[0.625rem] font-semibold tracking-wide"
+        style={{ color: "var(--primary)", lineHeight: "1.25rem" }}
+      >
+        = {fmt(annualIncome / 12)} / mth
+      </p>
     </div>
   );
 }
@@ -277,11 +312,11 @@ function GrowthChart({
 
     for (let y = 0; y <= years; y++) {
       const portfolio = vals.reduce((a, b) => a + b, 0);
-      const annualIncome = sources.reduce((sum, s, i) => sum + vals[i] * (s.yieldRate / 100), 0);
+      const annualIncome = sources.reduce((sum, s, i) => sum + vals[i] * (netYieldRate(s) / 100), 0);
       rows.push({ year: y, portfolio, cumulativeIncome: cumIncome, annualIncome });
       cumIncome += annualIncome;
-      // Reinvest dividends: grow each source by its yield
-      vals = vals.map((v, i) => v * (1 + sources[i].yieldRate / 100));
+      // Reinvest dividends (after withholding tax): grow each source by its net yield
+      vals = vals.map((v, i) => v * (1 + netYieldRate(sources[i]) / 100));
     }
     return rows;
   }, [sources, years]);
@@ -410,8 +445,8 @@ export function DividendCalculatorPage() {
   useEffect(() => {
     setSourcesRaw(
       loadArray<YieldSource>("dividend:sources", [
-        { id: genId("div"), name: "Dividend ETF", value: 50000, yieldRate: 5 },
-        { id: genId("div"), name: "REITs", value: 30000, yieldRate: 6 },
+        { id: genId("div"), name: "Dividend ETF", value: 50000, yieldRate: 5, withholdingTax: false },
+        { id: genId("div"), name: "REITs", value: 30000, yieldRate: 6, withholdingTax: false },
       ]),
     );
     const savedYears = localStorage.getItem("dividend:projection-years");
@@ -434,7 +469,7 @@ export function DividendCalculatorPage() {
 
   // Computed values
   const totalValue = sources.reduce((s, src) => s + src.value, 0);
-  const totalAnnualIncome = sources.reduce((s, src) => s + src.value * (src.yieldRate / 100), 0);
+  const totalAnnualIncome = sources.reduce((s, src) => s + src.value * (netYieldRate(src) / 100), 0);
   const totalMonthlyIncome = totalAnnualIncome / 12;
   const weightedYield = totalValue > 0 ? (totalAnnualIncome / totalValue) * 100 : 0;
 
@@ -449,7 +484,7 @@ export function DividendCalculatorPage() {
       sources
         .map((src, i) => ({
           name: src.name || "Untitled",
-          annualIncome: src.value * (src.yieldRate / 100),
+          annualIncome: src.value * (netYieldRate(src) / 100),
           color: barColors[i % barColors.length],
         }))
         .sort((a, b) => b.annualIncome - a.annualIncome),
@@ -534,7 +569,8 @@ export function DividendCalculatorPage() {
                   </span>
                 </div>
                 <p className="text-xs mb-4" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
-                  Dividend stocks, REITs, bonds, ETFs — add each income-producing holding.
+                  Dividend stocks, REITs, bonds, ETFs — add each income-producing holding. Tick
+                  &ldquo;30% WHT&rdquo; for holdings subject to 30% dividend withholding tax.
                 </p>
 
                 {/* Column headers */}
@@ -552,10 +588,13 @@ export function DividendCalculatorPage() {
                       name={src.name}
                       value={src.value}
                       rate={src.yieldRate}
-                      annualIncome={src.value * (src.yieldRate / 100)}
+                      withholdingTax={src.withholdingTax ?? false}
+                      netRate={netYieldRate(src)}
+                      annualIncome={src.value * (netYieldRate(src) / 100)}
                       onChangeName={(v) => setSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, name: v } : s)))}
                       onChangeValue={(v) => setSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, value: v } : s)))}
                       onChangeRate={(v) => setSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, yieldRate: v } : s)))}
+                      onToggleWithholdingTax={(v) => setSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, withholdingTax: v } : s)))}
                       onDelete={() => setSources((prev) => prev.filter((s) => s.id !== src.id))}
                       onMoveUp={i > 0 ? () => setSources((prev) => { const a = [...prev]; [a[i - 1], a[i]] = [a[i], a[i - 1]]; return a; }) : undefined}
                       onMoveDown={i < sources.length - 1 ? () => setSources((prev) => { const a = [...prev]; [a[i], a[i + 1]] = [a[i + 1], a[i]]; return a; }) : undefined}
@@ -565,7 +604,7 @@ export function DividendCalculatorPage() {
 
                 <button
                   type="button"
-                  onClick={() => setSources((prev) => [...prev, { id: genId("div"), name: "", value: 0, yieldRate: 5 }])}
+                  onClick={() => setSources((prev) => [...prev, { id: genId("div"), name: "", value: 0, yieldRate: 5, withholdingTax: false }])}
                   className="mt-3 flex items-center gap-1.5 text-xs font-semibold"
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--primary)", fontFamily: "Manrope, sans-serif", padding: 0 }}
                 >
@@ -675,7 +714,8 @@ export function DividendCalculatorPage() {
                       {sources
                         .map((src, i) => ({
                           ...src,
-                          annual: src.value * (src.yieldRate / 100),
+                          netRate: netYieldRate(src),
+                          annual: src.value * (netYieldRate(src) / 100),
                           color: barColors[i % barColors.length],
                         }))
                         .sort((a, b) => b.annual - a.annual)
@@ -684,14 +724,23 @@ export function DividendCalculatorPage() {
                             <p className="text-sm font-medium flex items-center gap-2" style={{ color: "var(--on-surface)" }}>
                               <span className="w-2.5 h-2.5 rounded-sm inline-block flex-shrink-0" style={{ backgroundColor: src.color }} />
                               {src.name || "Untitled"}
+                              {src.withholdingTax && (
+                                <span
+                                  className="text-[0.5625rem] font-bold tracking-wide px-1 py-0.5 rounded"
+                                  style={{ color: "var(--tertiary)", backgroundColor: "var(--surface-container-highest)" }}
+                                  title="30% withholding tax deducted"
+                                >
+                                  WHT
+                                </span>
+                              )}
                             </p>
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface)" }}>{fmt(src.annual)}</p>
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>{fmt(src.annual / 12)}</p>
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>
-                              {src.yieldRate > 0 ? fmt(Math.max(0, 600 / (src.yieldRate / 100) - src.value)) : "—"}
+                              {src.netRate > 0 ? fmt(Math.max(0, 600 / (src.netRate / 100) - src.value)) : "—"}
                             </p>
                             <p className="text-sm font-semibold text-right" style={{ color: "var(--on-surface-sub)" }}>
-                              {src.yieldRate > 0 ? fmt(Math.max(0, 1200 / (src.yieldRate / 100) - src.value)) : "—"}
+                              {src.netRate > 0 ? fmt(Math.max(0, 1200 / (src.netRate / 100) - src.value)) : "—"}
                             </p>
                           </React.Fragment>
                         ))}
