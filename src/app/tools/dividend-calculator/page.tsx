@@ -61,6 +61,7 @@ function InlineInput({
       onChange={(e) => onChange(e.target.value)}
       onFocus={() => setFocused(true)}
       onBlur={() => setFocused(false)}
+      className="[appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       style={{
         width: "100%",
         background: "var(--surface-container-highest)",
@@ -111,7 +112,7 @@ function SourceRow({
   onMoveDown?: () => void;
 }) {
   return (
-    <div className="grid grid-cols-[3fr_3fr_3fr_auto] gap-x-2 gap-y-1 items-start">
+    <div className="grid grid-cols-[2.3fr_1.7fr_1.8fr_0.9fr_auto] gap-x-2 gap-y-1 items-start">
       {/* Name */}
       <InlineInput value={name} onChange={onChangeName} placeholder="Name" />
 
@@ -134,6 +135,28 @@ function SourceRow({
         min={0}
         step={0.1}
       />
+
+      {/* 30% withholding tax toggle */}
+      <label
+        className="flex items-center justify-center cursor-pointer"
+        style={{ minHeight: "2.375rem" }}
+        title="Subject to 30% dividend withholding tax (e.g. US-domiciled stocks)"
+      >
+        <input
+          type="checkbox"
+          checked={withholdingTax}
+          onChange={(e) => onToggleWithholdingTax(e.target.checked)}
+          aria-label="Subject to 30% dividend withholding tax"
+          style={{
+            width: "0.875rem",
+            height: "0.875rem",
+            accentColor: "var(--primary)",
+            cursor: "pointer",
+            flexShrink: 0,
+            margin: 0,
+          }}
+        />
+      </label>
 
       {/* Reorder + Delete */}
       <div className="row-span-2 flex items-center gap-0.5 pt-[0.35rem]">
@@ -173,39 +196,16 @@ function SourceRow({
         </button>
       </div>
 
-      {/* 30% withholding tax toggle */}
-      <label
-        className="col-span-2 flex items-center gap-1.5 cursor-pointer select-none"
-        style={{ lineHeight: "1.25rem" }}
-        title="Subject to 30% dividend withholding tax (e.g. US-domiciled stocks)"
-      >
-        <input
-          type="checkbox"
-          checked={withholdingTax}
-          onChange={(e) => onToggleWithholdingTax(e.target.checked)}
-          style={{
-            width: "0.875rem",
-            height: "0.875rem",
-            accentColor: "var(--primary)",
-            cursor: "pointer",
-            flexShrink: 0,
-            margin: 0,
-          }}
-        />
-        <span
-          className="text-[0.625rem] font-semibold tracking-wide truncate"
-          style={{ color: withholdingTax ? "var(--tertiary)" : "var(--on-surface-sub)" }}
-        >
-          30% WHT{withholdingTax ? ` · ${netRate.toFixed(2)}% net` : ""}
-        </span>
-      </label>
+      {/* Row 2 captions: Name, Value have none */}
+      <div />
+      <div />
 
       {/* Monthly income (net of withholding tax) */}
       <p
         className="text-[0.625rem] font-semibold tracking-wide"
         style={{ color: "var(--primary)", lineHeight: "1.25rem" }}
       >
-        = {fmt(annualIncome / 12)} / mth
+        = {fmt(annualIncome / 12)} / mth{withholdingTax ? ` · ${netRate.toFixed(2)}% net` : ""}
       </p>
     </div>
   );
@@ -555,7 +555,7 @@ export function DividendCalculatorPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
             {/* Left — Yield Sources */}
-            <div className="lg:col-span-5 space-y-5">
+            <div className="lg:col-span-6 space-y-5">
               <div
                 className="rounded-xl p-6"
                 style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
@@ -574,10 +574,11 @@ export function DividendCalculatorPage() {
                 </p>
 
                 {/* Column headers */}
-                <div className="grid grid-cols-[3fr_3fr_3fr_auto] gap-2 mb-2">
+                <div className="grid grid-cols-[2.3fr_1.7fr_1.8fr_0.9fr_auto] gap-2 mb-2">
                   <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Name</p>
                   <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Value ($)</p>
                   <p className="text-[0.625rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Yield % p.a.</p>
+                  <p className="text-[0.625rem] font-semibold tracking-widest uppercase text-center" style={{ color: "var(--on-surface-sub)" }} title="30% dividend withholding tax">WHT</p>
                   <p style={{ width: "2.75rem" }} />
                 </div>
 
@@ -656,7 +657,7 @@ export function DividendCalculatorPage() {
             </div>
 
             {/* Right — Results & Charts */}
-            <div className="lg:col-span-7 space-y-5">
+            <div className="lg:col-span-6 space-y-5">
 
               {/* Stat cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
