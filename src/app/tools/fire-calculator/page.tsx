@@ -1124,11 +1124,7 @@ export function FireCalculatorPage() {
                       value={src.value}
                       rate={src.yieldRate}
                       rateLabel="% p.a."
-                      annualAmount={
-                        src.value *
-                        Math.pow(1 + src.yieldRate / 100, Math.max(0, retirementAge - currentAge)) *
-                        (src.yieldRate / 100)
-                      }
+                      annualAmount={src.value * (src.yieldRate / 100)}
                       startAge={src.startAge}
                       onChangeName={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, name: v } : s)))}
                       onChangeValue={(v) => setYieldSources((prev) => prev.map((s) => (s.id === src.id ? { ...s, value: v } : s)))}
