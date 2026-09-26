@@ -5,6 +5,7 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useToolState } from "@/hooks/useToolState";
 import { loadArray, saveArray, genId } from "@/lib/utils";
+import { liftColor } from "@/lib/theme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,11 +72,12 @@ const MANDATORY_CATEGORIES = new Set<BudgetCategory>([
   "Tax",
 ]);
 
+// The darkest hues are lifted in dark mode so slices and swatches stay visible
 const CATEGORY_COLORS: Record<BudgetCategory, string> = {
-  Insurance:     "#00351f",
-  Utilities:     "#1a6b42",
+  Insurance:     "var(--primary)",
+  Utilities:     liftColor("#1a6b42", "chart"),
   Home:          "#2d8a5e",
-  Car:           "#0d5c38",
+  Car:           liftColor("#0d5c38", "chart"),
   Education:     "#3ba373",
   Tuition:       "#5bbf8a",
   Food:          "#c05621",
@@ -85,7 +87,7 @@ const CATEGORY_COLORS: Record<BudgetCategory, string> = {
   Investment:    "#0891b2",
   Grocery:       "#b45309",
   Entertainment: "#be185d",
-  Tax:           "#6b2d2d",
+  Tax:           liftColor("#6b2d2d", "chart"),
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -344,7 +346,7 @@ function BudgetItemRow({
         />
         <p
           className="text-[0.625rem] mt-1 font-semibold tracking-wide"
-          style={{ color: isMandatory ? "var(--primary)" : "#c05621", lineHeight: "1.25rem" }}
+          style={{ color: isMandatory ? "var(--primary)" : "var(--warning)", lineHeight: "1.25rem" }}
         >
           {isMandatory ? "Mandatory" : "Discretionary"}
         </p>
@@ -489,7 +491,7 @@ function PieChart({
             key={sl.key}
             d={slicePath(cx, cy, r, innerRadius, sl.startAngle, sl.endAngle)}
             fill={sl.color}
-            stroke="white"
+            stroke="var(--surface-container-lowest)"
             strokeWidth={1.5}
             opacity={hovered === null || isHovered ? 1 : 0.5}
             style={{ transition: "opacity 0.15s ease", cursor: "pointer" }}
@@ -655,8 +657,8 @@ function SpendingSplitChart({
   const total = mandatoryTotal + discretionaryTotal;
 
   const slices: SliceData[] = [
-    { key: "mandatory",     label: "Mandatory",     value: mandatoryTotal,     color: "#00351f" },
-    { key: "discretionary", label: "Discretionary", value: discretionaryTotal, color: "#c05621" },
+    { key: "mandatory",     label: "Mandatory",     value: mandatoryTotal,     color: "var(--primary)" },
+    { key: "discretionary", label: "Discretionary", value: discretionaryTotal, color: "var(--warning)" },
   ].filter((sl) => sl.value > 0);
 
   const isPositive = surplusMonthly >= 0;
@@ -680,8 +682,8 @@ function SpendingSplitChart({
       {/* Legend */}
       <div className="space-y-3 mb-5">
         {[
-          { label: "Mandatory",     color: "#00351f", value: mandatoryTotal,     desc: "Insurance, Utilities, Food, Education, Car, Home, Grocery, Tax" },
-          { label: "Discretionary", color: "#c05621", value: discretionaryTotal, desc: "Tuition, Allowance, Holiday, Saving, Investment, Entertainment" },
+          { label: "Mandatory",     color: "var(--primary)", value: mandatoryTotal,     desc: "Insurance, Utilities, Food, Education, Car, Home, Grocery, Tax" },
+          { label: "Discretionary", color: "var(--warning)", value: discretionaryTotal, desc: "Tuition, Allowance, Holiday, Saving, Investment, Entertainment" },
         ].map((row) => (
           <div key={row.label}>
             <div className="flex items-center gap-3">
@@ -848,7 +850,7 @@ export function BudgetPlannerPage() {
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
                 style={{
-                  background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+                  background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
                   boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
                 }}
               >
@@ -995,7 +997,7 @@ export function BudgetPlannerPage() {
                 <div
                   className="rounded-xl p-5 flex flex-col justify-between"
                   style={{
-                    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                    background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
                     boxShadow: "0 12px 32px rgba(0,53,31,0.20)",
                     minHeight: "7.5rem",
                   }}
@@ -1141,7 +1143,7 @@ export function BudgetPlannerPage() {
                             <span
                               className="text-[0.6875rem] font-semibold px-2 py-0.5 rounded-full"
                               style={{
-                                backgroundColor: isMandatory ? "var(--primary)" : "#c05621",
+                                backgroundColor: isMandatory ? "var(--primary-fill)" : "#c05621",
                                 color: "#fff",
                               }}
                             >
@@ -1218,7 +1220,7 @@ export function BudgetPlannerPage() {
                   <div className="flex items-center gap-3 mb-2.5">
                     <span
                       className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                      style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                      style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}
                     >
                       {n}
                     </span>

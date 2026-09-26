@@ -52,7 +52,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer
-        style={{ backgroundColor: "var(--surface-container)", borderTop: `1px solid rgba(192,201,192,0.15)` }}
+        style={{ backgroundColor: "var(--surface-container)", borderTop: `1px solid color-mix(in srgb, var(--outline-variant) 15%, transparent)` }}
         className="px-5 py-10 sm:px-8 lg:px-16"
       >
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

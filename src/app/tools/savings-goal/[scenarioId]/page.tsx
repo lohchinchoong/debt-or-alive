@@ -186,7 +186,7 @@ function StatCard({
       className="rounded-xl p-5 flex flex-col justify-between"
       style={{
         background: gradient
-          ? "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)"
+          ? "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)"
           : "var(--surface-container-lowest)",
         boxShadow: gradient
           ? "0 12px 32px rgba(0,53,31,0.20)"
@@ -347,21 +347,21 @@ function SavingsChart({
       >
         <defs>
           <linearGradient id="savings-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00351f" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#00351f" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
         {/* Grid */}
         {yTicks.map((v) => (
           <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)}
-            stroke="#c0c9c0" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+            stroke="var(--outline-variant)" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
         ))}
 
         {/* Y-axis labels */}
         {yTicks.map((v) => (
           <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end"
-            fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {fmtAxis(v)}
           </text>
         ))}
@@ -369,7 +369,7 @@ function SavingsChart({
         {/* X-axis labels */}
         {xLabels.map((l, i) => (
           <text key={i} x={l.x} y={H - 6} textAnchor="middle"
-            fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {l.label}
           </text>
         ))}
@@ -378,9 +378,9 @@ function SavingsChart({
         {targetY !== null && (
           <>
             <line x1={PAD.left} y1={targetY} x2={W - PAD.right} y2={targetY}
-              stroke="#00351f" strokeWidth="1.5" strokeDasharray="6 4" opacity="0.75" />
+              stroke="var(--primary)" strokeWidth="1.5" strokeDasharray="6 4" opacity="0.75" />
             <text x={W - PAD.right - 4} y={targetY - 6} textAnchor="end"
-              fontSize="10" fill="#00351f" fontWeight="700" fontFamily="Manrope, sans-serif">
+              fontSize="10" fill="var(--primary)" fontWeight="700" fontFamily="Manrope, sans-serif">
               Target {fmtAxis(targetAmount)}
             </text>
           </>
@@ -390,8 +390,8 @@ function SavingsChart({
         {targetDateX !== null && targetDate >= xMin && targetDate <= xMax && (
           <>
             <line x1={targetDateX} y1={PAD.top} x2={targetDateX} y2={PAD.top + CH}
-              stroke="#c0c9c0" strokeWidth="1" strokeDasharray="4 4" opacity="0.6" />
-            <text x={targetDateX + 4} y={PAD.top + 12} fontSize="9" fill="#3d4a41"
+              stroke="var(--outline-variant)" strokeWidth="1" strokeDasharray="4 4" opacity="0.6" />
+            <text x={targetDateX + 4} y={PAD.top + 12} fontSize="9" fill="var(--on-surface-sub)"
               fontFamily="Manrope, sans-serif" opacity="0.8">
               Target date
             </text>
@@ -400,42 +400,42 @@ function SavingsChart({
 
         {/* Data */}
         <path d={area} fill="url(#savings-fill)" />
-        <path d={line} fill="none" stroke="#00351f" strokeWidth="2"
+        <path d={line} fill="none" stroke="var(--primary)" strokeWidth="2"
           strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Item dots */}
         {points.slice(1, points[points.length - 1].label === "Now" ? -1 : undefined).map((p, i) => (
           <circle key={i} cx={xOf(p.date)} cy={yOf(p.value)} r="3.5"
-            fill="#00351f" stroke="white" strokeWidth="1.5" />
+            fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
         ))}
 
         {/* Legend */}
         <g transform={`translate(${PAD.left}, 10)`}>
-          <line x1="0" y1="0" x2="18" y2="0" stroke="#00351f" strokeWidth="2" />
-          <text x="23" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <line x1="0" y1="0" x2="18" y2="0" stroke="var(--primary)" strokeWidth="2" />
+          <text x="23" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             Cumulative Savings
           </text>
-          <line x1="150" y1="0" x2="168" y2="0" stroke="#00351f" strokeWidth="1.5" strokeDasharray="6 4" />
-          <text x="173" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">Target</text>
+          <line x1="150" y1="0" x2="168" y2="0" stroke="var(--primary)" strokeWidth="1.5" strokeDasharray="6 4" />
+          <text x="173" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">Target</text>
         </g>
 
         {/* Hover tooltip */}
         {hd && (
           <g pointerEvents="none">
             <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH}
-              stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
-            <circle cx={hx} cy={yOf(hd.value)} r="4" fill="#00351f" stroke="white" strokeWidth="1.5" />
+              stroke="var(--on-surface-sub)" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.value)} r="4" fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
             <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5"
-              fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
+              fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
             <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700"
-              fill="#00351f" fontFamily="Manrope, sans-serif">
+              fill="var(--primary)" fontFamily="Manrope, sans-serif">
               {hd.label ?? "Point"}
             </text>
-            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41"
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)"
               fontFamily="Manrope, sans-serif">
               {fmtDate(hd.date)}
             </text>
-            <text x={tooltipX + 10} y={PAD.top + 50} fontSize="10" fontWeight="600" fill="#3d4a41"
+            <text x={tooltipX + 10} y={PAD.top + 50} fontSize="10" fontWeight="600" fill="var(--on-surface-sub)"
               fontFamily="Manrope, sans-serif">
               {`Cumulative: ${fmt(hd.value)}`}
             </text>
@@ -663,7 +663,7 @@ export default function SavingsGoalDetailPage() {
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
                 style={{
-                  background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+                  background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
                   boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
                 }}
               >
@@ -941,7 +941,7 @@ export default function SavingsGoalDetailPage() {
               className="text-xs mt-8 pt-6"
               style={{
                 color: "var(--on-surface-sub)",
-                borderTop: "1px solid rgba(192,201,192,0.3)",
+                borderTop: "1px solid var(--divider)",
                 lineHeight: "1.6",
               }}
             >

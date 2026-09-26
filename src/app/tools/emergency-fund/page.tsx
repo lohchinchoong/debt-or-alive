@@ -256,7 +256,7 @@ function SourceRow({
         <button
           type="button"
           onClick={() => onDelete(source.id)}
-          className="p-1.5 rounded-md transition-colors hover:bg-red-50"
+          className="p-1.5 rounded-md transition-colors hover:bg-red-50 dark:hover:bg-red-950/40"
           style={{ color: "var(--on-surface-sub)", lineHeight: 1 }}
           aria-label="Remove source"
         >
@@ -348,12 +348,12 @@ function ProjectionChart({
       </p>
       <div className="flex items-center gap-4 mb-4">
         <div className="flex items-center gap-1.5">
-          <div style={{ width: 14, height: 3, borderRadius: 2, backgroundColor: "#00351f" }} />
+          <div style={{ width: 14, height: 3, borderRadius: 2, backgroundColor: "var(--primary)" }} />
           <span className="text-[0.6875rem]" style={{ color: "var(--on-surface-sub)" }}>Total savings</span>
         </div>
         {showTarget && (
           <div className="flex items-center gap-1.5">
-            <div style={{ width: 14, height: 2, borderRadius: 2, backgroundColor: "#c05621", opacity: 0.7 }} />
+            <div style={{ width: 14, height: 2, borderRadius: 2, backgroundColor: "var(--warning)", opacity: 0.7 }} />
             <span className="text-[0.6875rem]" style={{ color: "var(--on-surface-sub)" }}>Target</span>
           </div>
         )}
@@ -368,51 +368,51 @@ function ProjectionChart({
       >
         <defs>
           <linearGradient id="ef-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00351f" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#00351f" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
         {/* Grid lines */}
         {ticks.map((v) => (
-          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="#c0c9c0" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="var(--outline-variant)" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
         ))}
 
         {/* Y-axis labels */}
         {ticks.map((v) => (
-          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {fmtAxis(v)}
           </text>
         ))}
 
         {/* X-axis labels */}
         {xLabels.map((m) => (
-          <text key={m} x={xOf(m)} y={H - 6} textAnchor="middle" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={m} x={xOf(m)} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {m === 0 ? "Now" : m < 12 ? `${m}m` : `Yr ${Math.round(m / 12)}`}
           </text>
         ))}
 
         {/* Target line */}
         {showTarget && (
-          <line x1={PAD.left} y1={targetY} x2={W - PAD.right} y2={targetY} stroke="#c05621" strokeWidth="1.5" strokeDasharray="6 4" opacity="0.7" />
+          <line x1={PAD.left} y1={targetY} x2={W - PAD.right} y2={targetY} stroke="var(--warning)" strokeWidth="1.5" strokeDasharray="6 4" opacity="0.7" />
         )}
 
         {/* Area fill */}
         <path d={area} fill="url(#ef-fill)" />
 
         {/* Savings line */}
-        <path d={line} fill="none" stroke="#00351f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={line} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Cross point marker */}
         {crossMonth > 0 && (
-          <circle cx={xOf(crossMonth)} cy={yOf(data[crossMonth]?.total ?? 0)} r="4" fill="#00351f" stroke="#fff" strokeWidth="1.5" />
+          <circle cx={xOf(crossMonth)} cy={yOf(data[crossMonth]?.total ?? 0)} r="4" fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
         )}
 
         {/* Hover crosshair & tooltip */}
         {hd && (
           <>
-            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#00351f" strokeWidth="0.75" strokeDasharray="3 3" opacity="0.5" />
-            <circle cx={hx} cy={yOf(hd.total)} r="4" fill="#00351f" stroke="#fff" strokeWidth="1.5" />
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="var(--primary)" strokeWidth="0.75" strokeDasharray="3 3" opacity="0.5" />
+            <circle cx={hx} cy={yOf(hd.total)} r="4" fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
 
             <g transform={`translate(${tooltipX},${Math.max(PAD.top, yOf(hd.total) - TH / 2)})`}>
               <rect width={TW} height={TH} rx="6" fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" filter="drop-shadow(0 2px 6px rgba(0,0,0,0.12))" />
@@ -462,8 +462,8 @@ function ProgressBar({ current, target }: { current: number; target: number }) {
           style={{
             width: `${pct}%`,
             background: achieved
-              ? "linear-gradient(90deg, var(--primary), var(--primary-container))"
-              : "linear-gradient(90deg, var(--primary), #2a7355)",
+              ? "linear-gradient(90deg, var(--primary-fill), var(--primary-fill-container))"
+              : "linear-gradient(90deg, var(--primary-fill), #2a7355)",
           }}
         />
       </div>
@@ -507,7 +507,7 @@ function SourcesTable({ sources }: { sources: SavingsSource[] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-left" style={{ borderCollapse: "collapse" }}>
           <thead>
-            <tr style={{ borderBottom: "1px solid rgba(192,201,192,0.3)" }}>
+            <tr style={{ borderBottom: "1px solid var(--divider)" }}>
               <th className="px-6 py-3 text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Source</th>
               <th className="px-6 py-3 text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Balance</th>
               <th className="px-6 py-3 text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: "var(--on-surface-sub)" }}>Start Date</th>
@@ -551,7 +551,7 @@ function SourcesTable({ sources }: { sources: SavingsSource[] }) {
             })}
           </tbody>
           <tfoot>
-            <tr style={{ borderTop: "2px solid rgba(192,201,192,0.3)" }}>
+            <tr style={{ borderTop: "2px solid var(--divider)" }}>
               <td className="px-6 py-3.5 text-sm font-bold" style={{ color: "var(--on-surface)" }}>Total</td>
               <td className="px-6 py-3.5 text-sm font-bold" style={{ color: "var(--on-surface)" }}>{fmt(totalBalance)}</td>
               <td colSpan={3} />
@@ -667,7 +667,7 @@ export function EmergencyFundPage() {
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
                 style={{
-                  background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+                  background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
                   boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
                 }}
               >
@@ -810,7 +810,7 @@ export function EmergencyFundPage() {
                 <div
                   className="rounded-xl p-5 flex flex-col justify-between"
                   style={{
-                    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                    background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
                     boxShadow: "0 12px 32px rgba(0,53,31,0.20)",
                     minHeight: "7.5rem",
                   }}
@@ -833,7 +833,7 @@ export function EmergencyFundPage() {
                   className="rounded-xl p-5 flex flex-col justify-between"
                   style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)", minHeight: "7.5rem" }}
                 >
-                  <p className="text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: monthsCovered >= targetMonths ? "var(--primary)" : "#c05621" }}>
+                  <p className="text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: monthsCovered >= targetMonths ? "var(--primary)" : "var(--warning)" }}>
                     Months Covered
                   </p>
                   <div>
@@ -916,7 +916,7 @@ export function EmergencyFundPage() {
               {/* 1 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>1</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>1</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Why an Emergency Fund?</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -930,7 +930,7 @@ export function EmergencyFundPage() {
               {/* 2 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>2</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>2</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Multiple Sources</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -942,7 +942,7 @@ export function EmergencyFundPage() {
               {/* 3 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>3</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>3</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Interest Projection</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -956,7 +956,7 @@ export function EmergencyFundPage() {
               {/* 4 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>4</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>4</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Months Covered</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -973,7 +973,7 @@ export function EmergencyFundPage() {
               className="text-xs mt-8 pt-6"
               style={{
                 color: "var(--on-surface-sub)",
-                borderTop: "1px solid rgba(192,201,192,0.3)",
+                borderTop: "1px solid var(--divider)",
                 lineHeight: "1.6",
               }}
             >

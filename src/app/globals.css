@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   /* Fiscal Atelier — Surface Architecture */
   --surface:                  #f8faf8;
@@ -15,6 +17,11 @@
   --primary-container: #0e4d31;
   --primary-fixed:     #b3f0ca;
   --on-primary:        #ffffff;
+  --on-primary-container: #b3f0ca;
+
+  /* Filled surfaces (hero cards, buttons, badges) — stay deep green in both modes */
+  --primary-fill:           #00351f;
+  --primary-fill-container: #0e4d31;
 
   /* Tertiary — Wine Red (debt/negative) */
   --tertiary:           #4f1b1f;
@@ -26,10 +33,83 @@
 
   /* Utility */
   --outline-variant: #c0c9c0;
+  --divider:        color-mix(in srgb, var(--outline-variant) 30%, transparent);
+  --divider-subtle: color-mix(in srgb, var(--outline-variant) 20%, transparent);
+
+  /* Semantic accents */
+  --positive:   #1a6b42;
+  --success:    #007a3d;
+  --danger:     #b91c1c;
+  --warning:    #c05621;
+  --amber:      #c85a00;
+  --amber-soft: #cc7a00;
+  --gold:       #b8860b;
+
+  /* Lifts dark category hues toward the text colour in dark mode */
+  --category-lift: 0%;
+  /* Gentler lift for chart fills, so dark series stay distinguishable but keep their hue */
+  --chart-lift: 0%;
+
+  /* Glass + hero */
+  --header-glass:  rgba(248, 250, 248, 0.80);
+  --popover-glass: rgba(248, 250, 248, 0.92);
+  --hero-from:  #d0e6d8;
+  --hero-via-1: #e2ede6;
+  --hero-via-2: #edf2ee;
 
   /* Botanical Shadow */
   --shadow-botanical: 0 20px 40px rgba(14, 77, 49, 0.06);
   --shadow-botanical-hover: 0 24px 48px rgba(14, 77, 49, 0.10);
+
+  color-scheme: light;
+}
+
+.dark {
+  --surface:                  #0f1512;
+  --surface-container-lowest: #161d19;
+  --surface-container-low:    #111814;
+  --surface-container:        #1b231f;
+  --surface-container-high:   #212a25;
+  --surface-container-highest:#2a342e;
+
+  --primary:           #8fd9b0;
+  --primary-container: #b3f0ca;
+  --primary-fixed:     #1f5c40;
+  --on-primary:        #ffffff;
+  --on-primary-container: #00351f;
+
+  --primary-fill:           #0e4d31;
+  --primary-fill-container: #1a6b47;
+
+  --tertiary:           #f2b8bb;
+  --tertiary-container: #e79a9f;
+
+  --on-surface:     #e2e7e3;
+  --on-surface-sub: #a8b7ac;
+
+  --outline-variant: #3e4a43;
+
+  --positive:   #6fcf97;
+  --success:    #5fd08f;
+  --danger:     #f28b8b;
+  --warning:    #f0a070;
+  --amber:      #f5a55c;
+  --amber-soft: #f2b35c;
+  --gold:       #e3b64f;
+
+  --category-lift: 70%;
+  --chart-lift: 40%;
+
+  --header-glass:  rgba(15, 21, 18, 0.75);
+  --popover-glass: rgba(22, 29, 25, 0.94);
+  --hero-from:  #12251b;
+  --hero-via-1: #131f19;
+  --hero-via-2: #111a15;
+
+  --shadow-botanical: 0 20px 40px rgba(0, 0, 0, 0.35);
+  --shadow-botanical-hover: 0 24px 48px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
 }
 
 * {
@@ -41,6 +121,7 @@ html {
   color: var(--on-surface);
   background-color: var(--surface-container-low);
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease;
 }
 
 body {

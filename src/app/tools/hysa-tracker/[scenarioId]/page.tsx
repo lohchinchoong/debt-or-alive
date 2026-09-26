@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useHysaScenarios, HysaMonthEntry } from "@/hooks/useHysaScenarios";
 import { fmtAxis, niceMax } from "@/lib/utils";
+import { liftColor } from "@/lib/theme";
 
 const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -87,7 +88,7 @@ function StatCard({ label, sublabel, value, caption, gradient }: {
       className="rounded-xl p-5 flex flex-col justify-between"
       style={{
         background: gradient
-          ? "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)"
+          ? "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)"
           : "var(--surface-container-lowest)",
         boxShadow: gradient ? "0 12px 32px rgba(0,53,31,0.20)" : "var(--shadow-botanical)",
         minHeight: "7.5rem",
@@ -335,17 +336,17 @@ function GainChart({ rows }: { rows: Row[] }) {
         {yTicks.map((v) => (
           <g key={v}>
             <line x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)}
-              stroke={v === 0 ? "#3d4a41" : "#c0c9c0"} strokeWidth={v === 0 ? 0.75 : 0.5}
+              stroke={v === 0 ? "var(--on-surface-sub)" : "var(--outline-variant)"} strokeWidth={v === 0 ? 0.75 : 0.5}
               strokeDasharray={v === 0 ? "" : "3 5"} opacity="0.7" />
             <text x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end"
-              fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{fmtAxis(v)}</text>
+              fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{fmtAxis(v)}</text>
           </g>
         ))}
 
         {chartData.map((bar, i) => {
           const bH    = Math.abs(yOf(bar.value) - zero);
           const bY    = bar.value >= 0 ? yOf(bar.value) : zero;
-          const color = bar.value >= 0 ? "#00351f" : "#b91c1c";
+          const color = bar.value >= 0 ? "var(--primary)" : "var(--danger)";
           const alpha = bar.isAnnual ? "1" : (hoveredIdx === i ? "0.9" : "0.72");
           return (
             <g key={i}>
@@ -354,10 +355,10 @@ function GainChart({ rows }: { rows: Row[] }) {
                 fill={color} opacity={alpha} rx="2" />
               <text x={xOf(i)} y={H - (bar.subLabel ? 24 : 8)} textAnchor="middle"
                 fontSize={bar.isAnnual ? "11" : "9"} fontWeight={bar.isAnnual ? "700" : "400"}
-                fill="#3d4a41" fontFamily="Manrope, sans-serif">{bar.label}</text>
+                fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{bar.label}</text>
               {bar.subLabel && (
                 <text x={xOf(i)} y={H - 8} textAnchor="middle" fontSize="8"
-                  fill="#3d4a41" fontFamily="Manrope, sans-serif" opacity="0.6">{bar.subLabel}</text>
+                  fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif" opacity="0.6">{bar.subLabel}</text>
               )}
             </g>
           );
@@ -366,18 +367,18 @@ function GainChart({ rows }: { rows: Row[] }) {
         {hd && (
           <g pointerEvents="none">
             <rect x={ttX} y={PAD.top + 4} width={TW} height={TH} rx="5"
-              fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
+              fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
             <text x={ttX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700"
-              fill="#00351f" fontFamily="Manrope, sans-serif">
+              fill="var(--primary)" fontFamily="Manrope, sans-serif">
               {hd.label}{hd.isAnnual ? " (Annual)" : ""}
             </text>
-            <text x={ttX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            <text x={ttX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
               {`Net gain: $${fmtAxis(hd.value)}`}
             </text>
-            <text x={ttX + 10} y={PAD.top + 51} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            <text x={ttX + 10} y={PAD.top + 51} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
               {`Interest: $${fmtAxis(hd.interest)}`}
             </text>
-            <text x={ttX + 10} y={PAD.top + 66} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            <text x={ttX + 10} y={PAD.top + 66} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
               {`Invest P&L: $${fmtAxis(hd.investPL)}`}
             </text>
           </g>
@@ -388,6 +389,13 @@ function GainChart({ rows }: { rows: Row[] }) {
 }
 
 // ─── SpreadsheetTable ─────────────────────────────────────────────────────────
+
+const CAT_COLORS = {
+  salary: liftColor("#1a5c3b"),
+  card:   liftColor("#1a4d6b"),
+  insure: liftColor("#5c3b1a"),
+  invest: liftColor("#3b1a5c"),
+};
 
 function SpreadsheetTable({ rows, onUpdate }: {
   rows: Row[];
@@ -421,7 +429,7 @@ function SpreadsheetTable({ rows, onUpdate }: {
     fontSize: "0.625rem", fontWeight: 600, letterSpacing: "0.04em",
     textTransform: "uppercase" as const, color: "var(--on-surface-sub)",
     backgroundColor: "var(--surface-container-low)", whiteSpace: "nowrap" as const,
-    borderBottom: "1px solid rgba(192,201,192,0.3)",
+    borderBottom: "1px solid var(--divider)",
   };
   const thLeft: React.CSSProperties = { ...thBase, textAlign: "left" as const };
   const thCenter: React.CSSProperties = { ...thBase, textAlign: "center" as const };
@@ -436,23 +444,17 @@ function SpreadsheetTable({ rows, onUpdate }: {
   };
 
   function intColor(v: number) {
-    return v > 0 ? "#007a3d" : v < 0 ? "#b91c1c" : "var(--on-surface-sub)";
+    return v > 0 ? "var(--success)" : v < 0 ? "var(--danger)" : "var(--on-surface-sub)";
   }
 
   // Category group colors
-  const CAT_COLORS = {
-    salary:   "#1a5c3b",
-    card:     "#1a4d6b",
-    insure:   "#5c3b1a",
-    invest:   "#3b1a5c",
-  };
 
   function groupTh(label: string, color: string): React.ReactNode {
     return (
       <th colSpan={2} style={{
-        ...thCenter, color, borderBottom: "1px solid rgba(192,201,192,0.3)",
+        ...thCenter, color, borderBottom: "1px solid var(--divider)",
         fontSize: "0.625rem", fontWeight: 700,
-        borderLeft: "1px solid rgba(192,201,192,0.2)",
+        borderLeft: "1px solid var(--divider-subtle)",
       }}>{label}</th>
     );
   }
@@ -473,22 +475,22 @@ function SpreadsheetTable({ rows, onUpdate }: {
     };
     const stBg: React.CSSProperties = {
       backgroundColor: "var(--surface-container-low)",
-      borderTop: "1px solid rgba(192,201,192,0.4)",
-      borderBottom: "1px solid rgba(192,201,192,0.4)",
+      borderTop: "1px solid color-mix(in srgb, var(--outline-variant) 40%, transparent)",
+      borderBottom: "1px solid color-mix(in srgb, var(--outline-variant) 40%, transparent)",
     };
     const st: React.CSSProperties = { ...tdNum, fontWeight: 700, ...stBg };
     const dash = (v: number) => v !== 0 ? fmt(v) : "—";
     return (
       <tr>
         <td style={{ ...tdMonth, ...stBg, fontSize: "0.75rem", color: "var(--primary)" }}>{yr} Total</td>
-        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid rgba(192,201,192,0.2)" }}>{dash(yt.salaryAmount)}</td>
-        <td style={{ ...st, color: "#007a3d" }}>{fmt(yt.salaryInterest)}</td>
-        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid rgba(192,201,192,0.2)" }}>{dash(yt.cardSpendAmount)}</td>
-        <td style={{ ...st, color: "#007a3d" }}>{fmt(yt.cardInterest)}</td>
-        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid rgba(192,201,192,0.2)" }}>{dash(yt.insureAmount)}</td>
-        <td style={{ ...st, color: "#007a3d" }}>{fmt(yt.insureInterest)}</td>
-        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid rgba(192,201,192,0.2)" }}>{dash(yt.investAmount)}</td>
-        <td style={{ ...st, color: "#007a3d" }}>{fmt(yt.investInterest)}</td>
+        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid var(--divider-subtle)" }}>{dash(yt.salaryAmount)}</td>
+        <td style={{ ...st, color: "var(--success)" }}>{fmt(yt.salaryInterest)}</td>
+        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid var(--divider-subtle)" }}>{dash(yt.cardSpendAmount)}</td>
+        <td style={{ ...st, color: "var(--success)" }}>{fmt(yt.cardInterest)}</td>
+        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid var(--divider-subtle)" }}>{dash(yt.insureAmount)}</td>
+        <td style={{ ...st, color: "var(--success)" }}>{fmt(yt.insureInterest)}</td>
+        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid var(--divider-subtle)" }}>{dash(yt.investAmount)}</td>
+        <td style={{ ...st, color: "var(--success)" }}>{fmt(yt.investInterest)}</td>
         <td style={{ ...st, color: intColor(yt.investmentPL) }}>{dash(yt.investmentPL)}</td>
         <td style={{ ...st, color: intColor(yt.netGain) }}>{fmt(yt.netGain)}</td>
       </tr>
@@ -512,18 +514,18 @@ function SpreadsheetTable({ rows, onUpdate }: {
               {groupTh("Card Spend", CAT_COLORS.card)}
               {groupTh("Insurance", CAT_COLORS.insure)}
               {groupTh("Investment", CAT_COLORS.invest)}
-              <th rowSpan={2} style={{ ...thBase, color: "#c85a00" }}>Invest P&amp;L</th>
+              <th rowSpan={2} style={{ ...thBase, color: "var(--amber)" }}>Invest P&amp;L</th>
               <th rowSpan={2} style={{ ...thBase, color: "var(--on-surface)", fontWeight: 700 }}>Net Gain</th>
             </tr>
             <tr>
-              <th style={{ ...thBase, borderLeft: "1px solid rgba(192,201,192,0.2)" }}>Amt</th>
-              <th style={{ ...thBase, color: "#007a3d" }}>Interest</th>
-              <th style={{ ...thBase, borderLeft: "1px solid rgba(192,201,192,0.2)" }}>Amt</th>
-              <th style={{ ...thBase, color: "#007a3d" }}>Interest</th>
-              <th style={{ ...thBase, borderLeft: "1px solid rgba(192,201,192,0.2)" }}>Amt</th>
-              <th style={{ ...thBase, color: "#007a3d" }}>Interest</th>
-              <th style={{ ...thBase, borderLeft: "1px solid rgba(192,201,192,0.2)" }}>Amt</th>
-              <th style={{ ...thBase, color: "#007a3d" }}>Interest</th>
+              <th style={{ ...thBase, borderLeft: "1px solid var(--divider-subtle)" }}>Amt</th>
+              <th style={{ ...thBase, color: "var(--success)" }}>Interest</th>
+              <th style={{ ...thBase, borderLeft: "1px solid var(--divider-subtle)" }}>Amt</th>
+              <th style={{ ...thBase, color: "var(--success)" }}>Interest</th>
+              <th style={{ ...thBase, borderLeft: "1px solid var(--divider-subtle)" }}>Amt</th>
+              <th style={{ ...thBase, color: "var(--success)" }}>Interest</th>
+              <th style={{ ...thBase, borderLeft: "1px solid var(--divider-subtle)" }}>Amt</th>
+              <th style={{ ...thBase, color: "var(--success)" }}>Interest</th>
             </tr>
           </thead>
           <tbody>
@@ -531,7 +533,7 @@ function SpreadsheetTable({ rows, onUpdate }: {
               <React.Fragment key={yr}>
                 {yearRows.map((row, ri) => {
                   const rowBg  = ri % 2 === 0 ? "var(--surface-container-lowest)" : "var(--surface-container-low)";
-                  const intBg  = ri % 2 === 0 ? "rgba(0,122,61,0.04)" : "rgba(0,122,61,0.09)";
+                  const intBg  = ri % 2 === 0 ? "color-mix(in srgb, var(--success) 4%, transparent)" : "color-mix(in srgb, var(--success) 9%, transparent)";
                   return (
                     <tr key={`${row.year}-${row.month}`}>
                       <td style={{ ...tdMonth, backgroundColor: rowBg }}>
@@ -543,7 +545,7 @@ function SpreadsheetTable({ rows, onUpdate }: {
                         />
                       </td>
                       {/* Salary */}
-                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid rgba(192,201,192,0.2)" }}>
+                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid var(--divider-subtle)" }}>
                         <EditableCell value={row.salaryAmount} step={500}
                           onChange={(v) => onUpdate(row.year, row.month, { salaryAmount: v })} />
                       </td>
@@ -552,7 +554,7 @@ function SpreadsheetTable({ rows, onUpdate }: {
                           onChange={(v) => onUpdate(row.year, row.month, { salaryInterest: v })} />
                       </td>
                       {/* Card Spend */}
-                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid rgba(192,201,192,0.2)" }}>
+                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid var(--divider-subtle)" }}>
                         <EditableCell value={row.cardSpendAmount} step={100}
                           onChange={(v) => onUpdate(row.year, row.month, { cardSpendAmount: v })} />
                       </td>
@@ -561,7 +563,7 @@ function SpreadsheetTable({ rows, onUpdate }: {
                           onChange={(v) => onUpdate(row.year, row.month, { cardInterest: v })} />
                       </td>
                       {/* Insurance */}
-                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid rgba(192,201,192,0.2)" }}>
+                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid var(--divider-subtle)" }}>
                         <EditableCell value={row.insureAmount} step={100}
                           onChange={(v) => onUpdate(row.year, row.month, { insureAmount: v })} />
                       </td>
@@ -570,7 +572,7 @@ function SpreadsheetTable({ rows, onUpdate }: {
                           onChange={(v) => onUpdate(row.year, row.month, { insureInterest: v })} />
                       </td>
                       {/* Investment */}
-                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid rgba(192,201,192,0.2)" }}>
+                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid var(--divider-subtle)" }}>
                         <EditableCell value={row.investAmount} step={1000}
                           onChange={(v) => onUpdate(row.year, row.month, { investAmount: v })} />
                       </td>
@@ -586,8 +588,8 @@ function SpreadsheetTable({ rows, onUpdate }: {
                       {/* Net Gain — computed */}
                       <td style={{
                         ...tdNum, fontWeight: 700,
-                        backgroundColor: ri % 2 === 0 ? "rgba(0,53,31,0.04)" : "rgba(0,53,31,0.08)",
-                        color: row.netGain > 0 ? "#007a3d" : row.netGain < 0 ? "#b91c1c" : "var(--on-surface-sub)",
+                        backgroundColor: ri % 2 === 0 ? "color-mix(in srgb, var(--primary) 4%, transparent)" : "color-mix(in srgb, var(--primary) 8%, transparent)",
+                        color: row.netGain > 0 ? "var(--success)" : row.netGain < 0 ? "var(--danger)" : "var(--on-surface-sub)",
                       }}>
                         {fmt(row.netGain)}
                       </td>
@@ -600,7 +602,7 @@ function SpreadsheetTable({ rows, onUpdate }: {
 
             {/* Grand Total */}
             {rows.length > 0 && (() => {
-              const p = "var(--primary)";
+              const p = "var(--primary-fill)";
               const w = "#fff";
               const mw = "rgba(255,255,255,0.6)";
               const dash = (v: number) => v !== 0 ? fmt(v) : "—";
@@ -675,7 +677,7 @@ export default function HysaTrackerPage() {
 
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                style={{ background: "linear-gradient(45deg, var(--primary), var(--primary-container))", boxShadow: "0 8px 24px rgba(0,53,31,0.2)" }}>
+                style={{ background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))", boxShadow: "0 8px 24px rgba(0,53,31,0.2)" }}>
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="2" y="5" width="20" height="14" rx="2" />
                   <path d="M2 10h20M6 15h2M10 15h4" />
@@ -732,7 +734,7 @@ export default function HysaTrackerPage() {
               onClick={() => addMonth(scenarioId)}
               className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm"
               style={{
-                background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
                 color: "#fff", border: "none", cursor: "pointer",
                 boxShadow: "0 8px 24px rgba(0,53,31,0.2)", fontFamily: "Manrope, sans-serif",
               }}
@@ -754,7 +756,7 @@ export default function HysaTrackerPage() {
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm"
                 style={{
                   background: "var(--surface-container-lowest)",
-                  color: "var(--on-surface-sub)", border: "1px solid rgba(192,201,192,0.5)",
+                  color: "var(--on-surface-sub)", border: "1px solid color-mix(in srgb, var(--outline-variant) 50%, transparent)",
                   cursor: "pointer", fontFamily: "Manrope, sans-serif",
                 }}
               >

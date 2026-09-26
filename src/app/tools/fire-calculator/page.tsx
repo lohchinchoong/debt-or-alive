@@ -52,8 +52,8 @@ const FIRE_TIERS: { min: number; tier: FireTier }[] = [
     min: 200,
     tier: {
       label: "Fat FIRE",
-      color: "#00351f",
-      bgColor: "rgba(0,53,31,0.12)",
+      color: "var(--primary)",
+      bgColor: "color-mix(in srgb, var(--primary) 12%, transparent)",
       description: "Double your target — retire in luxury with a wide margin of safety.",
     },
   },
@@ -61,8 +61,8 @@ const FIRE_TIERS: { min: number; tier: FireTier }[] = [
     min: 150,
     tier: {
       label: "Comfortable FIRE",
-      color: "#0e4d31",
-      bgColor: "rgba(14,77,49,0.10)",
+      color: "var(--primary-container)",
+      bgColor: "color-mix(in srgb, var(--primary-container) 10%, transparent)",
       description: "Substantial surplus above your needs — you can weather market downturns with ease.",
     },
   },
@@ -70,8 +70,8 @@ const FIRE_TIERS: { min: number; tier: FireTier }[] = [
     min: 100,
     tier: {
       label: "FIRE Achieved",
-      color: "#1a6b42",
-      bgColor: "rgba(26,107,66,0.10)",
+      color: "var(--positive)",
+      bgColor: "color-mix(in srgb, var(--positive) 10%, transparent)",
       description: "Your passive income covers your retirement expenses. Financial independence unlocked.",
     },
   },
@@ -79,8 +79,8 @@ const FIRE_TIERS: { min: number; tier: FireTier }[] = [
     min: 80,
     tier: {
       label: "Almost There",
-      color: "#b8860b",
-      bgColor: "rgba(184,134,11,0.10)",
+      color: "var(--gold)",
+      bgColor: "color-mix(in srgb, var(--gold) 10%, transparent)",
       description: "Within striking distance. A few more years of contributions or a spending trim closes the gap.",
     },
   },
@@ -88,8 +88,8 @@ const FIRE_TIERS: { min: number; tier: FireTier }[] = [
     min: 50,
     tier: {
       label: "Coast FIRE",
-      color: "#cc7a00",
-      bgColor: "rgba(204,122,0,0.10)",
+      color: "var(--amber-soft)",
+      bgColor: "color-mix(in srgb, var(--amber-soft) 10%, transparent)",
       description: "Your existing assets can grow to your FIRE number by retirement — keep contributions steady.",
     },
   },
@@ -97,8 +97,8 @@ const FIRE_TIERS: { min: number; tier: FireTier }[] = [
     min: 25,
     tier: {
       label: "Building Momentum",
-      color: "#c05621",
-      bgColor: "rgba(192,86,33,0.10)",
+      color: "var(--warning)",
+      bgColor: "color-mix(in srgb, var(--warning) 10%, transparent)",
       description: "Solid foundation in place. Focus on increasing savings rate and growing your yield sources.",
     },
   },
@@ -106,8 +106,8 @@ const FIRE_TIERS: { min: number; tier: FireTier }[] = [
     min: 0,
     tier: {
       label: "Early Days",
-      color: "#4f1b1f",
-      bgColor: "rgba(79,27,31,0.10)",
+      color: "var(--tertiary)",
+      bgColor: "color-mix(in srgb, var(--tertiary) 10%, transparent)",
       description: "Everyone starts here. The most powerful step is the first one — keep building.",
     },
   },
@@ -410,26 +410,26 @@ function FireChart({
       >
         <defs>
           <linearGradient id="fire-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00351f" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#00351f" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
         {/* Grid lines */}
         {ticks.map((v) => (
-          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="#c0c9c0" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="var(--outline-variant)" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
         ))}
 
         {/* Y-axis labels */}
         {ticks.map((v) => (
-          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {fmtAxis(v)}
           </text>
         ))}
 
         {/* X-axis labels */}
         {xLabels.map((a) => (
-          <text key={a} x={xOf(a)} y={H - 6} textAnchor="middle" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={a} x={xOf(a)} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {a}
           </text>
         ))}
@@ -437,8 +437,8 @@ function FireChart({
         {/* FIRE number horizontal line */}
         {fireNumber > 0 && fireNumber <= yMax && (
           <>
-            <line x1={PAD.left} y1={yOf(fireNumber)} x2={W - PAD.right} y2={yOf(fireNumber)} stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" opacity="0.6" />
-            <text x={W - PAD.right + 4} y={yOf(fireNumber) + 3} fontSize="9" fill="#c05621" fontFamily="Manrope, sans-serif" fontWeight="600">
+            <line x1={PAD.left} y1={yOf(fireNumber)} x2={W - PAD.right} y2={yOf(fireNumber)} stroke="var(--warning)" strokeWidth="1" strokeDasharray="6 3" opacity="0.6" />
+            <text x={W - PAD.right + 4} y={yOf(fireNumber) + 3} fontSize="9" fill="var(--warning)" fontFamily="Manrope, sans-serif" fontWeight="600">
               FIRE
             </text>
           </>
@@ -447,8 +447,8 @@ function FireChart({
         {/* Retirement vertical line */}
         {retirementAge > ageMin && retirementAge < ageMax && (
           <>
-            <line x1={retX} y1={PAD.top} x2={retX} y2={PAD.top + CH} stroke="#b8860b" strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
-            <text x={retX} y={PAD.top - 6} textAnchor="middle" fontSize="9" fill="#b8860b" fontFamily="Manrope, sans-serif" fontWeight="600">
+            <line x1={retX} y1={PAD.top} x2={retX} y2={PAD.top + CH} stroke="var(--gold)" strokeWidth="1" strokeDasharray="4 4" opacity="0.5" />
+            <text x={retX} y={PAD.top - 6} textAnchor="middle" fontSize="9" fill="var(--gold)" fontFamily="Manrope, sans-serif" fontWeight="600">
               Retire
             </text>
           </>
@@ -458,32 +458,32 @@ function FireChart({
         <path d={area} fill="url(#fire-fill)" />
 
         {/* Yield-only dashed line */}
-        <path d={yieldLine} fill="none" stroke="#1a6b42" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.6" />
+        <path d={yieldLine} fill="none" stroke="var(--positive)" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.6" />
 
         {/* Total portfolio line */}
-        <path d={line} fill="none" stroke="#00351f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={line} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Legend */}
         <g transform={`translate(${PAD.left}, 12)`}>
-          <line x1="0" y1="0" x2="18" y2="0" stroke="#00351f" strokeWidth="2" />
-          <text x="23" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Total portfolio</text>
-          <line x1="130" y1="0" x2="148" y2="0" stroke="#1a6b42" strokeWidth="1.5" strokeDasharray="5 4" />
-          <text x="153" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Yield sources only</text>
-          <line x1="275" y1="0" x2="293" y2="0" stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" />
-          <text x="298" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">FIRE number</text>
+          <line x1="0" y1="0" x2="18" y2="0" stroke="var(--primary)" strokeWidth="2" />
+          <text x="23" y="4" fontSize="9" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">Total portfolio</text>
+          <line x1="130" y1="0" x2="148" y2="0" stroke="var(--positive)" strokeWidth="1.5" strokeDasharray="5 4" />
+          <text x="153" y="4" fontSize="9" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">Yield sources only</text>
+          <line x1="275" y1="0" x2="293" y2="0" stroke="var(--warning)" strokeWidth="1" strokeDasharray="6 3" />
+          <text x="298" y="4" fontSize="9" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">FIRE number</text>
         </g>
 
         {/* Hover crosshair + tooltip */}
         {hd && (
           <g pointerEvents="none">
-            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
-            <circle cx={hx} cy={yOf(hd.yieldPortfolio)} r="3.5" fill="#1a6b42" stroke="white" strokeWidth="1.5" />
-            <circle cx={hx} cy={yOf(hd.totalPortfolio)} r="4" fill="#00351f" stroke="white" strokeWidth="1.5" />
-            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
-            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`Age ${hd.age} · ${hd.year}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Total: $${fmtAxis(hd.totalPortfolio)}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="#1a6b42" fontFamily="Manrope, sans-serif">{`Yield: $${fmtAxis(hd.yieldPortfolio)}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="#b8860b" fontFamily="Manrope, sans-serif">{`Drawdown: $${fmtAxis(hd.drawdownPortfolio)}`}</text>
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="var(--on-surface-sub)" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.yieldPortfolio)} r="3.5" fill="var(--positive)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <circle cx={hx} cy={yOf(hd.totalPortfolio)} r="4" fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="var(--primary)" fontFamily="Manrope, sans-serif">{`Age ${hd.age} · ${hd.year}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{`Total: $${fmtAxis(hd.totalPortfolio)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="var(--positive)" fontFamily="Manrope, sans-serif">{`Yield: $${fmtAxis(hd.yieldPortfolio)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="var(--gold)" fontFamily="Manrope, sans-serif">{`Drawdown: $${fmtAxis(hd.drawdownPortfolio)}`}</text>
           </g>
         )}
       </svg>
@@ -572,30 +572,30 @@ function IncomeChart({
       >
         <defs>
           <linearGradient id="income-total-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1a6b42" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#1a6b42" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--positive)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--positive)" stopOpacity="0.02" />
           </linearGradient>
           <linearGradient id="income-yield-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00351f" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="#00351f" stopOpacity="0.04" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.04" />
           </linearGradient>
         </defs>
 
         {/* Grid lines */}
         {ticks.map((v) => (
-          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="#c0c9c0" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="var(--outline-variant)" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
         ))}
 
         {/* Y-axis labels */}
         {ticks.map((v) => (
-          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {fmtAxis(v)}
           </text>
         ))}
 
         {/* X-axis labels */}
         {xLabels.map((a) => (
-          <text key={a} x={xOf(a)} y={H - 6} textAnchor="middle" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={a} x={xOf(a)} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {a}
           </text>
         ))}
@@ -603,8 +603,8 @@ function IncomeChart({
         {/* Monthly expense line */}
         {expenseInRange && (
           <>
-            <line x1={PAD.left} y1={expenseY} x2={W - PAD.right} y2={expenseY} stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" opacity="0.6" />
-            <text x={W - PAD.right + 4} y={expenseY + 3} fontSize="9" fill="#c05621" fontFamily="Manrope, sans-serif" fontWeight="600">
+            <line x1={PAD.left} y1={expenseY} x2={W - PAD.right} y2={expenseY} stroke="var(--warning)" strokeWidth="1" strokeDasharray="6 3" opacity="0.6" />
+            <text x={W - PAD.right + 4} y={expenseY + 3} fontSize="9" fill="var(--warning)" fontFamily="Manrope, sans-serif" fontWeight="600">
               Target
             </text>
           </>
@@ -617,33 +617,33 @@ function IncomeChart({
         <path d={yieldArea} fill="url(#income-yield-fill)" />
 
         {/* Yield income line */}
-        <path d={`M ${yieldPts.join(" L ")}`} fill="none" stroke="#00351f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={`M ${yieldPts.join(" L ")}`} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Total income line */}
-        <path d={totalLine} fill="none" stroke="#1a6b42" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.85" />
+        <path d={totalLine} fill="none" stroke="var(--positive)" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.85" />
 
         {/* Legend */}
         <g transform={`translate(${PAD.left}, 12)`}>
-          <line x1="0" y1="0" x2="18" y2="0" stroke="#00351f" strokeWidth="2" />
-          <text x="23" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Yield income</text>
-          <line x1="130" y1="0" x2="148" y2="0" stroke="#1a6b42" strokeWidth="1.5" strokeDasharray="5 4" />
-          <text x="153" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Total income (incl. drawdown)</text>
-          <line x1="355" y1="0" x2="373" y2="0" stroke="#c05621" strokeWidth="1" strokeDasharray="6 3" />
-          <text x="378" y="4" fontSize="9" fill="#3d4a41" fontFamily="Manrope, sans-serif">Monthly expense</text>
+          <line x1="0" y1="0" x2="18" y2="0" stroke="var(--primary)" strokeWidth="2" />
+          <text x="23" y="4" fontSize="9" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">Yield income</text>
+          <line x1="130" y1="0" x2="148" y2="0" stroke="var(--positive)" strokeWidth="1.5" strokeDasharray="5 4" />
+          <text x="153" y="4" fontSize="9" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">Total income (incl. drawdown)</text>
+          <line x1="355" y1="0" x2="373" y2="0" stroke="var(--warning)" strokeWidth="1" strokeDasharray="6 3" />
+          <text x="378" y="4" fontSize="9" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">Monthly expense</text>
         </g>
 
         {/* Hover crosshair + tooltip */}
         {hd && (
           <g pointerEvents="none">
-            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
-            <circle cx={hx} cy={yOf(hd.yieldIncome / 12)} r="3.5" fill="#00351f" stroke="white" strokeWidth="1.5" />
-            <circle cx={hx} cy={yOf(hd.totalIncome / 12)} r="4" fill="#1a6b42" stroke="white" strokeWidth="1.5" />
-            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
-            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`Age ${hd.age}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Total: ${fmt(hd.totalIncome / 12)}/mth`}</text>
-            <text x={tooltipX + 20} y={PAD.top + 51} fontSize="9" fill="#1a6b42" fontFamily="Manrope, sans-serif">{`Yield: ${fmt(hd.yieldIncome / 12)}/mth`}</text>
-            <text x={tooltipX + 20} y={PAD.top + 65} fontSize="9" fill="#b8860b" fontFamily="Manrope, sans-serif">{`Drawdown: ${fmt(hd.drawdownWithdrawal / 12)}/mth`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 81} fontSize="9" fill="#c05621" fontFamily="Manrope, sans-serif">{`Target: ${fmt(monthlyExpense)}/mth`}</text>
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="var(--on-surface-sub)" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.yieldIncome / 12)} r="3.5" fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <circle cx={hx} cy={yOf(hd.totalIncome / 12)} r="4" fill="var(--positive)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="var(--primary)" fontFamily="Manrope, sans-serif">{`Age ${hd.age}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{`Total: ${fmt(hd.totalIncome / 12)}/mth`}</text>
+            <text x={tooltipX + 20} y={PAD.top + 51} fontSize="9" fill="var(--positive)" fontFamily="Manrope, sans-serif">{`Yield: ${fmt(hd.yieldIncome / 12)}/mth`}</text>
+            <text x={tooltipX + 20} y={PAD.top + 65} fontSize="9" fill="var(--gold)" fontFamily="Manrope, sans-serif">{`Drawdown: ${fmt(hd.drawdownWithdrawal / 12)}/mth`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 81} fontSize="9" fill="var(--warning)" fontFamily="Manrope, sans-serif">{`Target: ${fmt(monthlyExpense)}/mth`}</text>
           </g>
         )}
       </svg>
@@ -697,8 +697,8 @@ function FireTable({ data }: { data: YearRow[] }) {
                       <span
                         className="px-2 py-0.5 rounded-full"
                         style={{
-                          backgroundColor: row.phase === "retirement" ? "rgba(184,134,11,0.12)" : "rgba(0,53,31,0.08)",
-                          color: row.phase === "retirement" ? "#b8860b" : "var(--primary)",
+                          backgroundColor: row.phase === "retirement" ? "color-mix(in srgb, var(--gold) 12%, transparent)" : "color-mix(in srgb, var(--primary) 8%, transparent)",
+                          color: row.phase === "retirement" ? "var(--gold)" : "var(--primary)",
                           fontSize: "0.6875rem",
                         }}
                       >
@@ -1026,7 +1026,7 @@ export function FireCalculatorPage() {
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
                 style={{
-                  background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+                  background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
                   boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
                 }}
               >
@@ -1294,7 +1294,7 @@ export function FireCalculatorPage() {
                 <div
                   className="rounded-xl p-5 flex flex-col justify-between"
                   style={{
-                    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                    background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
                     boxShadow: "0 12px 32px rgba(0,53,31,0.20)",
                     minHeight: "7.5rem",
                   }}
@@ -1316,7 +1316,7 @@ export function FireCalculatorPage() {
                 <div
                   className="rounded-xl p-5 flex flex-col justify-between"
                   style={{
-                    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                    background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
                     boxShadow: "0 12px 32px rgba(0,53,31,0.20)",
                     minHeight: "7.5rem",
                   }}
@@ -1399,7 +1399,7 @@ export function FireCalculatorPage() {
               {/* 1 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>1</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>1</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>The 4% Rule (Trinity Study)</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -1413,7 +1413,7 @@ export function FireCalculatorPage() {
               {/* 2 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>2</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>2</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Yield vs. Drawdown Sources</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -1427,7 +1427,7 @@ export function FireCalculatorPage() {
               {/* 3 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>3</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>3</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>The FIRE Score</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -1441,7 +1441,7 @@ export function FireCalculatorPage() {
               {/* 4 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>4</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>4</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Income Sustainability</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -1456,7 +1456,7 @@ export function FireCalculatorPage() {
 
             <p
               className="text-xs mt-8 pt-6"
-              style={{ color: "var(--on-surface-sub)", borderTop: "1px solid rgba(192,201,192,0.3)", lineHeight: "1.6" }}
+              style={{ color: "var(--on-surface-sub)", borderTop: "1px solid var(--divider)", lineHeight: "1.6" }}
             >
               <span className="font-semibold">Disclaimer:</span> This calculator is for illustrative purposes only. It assumes constant yield
               rates, no inflation adjustment, and simplified withdrawal mechanics. Actual investment returns vary based on market conditions,

@@ -47,6 +47,7 @@ function ToolIcon({ name, color }: { name: string; color: string }) {
 export function ToolCard({ slug, name, tagline, category, icon, accent, comingSoon }: ToolCardProps) {
   const accentColor = accent === "tertiary" ? "var(--tertiary)" : "var(--primary)";
   const categoryColor = categoryColors[category];
+  const categoryTint = (pct: number) => `color-mix(in srgb, ${categoryColor} ${pct}%, transparent)`;
 
   if (comingSoon) {
     return (
@@ -62,7 +63,7 @@ export function ToolCard({ slug, name, tagline, category, icon, accent, comingSo
         <div className="flex items-start justify-between mb-4">
           <div
             className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: `${categoryColor}0d` }}
+            style={{ backgroundColor: categoryTint(5) }}
           >
             <ToolIcon name={icon} color="var(--on-surface-sub)" />
           </div>
@@ -110,14 +111,14 @@ export function ToolCard({ slug, name, tagline, category, icon, accent, comingSo
       <div className="flex items-start justify-between mb-4">
         <div
           className="w-10 h-10 rounded-lg flex items-center justify-center"
-          style={{ backgroundColor: `${categoryColor}12` }}
+          style={{ backgroundColor: categoryTint(7) }}
         >
           <ToolIcon name={icon} color={accentColor} />
         </div>
         <span
           className="text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full"
           style={{
-            backgroundColor: `${categoryColor}10`,
+            backgroundColor: categoryTint(6),
             color: categoryColor,
           }}
         >

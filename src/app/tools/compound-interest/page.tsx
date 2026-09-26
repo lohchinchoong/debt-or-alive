@@ -316,8 +316,8 @@ function GrowthChart({ data }: { data: YearData[] }) {
       >
         <defs>
           <linearGradient id="cic-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00351f" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#00351f" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
@@ -329,7 +329,7 @@ function GrowthChart({ data }: { data: YearData[] }) {
             y1={yOf(v)}
             x2={W - PAD.right}
             y2={yOf(v)}
-            stroke="#c0c9c0"
+            stroke="var(--outline-variant)"
             strokeWidth="0.5"
             strokeDasharray="3 5"
             opacity="0.7"
@@ -344,7 +344,7 @@ function GrowthChart({ data }: { data: YearData[] }) {
             y={yOf(v) + 4}
             textAnchor="end"
             fontSize="10"
-            fill="#3d4a41"
+            fill="var(--on-surface-sub)"
             fontFamily="Manrope, sans-serif"
           >
             {fmtAxis(v)}
@@ -359,7 +359,7 @@ function GrowthChart({ data }: { data: YearData[] }) {
             y={H - 6}
             textAnchor="middle"
             fontSize="10"
-            fill="#3d4a41"
+            fill="var(--on-surface-sub)"
             fontFamily="Manrope, sans-serif"
           >
             {y === 0 ? "Now" : `Yr ${y}`}
@@ -370,13 +370,13 @@ function GrowthChart({ data }: { data: YearData[] }) {
         <path d={growthArea} fill="url(#cic-fill)" />
 
         {/* Principal-only dashed line */}
-        <path d={principalLine} fill="none" stroke="#c0c9c0" strokeWidth="1.5" strokeDasharray="5 4" />
+        <path d={principalLine} fill="none" stroke="var(--outline-variant)" strokeWidth="1.5" strokeDasharray="5 4" />
 
         {/* Compound growth line */}
         <path
           d={growthLine}
           fill="none"
-          stroke="#00351f"
+          stroke="var(--primary)"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -384,12 +384,12 @@ function GrowthChart({ data }: { data: YearData[] }) {
 
         {/* Legend */}
         <g transform={`translate(${PAD.left}, 10)`}>
-          <line x1="0" y1="0" x2="18" y2="0" stroke="#00351f" strokeWidth="2" />
-          <text x="23" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <line x1="0" y1="0" x2="18" y2="0" stroke="var(--primary)" strokeWidth="2" />
+          <text x="23" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             With compound interest
           </text>
-          <line x1="162" y1="0" x2="180" y2="0" stroke="#c0c9c0" strokeWidth="1.5" strokeDasharray="5 4" />
-          <text x="185" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <line x1="162" y1="0" x2="180" y2="0" stroke="var(--outline-variant)" strokeWidth="1.5" strokeDasharray="5 4" />
+          <text x="185" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             Principal only
           </text>
         </g>
@@ -397,14 +397,14 @@ function GrowthChart({ data }: { data: YearData[] }) {
         {/* Hover crosshair + tooltip */}
         {hd && (
           <g pointerEvents="none">
-            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
-            <circle cx={hx} cy={yOf(hd.totalContribution)} r="3.5" fill="#c0c9c0" stroke="white" strokeWidth="1.5" />
-            <circle cx={hx} cy={yOf(hd.futureValue)} r="4" fill="#00351f" stroke="white" strokeWidth="1.5" />
-            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
-            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`Year ${hd.year}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Balance: $${fmtAxis(hd.futureValue)}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Principal: $${fmtAxis(hd.totalContribution)}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="#1a6b42" fontFamily="Manrope, sans-serif">{`Interest: $${fmtAxis(hd.accruedInterest)}`}</text>
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="var(--on-surface-sub)" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.totalContribution)} r="3.5" fill="var(--outline-variant)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <circle cx={hx} cy={yOf(hd.futureValue)} r="4" fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="var(--primary)" fontFamily="Manrope, sans-serif">{`Year ${hd.year}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{`Balance: $${fmtAxis(hd.futureValue)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{`Principal: $${fmtAxis(hd.totalContribution)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="var(--positive)" fontFamily="Manrope, sans-serif">{`Interest: $${fmtAxis(hd.accruedInterest)}`}</text>
           </g>
         )}
       </svg>
@@ -580,7 +580,7 @@ export function CompoundInterestPage() {
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
                 style={{
-                  background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+                  background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
                   boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
                 }}
               >
@@ -722,7 +722,7 @@ export function CompoundInterestPage() {
                 <div
                   className="rounded-xl p-5 flex flex-col justify-between"
                   style={{
-                    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                    background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
                     boxShadow: "0 12px 32px rgba(0,53,31,0.20)",
                     minHeight: "7.5rem",
                   }}
@@ -802,7 +802,7 @@ export function CompoundInterestPage() {
                 <div className="flex items-center gap-3 mb-2.5">
                   <span
                     className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                    style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}
                   >
                     1
                   </span>
@@ -826,7 +826,7 @@ export function CompoundInterestPage() {
                 <div className="flex items-center gap-3 mb-2.5">
                   <span
                     className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                    style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}
                   >
                     2
                   </span>
@@ -847,7 +847,7 @@ export function CompoundInterestPage() {
                 <div className="flex items-center gap-3 mb-2.5">
                   <span
                     className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                    style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}
                   >
                     3
                   </span>
@@ -870,7 +870,7 @@ export function CompoundInterestPage() {
                 <div className="flex items-center gap-3 mb-2.5">
                   <span
                     className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                    style={{ backgroundColor: "var(--primary)", color: "#fff" }}
+                    style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}
                   >
                     4
                   </span>
@@ -898,7 +898,7 @@ export function CompoundInterestPage() {
               className="text-xs mt-8 pt-6"
               style={{
                 color: "var(--on-surface-sub)",
-                borderTop: "1px solid rgba(192,201,192,0.3)",
+                borderTop: "1px solid var(--divider)",
                 lineHeight: "1.6",
               }}
             >

@@ -179,7 +179,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       <div
         className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
         style={{
-          background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+          background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
           boxShadow: "0 8px 24px rgba(0,53,31,0.15)",
         }}
       >
@@ -201,7 +201,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
         onClick={onAdd}
         className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm"
         style={{
-          background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+          background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
           color: "#fff",
           border: "none",
           cursor: "pointer",
@@ -255,7 +255,7 @@ export default function CpfMaLandingPage() {
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
                   style={{
-                    background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+                    background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
                     boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
                   }}
                 >
@@ -285,7 +285,7 @@ export default function CpfMaLandingPage() {
                   onClick={handleAdd}
                   className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm w-full sm:w-auto flex-shrink-0"
                   style={{
-                    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                    background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
                     color: "#fff",
                     border: "none",
                     cursor: "pointer",

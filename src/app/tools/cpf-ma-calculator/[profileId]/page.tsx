@@ -263,7 +263,7 @@ function StatCard({
   highlight?: boolean; // teal accent for the BHS milestone
 }) {
   const bgStyle = gradient
-    ? "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)"
+    ? "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)"
     : highlight
     ? "linear-gradient(135deg, #0d6b4a 0%, #1a9467 100%)"
     : "var(--surface-container-lowest)";
@@ -394,26 +394,26 @@ function MaChart({
       >
         <defs>
           <linearGradient id="ma-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00351f" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#00351f" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
         {ticks.map((v) => (
           <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)}
-            stroke="#c0c9c0" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+            stroke="var(--outline-variant)" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
         ))}
 
         {ticks.map((v) => (
           <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end"
-            fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {fmtAxis(v)}
           </text>
         ))}
 
         {xLabels.map((yr) => (
           <text key={yr} x={xOf(yr)} y={H - 6} textAnchor="middle"
-            fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+            fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {yr}
           </text>
         ))}
@@ -422,9 +422,9 @@ function MaChart({
         {BHS <= yMax && (
           <g>
             <line x1={PAD.left} y1={bhsY} x2={W - PAD.right} y2={bhsY}
-              stroke="#c85a00" strokeWidth="1" strokeDasharray="6 4" opacity="0.7" />
+              stroke="var(--amber)" strokeWidth="1" strokeDasharray="6 4" opacity="0.7" />
             <text x={W - PAD.right - 4} y={bhsY - 4} textAnchor="end"
-              fontSize="9" fill="#c85a00" fontFamily="Manrope, sans-serif" opacity="0.9">
+              fontSize="9" fill="var(--amber)" fontFamily="Manrope, sans-serif" opacity="0.9">
               BHS S$79K
             </text>
           </g>
@@ -432,37 +432,37 @@ function MaChart({
 
         {/* Contributions end line */}
         <line x1={cutoffX} y1={PAD.top} x2={cutoffX} y2={PAD.top + CH}
-          stroke="#c0c9c0" strokeWidth="1" strokeDasharray="4 4" opacity="0.6" />
-        <text x={cutoffX + 4} y={PAD.top + 12} fontSize="9" fill="#3d4a41"
+          stroke="var(--outline-variant)" strokeWidth="1" strokeDasharray="4 4" opacity="0.6" />
+        <text x={cutoffX + 4} y={PAD.top + 12} fontSize="9" fill="var(--on-surface-sub)"
           fontFamily="Manrope, sans-serif" opacity="0.8">
           Contributions end
         </text>
 
         <path d={balanceArea} fill="url(#ma-fill)" />
-        <path d={principalLine} fill="none" stroke="#c0c9c0" strokeWidth="1.5" strokeDasharray="5 4" />
-        <path d={balanceLine} fill="none" stroke="#00351f" strokeWidth="2"
+        <path d={principalLine} fill="none" stroke="var(--outline-variant)" strokeWidth="1.5" strokeDasharray="5 4" />
+        <path d={balanceLine} fill="none" stroke="var(--primary)" strokeWidth="2"
           strokeLinecap="round" strokeLinejoin="round" />
 
         <g transform={`translate(${PAD.left}, 10)`}>
-          <line x1="0" y1="0" x2="18" y2="0" stroke="#00351f" strokeWidth="2" />
-          <text x="23" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">MA Balance</text>
-          <line x1="130" y1="0" x2="148" y2="0" stroke="#c0c9c0" strokeWidth="1.5" strokeDasharray="5 4" />
-          <text x="153" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">Total Contributions</text>
+          <line x1="0" y1="0" x2="18" y2="0" stroke="var(--primary)" strokeWidth="2" />
+          <text x="23" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">MA Balance</text>
+          <line x1="130" y1="0" x2="148" y2="0" stroke="var(--outline-variant)" strokeWidth="1.5" strokeDasharray="5 4" />
+          <text x="153" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">Total Contributions</text>
         </g>
 
         {hd && (
           <g pointerEvents="none">
             <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH}
-              stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
-            <circle cx={hx} cy={yOf(hd.totalContributions)} r="3.5" fill="#c0c9c0" stroke="white" strokeWidth="1.5" />
-            <circle cx={hx} cy={yOf(hd.balance)} r="4" fill="#00351f" stroke="white" strokeWidth="1.5" />
+              stroke="var(--on-surface-sub)" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.totalContributions)} r="3.5" fill="var(--outline-variant)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <circle cx={hx} cy={yOf(hd.balance)} r="4" fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
             <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5"
-              fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
+              fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
             <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700"
-              fill="#00351f" fontFamily="Manrope, sans-serif">{`${hd.year}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41"
+              fill="var(--primary)" fontFamily="Manrope, sans-serif">{`${hd.year}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)"
               fontFamily="Manrope, sans-serif">{`Balance: $${fmtAxis(hd.balance)}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="#3d4a41"
+            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="var(--on-surface-sub)"
               fontFamily="Manrope, sans-serif">{`Contributions: $${fmtAxis(hd.totalContributions)}`}</text>
           </g>
         )}
@@ -530,7 +530,7 @@ function YearlyTable({ rows, showOverflow, showPremiums }: { rows: YearRow[]; sh
                   }}>
                     <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "var(--on-surface)" }}>{row.year}</td>
                     <td className="px-6 py-3.5 text-sm font-medium" style={{
-                      color: row.balance >= BHS ? "#c85a00" : "var(--on-surface)",
+                      color: row.balance >= BHS ? "var(--amber)" : "var(--on-surface)",
                       fontWeight: row.balance >= BHS ? 700 : 500,
                     }}>
                       {fmt(row.balance)}
@@ -540,7 +540,7 @@ function YearlyTable({ rows, showOverflow, showPremiums }: { rows: YearRow[]; sh
                     <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "var(--primary)" }}>+{fmt(row.interestEarned)}</td>
                     <td className="px-6 py-3.5 text-sm font-medium" style={{ color: "var(--on-surface)" }}>{fmt(row.accruedInterest)}</td>
                     {showOverflow && (
-                      <td className="px-6 py-3.5 text-sm" style={{ color: row.overflowToSA > 0 ? "#c85a00" : "var(--on-surface-sub)" }}>
+                      <td className="px-6 py-3.5 text-sm" style={{ color: row.overflowToSA > 0 ? "var(--amber)" : "var(--on-surface-sub)" }}>
                         {row.overflowToSA > 0 ? fmt(row.overflowToSA) : "—"}
                       </td>
                     )}
@@ -640,7 +640,7 @@ export default function CpfMaCalculatorPage() {
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
                 style={{
-                  background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+                  background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
                   boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
                 }}
               >
@@ -750,15 +750,15 @@ export default function CpfMaCalculatorPage() {
               {/* BHS badge */}
               <div
                 className="mt-6 px-4 py-3 rounded-lg flex items-center gap-3"
-                style={{ backgroundColor: "var(--surface-container-low)", border: "1px solid rgba(200,90,0,0.2)" }}
+                style={{ backgroundColor: "var(--surface-container-low)", border: "1px solid color-mix(in srgb, var(--amber) 20%, transparent)" }}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c85a00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                   <circle cx="12" cy="12" r="10"/>
                   <line x1="12" y1="8" x2="12" y2="12"/>
                   <line x1="12" y1="16" x2="12.01" y2="16"/>
                 </svg>
                 <p className="text-xs" style={{ color: "var(--on-surface-sub)", lineHeight: "1.5" }}>
-                  <span className="font-semibold" style={{ color: "#c85a00" }}>Basic Healthcare Sum (BHS) 2026:</span>{" "}
+                  <span className="font-semibold" style={{ color: "var(--amber)" }}>Basic Healthcare Sum (BHS) 2026:</span>{" "}
                   S$79,000. Contributions exceeding this ceiling are redirected to your SA (or RA if 55+).
                 </p>
               </div>
@@ -953,7 +953,7 @@ export default function CpfMaCalculatorPage() {
               className="text-xs mt-8 pt-6"
               style={{
                 color: "var(--on-surface-sub)",
-                borderTop: "1px solid rgba(192,201,192,0.3)",
+                borderTop: "1px solid var(--divider)",
                 lineHeight: "1.6",
               }}
             >

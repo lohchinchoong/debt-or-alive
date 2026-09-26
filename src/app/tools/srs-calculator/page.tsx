@@ -327,7 +327,7 @@ function DepositRow({
         <button
           type="button"
           onClick={() => onDelete(deposit.id)}
-          className="p-1.5 rounded-md transition-colors hover:bg-red-50"
+          className="p-1.5 rounded-md transition-colors hover:bg-red-50 dark:hover:bg-red-950/40"
           style={{ color: "var(--on-surface-sub)", lineHeight: 1 }}
           aria-label="Remove deposit"
         >
@@ -507,7 +507,7 @@ function ProjectionChart({ data, withdrawalStartYear, withdrawalEndYear }: {
             cy={tooltipY}
             r="4"
             fill="var(--primary)"
-            stroke="white"
+            stroke="var(--surface-container-lowest)"
             strokeWidth="2"
           />
         )}
@@ -688,7 +688,7 @@ export function SRSCalculatorPage() {
             style={{
               width: 48,
               height: 48,
-              background: "var(--primary)",
+              background: "var(--primary-fill)",
               flexShrink: 0,
             }}
           >
@@ -834,7 +834,7 @@ export function SRSCalculatorPage() {
                         onClick={() => updateWithdrawal("years", yr)}
                         className="w-9 h-9 rounded-lg text-sm font-semibold transition-all"
                         style={{
-                          background: withdrawal.years === yr ? "var(--primary)" : "var(--surface-container-highest)",
+                          background: withdrawal.years === yr ? "var(--primary-fill)" : "var(--surface-container-highest)",
                           color: withdrawal.years === yr ? "white" : "var(--on-surface)",
                           border: "none",
                           cursor: "pointer",
@@ -862,7 +862,7 @@ export function SRSCalculatorPage() {
               <div
                 className="rounded-2xl p-4 col-span-2"
                 style={{
-                  background: "var(--primary)",
+                  background: "var(--primary-fill)",
                   color: "white",
                 }}
               >

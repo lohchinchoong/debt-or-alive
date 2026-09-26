@@ -1,3 +1,5 @@
+import { liftColor } from "@/lib/theme";
+
 export type ToolCategory = "Property" | "CPF" | "Debt" | "Savings" | "Investment" | "Planning";
 
 export type Tool = {
@@ -144,10 +146,10 @@ export const categoryOrder: ToolCategory[] = [
 ];
 
 export const categoryColors: Record<ToolCategory, string> = {
-  Property:   "#00351f",
-  CPF:        "#1a4d35",
-  Debt:       "#4f1b1f",
-  Savings:    "#1c3d2c",
-  Investment: "#0d3d28",
-  Planning:   "#2b3d32",
+  Property:   liftColor("#00351f"),
+  CPF:        liftColor("#1a4d35"),
+  Debt:       liftColor("#4f1b1f"),
+  Savings:    liftColor("#1c3d2c"),
+  Investment: liftColor("#0d3d28"),
+  Planning:   liftColor("#2b3d32"),
 };

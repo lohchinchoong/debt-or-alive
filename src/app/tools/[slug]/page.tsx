@@ -33,7 +33,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
         href="/"
         className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm"
         style={{
-          background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+          background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
           color: "#fff",
         }}
       >

@@ -1,10 +1,12 @@
+import { liftColor } from "@/lib/theme";
+
 export function HeroSection() {
   return (
     <section
       className="relative px-5 sm:px-8 lg:px-16 pt-16 pb-20 sm:pt-24 sm:pb-28 overflow-hidden"
       style={{
         background:
-          "linear-gradient(to right, #d0e6d8 0%, #e2ede6 25%, #edf2ee 55%, #f8faf8 100%)",
+          "linear-gradient(to right, var(--hero-from) 0%, var(--hero-via-1) 25%, var(--hero-via-2) 55%, var(--surface) 100%)",
       }}
     >
       {/* Layered radial depth blobs */}
@@ -12,21 +14,21 @@ export function HeroSection() {
         aria-hidden
         className="pointer-events-none absolute -top-24 -right-24 w-[560px] h-[560px] rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(0,53,31,0.07) 0%, transparent 68%)",
+          background: "radial-gradient(circle, color-mix(in srgb, var(--primary) 7%, transparent) 0%, transparent 68%)",
         }}
       />
       <div
         aria-hidden
         className="pointer-events-none absolute top-1/2 -left-32 w-[400px] h-[400px] rounded-full"
         style={{
-          background: "radial-gradient(circle, rgba(14,77,49,0.05) 0%, transparent 70%)",
+          background: "radial-gradient(circle, color-mix(in srgb, var(--primary-container) 5%, transparent) 0%, transparent 70%)",
         }}
       />
       <div
         aria-hidden
         className="pointer-events-none absolute bottom-0 left-1/3 w-[300px] h-[200px] rounded-full"
         style={{
-          background: "radial-gradient(ellipse, rgba(179,240,202,0.15) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse, color-mix(in srgb, var(--primary-fixed) 15%, transparent) 0%, transparent 70%)",
         }}
       />
 
@@ -61,7 +63,7 @@ export function HeroSection() {
             href="#tools"
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg font-semibold text-sm transition-opacity duration-200 hover:opacity-90"
             style={{
-              background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+              background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
               color: "#fff",
               boxShadow: "var(--shadow-botanical-hover)",
             }}
@@ -84,7 +86,7 @@ export function HeroSection() {
         aria-hidden
         className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
         style={{
-          background: "linear-gradient(to bottom, transparent, #f2f4f2)",
+          background: "linear-gradient(to bottom, transparent, var(--surface-container-low))",
         }}
       />
     </section>
@@ -118,7 +120,7 @@ function PortfolioCard({ offsetClass }: { offsetClass: string }) {
         </div>
         <span
           className="text-xs font-semibold px-2 py-0.5 rounded-full mt-1"
-          style={{ backgroundColor: "rgba(0,53,31,0.08)", color: "var(--primary)" }}
+          style={{ backgroundColor: "color-mix(in srgb, var(--primary) 8%, transparent)", color: "var(--primary)" }}
         >
           +12.4%
         </span>
@@ -126,14 +128,14 @@ function PortfolioCard({ offsetClass }: { offsetClass: string }) {
       <svg viewBox={`0 0 ${w} ${h}`} width="100%" height="40" preserveAspectRatio="none">
         <defs>
           <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00351f" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#00351f" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
           </linearGradient>
         </defs>
         <path d={areaPath} fill="url(#sparkFill)" />
-        <polyline points={polyline} fill="none" stroke="#00351f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <polyline points={polyline} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         {/* End dot */}
-        <circle cx={w} cy={points[points.length - 1]} r="3" fill="#00351f" />
+        <circle cx={w} cy={points[points.length - 1]} r="3" fill="var(--primary)" />
       </svg>
       <p className="text-[10px] mt-2" style={{ color: "var(--outline-variant)" }}>Past 10 months</p>
     </div>
@@ -157,17 +159,17 @@ function DebtProgressCard({ offsetClass }: { offsetClass: string }) {
       </p>
       <div className="flex items-center gap-4">
         <svg width="72" height="72" viewBox="0 0 72 72">
-          <circle cx="36" cy="36" r={r} fill="none" stroke="#e1e3e1" strokeWidth="7" />
+          <circle cx="36" cy="36" r={r} fill="none" stroke="var(--surface-container-highest)" strokeWidth="7" />
           <circle
             cx="36" cy="36" r={r}
             fill="none"
-            stroke="#00351f"
+            stroke="var(--primary)"
             strokeWidth="7"
             strokeLinecap="round"
             strokeDasharray={`${dash} ${circ}`}
             strokeDashoffset={circ * 0.25}
           />
-          <text x="36" y="40" textAnchor="middle" fontSize="14" fontWeight="700" fill="#191c1b" fontFamily="Manrope, sans-serif">
+          <text x="36" y="40" textAnchor="middle" fontSize="14" fontWeight="700" fill="var(--on-surface)" fontFamily="Manrope, sans-serif">
             {pct}%
           </text>
         </svg>
@@ -184,9 +186,9 @@ function DebtProgressCard({ offsetClass }: { offsetClass: string }) {
 /* ─── Widget 3: Budget split bars ─── */
 function BudgetSplitCard({ offsetClass }: { offsetClass: string }) {
   const segments = [
-    { label: "Needs",   pct: 50, color: "#00351f" },
-    { label: "Wants",   pct: 30, color: "#1c3d2c" },
-    { label: "Savings", pct: 20, color: "#b3f0ca" },
+    { label: "Needs",   pct: 50, color: "var(--primary)" },
+    { label: "Wants",   pct: 30, color: liftColor("#1c3d2c") },
+    { label: "Savings", pct: 20, color: "var(--primary-fixed)" },
   ];
 
   return (

@@ -301,26 +301,26 @@ function BalanceChart({ data, baseData }: { data: YearRow[]; baseData: YearRow[]
       >
         <defs>
           <linearGradient id="mort-bal-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00351f" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#00351f" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
         {/* Grid lines */}
         {ticks.map((v) => (
-          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="#c0c9c0" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="var(--outline-variant)" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
         ))}
 
         {/* Y-axis labels */}
         {ticks.map((v) => (
-          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {fmtAxis(v)}
           </text>
         ))}
 
         {/* X-axis labels */}
         {xLabels.map((i) => (
-          <text key={i} x={xOf(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={i} x={xOf(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {`Yr ${data[i].year}`}
           </text>
         ))}
@@ -329,45 +329,45 @@ function BalanceChart({ data, baseData }: { data: YearRow[]; baseData: YearRow[]
         <path d={area} fill="url(#mort-bal-fill)" />
 
         {/* Baseline dashed line (no partials) */}
-        {hasBase && <path d={baseLine} fill="none" stroke="#c0c9c0" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.7" />}
+        {hasBase && <path d={baseLine} fill="none" stroke="var(--outline-variant)" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.7" />}
 
         {/* Balance line */}
-        <path d={line} fill="none" stroke="#00351f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={line} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Partial repayment drop markers */}
         {repaymentIndices.map(({ i, d }) => (
           <g key={i}>
-            <line x1={xOf(i)} y1={PAD.top} x2={xOf(i)} y2={PAD.top + CH} stroke="#1a6b42" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
-            <circle cx={xOf(i)} cy={yOf(d.balance)} r="5" fill="#1a6b42" stroke="white" strokeWidth="1.5" />
+            <line x1={xOf(i)} y1={PAD.top} x2={xOf(i)} y2={PAD.top + CH} stroke="var(--positive)" strokeWidth="1" strokeDasharray="3 3" opacity="0.5" />
+            <circle cx={xOf(i)} cy={yOf(d.balance)} r="5" fill="var(--positive)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
           </g>
         ))}
 
         {/* Legend */}
         <g transform={`translate(${PAD.left}, 10)`}>
-          <line x1="0" y1="0" x2="18" y2="0" stroke="#00351f" strokeWidth="2" />
-          <text x="23" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">With repayments</text>
+          <line x1="0" y1="0" x2="18" y2="0" stroke="var(--primary)" strokeWidth="2" />
+          <text x="23" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">With repayments</text>
           {hasBase && <>
-            <line x1="140" y1="0" x2="158" y2="0" stroke="#c0c9c0" strokeWidth="1.5" strokeDasharray="5 4" />
-            <text x="163" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">No repayments</text>
+            <line x1="140" y1="0" x2="158" y2="0" stroke="var(--outline-variant)" strokeWidth="1.5" strokeDasharray="5 4" />
+            <text x="163" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">No repayments</text>
           </>}
           {repaymentIndices.length > 0 && <>
-            <circle cx={hasBase ? 290 : 155} cy="0" r="4" fill="#1a6b42" />
-            <text x={hasBase ? 298 : 163} y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">Partial repayment</text>
+            <circle cx={hasBase ? 290 : 155} cy="0" r="4" fill="var(--positive)" />
+            <text x={hasBase ? 298 : 163} y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">Partial repayment</text>
           </>}
         </g>
 
         {/* Hover crosshair + tooltip */}
         {hd && hoveredIdx !== null && (
           <g pointerEvents="none">
-            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
-            <circle cx={hx} cy={yOf(hd.balance)} r="4" fill="#00351f" stroke="white" strokeWidth="1.5" />
-            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
-            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`Year ${hd.year}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Balance: ${fmt(hd.balance)}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Principal paid: ${fmt(hd.principal)}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="#c05621" fontFamily="Manrope, sans-serif">{`Interest paid: ${fmt(hd.interest)}`}</text>
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="var(--on-surface-sub)" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.balance)} r="4" fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="var(--primary)" fontFamily="Manrope, sans-serif">{`Year ${hd.year}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{`Balance: ${fmt(hd.balance)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{`Principal paid: ${fmt(hd.principal)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="var(--warning)" fontFamily="Manrope, sans-serif">{`Interest paid: ${fmt(hd.interest)}`}</text>
             {hd.partialRepayment > 0 && (
-              <text x={tooltipX + 10} y={PAD.top + 81} fontSize="10" fill="#1a6b42" fontFamily="Manrope, sans-serif">{`Lump sum: ${fmt(hd.partialRepayment)}`}</text>
+              <text x={tooltipX + 10} y={PAD.top + 81} fontSize="10" fill="var(--positive)" fontFamily="Manrope, sans-serif">{`Lump sum: ${fmt(hd.partialRepayment)}`}</text>
             )}
           </g>
         )}
@@ -447,30 +447,30 @@ function PaymentBreakdownChart({ data }: { data: YearRow[] }) {
       >
         <defs>
           <linearGradient id="mort-int-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#c05621" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="#c05621" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--warning)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--warning)" stopOpacity="0.02" />
           </linearGradient>
           <linearGradient id="mort-princ-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00351f" stopOpacity="0.15" />
-            <stop offset="100%" stopColor="#00351f" stopOpacity="0.02" />
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
         {/* Grid lines */}
         {ticks.map((v) => (
-          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="#c0c9c0" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)} stroke="var(--outline-variant)" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
         ))}
 
         {/* Y-axis labels */}
         {ticks.map((v) => (
-          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {fmtAxis(v)}
           </text>
         ))}
 
         {/* X-axis labels */}
         {xLabels.map((i) => (
-          <text key={i} x={xOf(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <text key={i} x={xOf(i)} y={H - 6} textAnchor="middle" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             {`Yr ${data[i].year}`}
           </text>
         ))}
@@ -482,19 +482,19 @@ function PaymentBreakdownChart({ data }: { data: YearRow[] }) {
         <path d={interestArea} fill="url(#mort-int-fill)" />
 
         {/* Interest line */}
-        <path d={interestLine} fill="none" stroke="#c05621" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.8" />
+        <path d={interestLine} fill="none" stroke="var(--warning)" strokeWidth="1.5" strokeDasharray="5 4" opacity="0.8" />
 
         {/* Principal line */}
-        <path d={principalLine} fill="none" stroke="#00351f" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={principalLine} fill="none" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Legend */}
         <g transform={`translate(${PAD.left}, 10)`}>
-          <line x1="0" y1="0" x2="18" y2="0" stroke="#00351f" strokeWidth="2" />
-          <text x="23" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <line x1="0" y1="0" x2="18" y2="0" stroke="var(--primary)" strokeWidth="2" />
+          <text x="23" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             Principal
           </text>
-          <line x1="110" y1="0" x2="128" y2="0" stroke="#c05621" strokeWidth="1.5" strokeDasharray="5 4" />
-          <text x="133" y="4" fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">
+          <line x1="110" y1="0" x2="128" y2="0" stroke="var(--warning)" strokeWidth="1.5" strokeDasharray="5 4" />
+          <text x="133" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
             Interest
           </text>
         </g>
@@ -502,14 +502,14 @@ function PaymentBreakdownChart({ data }: { data: YearRow[] }) {
         {/* Hover crosshair + tooltip */}
         {hd && hoveredIdx !== null && (
           <g pointerEvents="none">
-            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="#3d4a41" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
-            <circle cx={hx} cy={yOf(hd.principal)} r="4" fill="#00351f" stroke="white" strokeWidth="1.5" />
-            <circle cx={hx} cy={yOf(hd.interest)} r="3.5" fill="#c05621" stroke="white" strokeWidth="1.5" />
-            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="white" stroke="#c0c9c0" strokeWidth="0.75" />
-            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="#00351f" fontFamily="Manrope, sans-serif">{`Year ${hd.year}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Principal: ${fmt(hd.principal)}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="#c05621" fontFamily="Manrope, sans-serif">{`Interest: ${fmt(hd.interest)}`}</text>
-            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="#3d4a41" fontFamily="Manrope, sans-serif">{`Total: ${fmt(hd.payment)}`}</text>
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH} stroke="var(--on-surface-sub)" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.principal)} r="4" fill="var(--primary)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <circle cx={hx} cy={yOf(hd.interest)} r="3.5" fill="var(--warning)" stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5" fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700" fill="var(--primary)" fontFamily="Manrope, sans-serif">{`Year ${hd.year}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{`Principal: ${fmt(hd.principal)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="var(--warning)" fontFamily="Manrope, sans-serif">{`Interest: ${fmt(hd.interest)}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 66} fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">{`Total: ${fmt(hd.payment)}`}</text>
           </g>
         )}
       </svg>
@@ -590,7 +590,7 @@ function YearlyTable({ data }: { data: YearRow[] }) {
                     <td className="px-6 py-3.5 text-sm" style={{ color: "var(--on-surface)" }}>
                       {fmt(row.principal)}
                     </td>
-                    <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "#c05621" }}>
+                    <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "var(--warning)" }}>
                       {fmt(row.interest)}
                     </td>
                     <td className="px-6 py-3.5 text-sm font-medium" style={{ color: "var(--on-surface)" }}>
@@ -740,7 +740,7 @@ export function MortgageCalculatorPage() {
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
                 style={{
-                  background: "linear-gradient(45deg, var(--primary), var(--primary-container))",
+                  background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
                   boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
                 }}
               >
@@ -917,7 +917,7 @@ export function MortgageCalculatorPage() {
                 <div
                   className="rounded-xl p-5 flex flex-col justify-between relative"
                   style={{
-                    background: "linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%)",
+                    background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
                     boxShadow: "0 12px 32px rgba(0,53,31,0.20)",
                     minHeight: "7.5rem",
                   }}
@@ -976,7 +976,7 @@ export function MortgageCalculatorPage() {
                   className="rounded-xl p-5 flex flex-col justify-between"
                   style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)", minHeight: "7.5rem" }}
                 >
-                  <p className="text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: "#c05621" }}>
+                  <p className="text-[0.6875rem] font-semibold tracking-widest uppercase" style={{ color: "var(--warning)" }}>
                     Total Interest
                   </p>
                   <div>
@@ -1047,7 +1047,7 @@ export function MortgageCalculatorPage() {
               {/* 1 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>1</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>1</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Standard Amortization</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -1064,13 +1064,13 @@ export function MortgageCalculatorPage() {
               {/* 2 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>2</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>2</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Principal vs Interest</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
                   Each monthly payment is split between{" "}
                   <span className="font-semibold" style={{ color: "var(--on-surface)" }}>principal</span> (reducing your debt) and{" "}
-                  <span className="font-semibold" style={{ color: "#c05621" }}>interest</span> (the cost of borrowing).
+                  <span className="font-semibold" style={{ color: "var(--warning)" }}>interest</span> (the cost of borrowing).
                   In the early years, most of your payment goes toward interest. Over time, the balance shifts as the
                   outstanding loan shrinks and generates less interest.
                 </p>
@@ -1079,7 +1079,7 @@ export function MortgageCalculatorPage() {
               {/* 3 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>3</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>3</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Down Payment</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -1094,7 +1094,7 @@ export function MortgageCalculatorPage() {
               {/* 4 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>4</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>4</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Reading the Charts</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -1110,7 +1110,7 @@ export function MortgageCalculatorPage() {
               {/* 5 */}
               <div>
                 <div className="flex items-center gap-3 mb-2.5">
-                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary)", color: "#fff" }}>5</span>
+                  <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: "var(--primary-fill)", color: "#fff" }}>5</span>
                   <h3 className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Partial Repayments</h3>
                 </div>
                 <p className="text-sm leading-relaxed pl-9" style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}>
@@ -1127,7 +1127,7 @@ export function MortgageCalculatorPage() {
 
             <p
               className="text-xs mt-8 pt-6"
-              style={{ color: "var(--on-surface-sub)", borderTop: "1px solid rgba(192,201,192,0.3)", lineHeight: "1.6" }}
+              style={{ color: "var(--on-surface-sub)", borderTop: "1px solid var(--divider)", lineHeight: "1.6" }}
             >
               <span className="font-semibold">Disclaimer:</span> This calculator assumes a fixed interest rate throughout
               the loan tenure. In practice, most Singapore mortgages use floating or hybrid rates that reset periodically.
