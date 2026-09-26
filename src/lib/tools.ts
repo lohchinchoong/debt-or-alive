@@ -36,6 +36,13 @@ export const tools: Tool[] = [
     icon: "HeartPulse",
   },
   {
+    slug: "cpf-oa-annuity-calculator",
+    name: "CPF Ordinary Account (OA) Annuity Calculator",
+    tagline: "See the constant monthly payout your OA balance at 55 can fund.",
+    category: "CPF",
+    icon: "Banknote",
+  },
+  {
     slug: "hysa-tracker",
     name: "High Yield Savings Account Tracker",
     tagline: "Log monthly interest and investment gains across your high-yield savings accounts.",

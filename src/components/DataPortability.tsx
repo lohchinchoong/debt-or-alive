@@ -7,6 +7,7 @@ const STORAGE_KEYS = [
   "tool:compound-interest",
   "cpf-sa:profiles",
   "cpf-ma:profiles",
+  "cpf-oa:profiles",
   "tool:fire-calculator",
   "tool:mortgage-calculator",
   "tool:emergency-fund",
