@@ -176,6 +176,9 @@ function FocusInput({
   hint?: string;
 }) {
   const [focused, setFocused] = useState(false);
+  // While focused, show the raw text so the field can be cleared mid-edit;
+  // only valid numbers are committed, and blur snaps back to the saved value.
+  const [draft, setDraft] = useState<string | null>(null);
   return (
     <div>
       <p className="text-[0.8125rem] font-medium mb-1.5" style={{ color: "var(--on-surface-sub)" }}>
@@ -183,13 +186,17 @@ function FocusInput({
       </p>
       <input
         type="number"
-        value={value}
+        value={draft ?? value}
         min={min}
         max={max}
         step={step}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          const parsed = parseFloat(e.target.value);
+          if (!Number.isNaN(parsed)) onChange(parsed);
+        }}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => { setFocused(false); setDraft(null); }}
         style={{
           width: "100%",
           background: "var(--surface-container-highest)",
@@ -500,10 +507,12 @@ export default function CpfSaCalculatorPage() {
   const profile = profiles.find((p) => p.id === profileId);
 
   useEffect(() => {
-    if (profiles.length > 0 && !profile) {
+    // Profiles are read synchronously from localStorage on the client, so a
+    // missing profile here means the id is stale (even when no profiles remain).
+    if (!profile) {
       router.replace("/tools/cpf-sa-calculator");
     }
-  }, [profile, profiles.length, router]);
+  }, [profile, router]);
 
   if (!profile) return null;
 
