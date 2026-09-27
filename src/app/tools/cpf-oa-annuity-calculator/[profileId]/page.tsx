@@ -19,7 +19,7 @@ type YearRow = {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const OA_RATE = 0.025;
-const START_AGE = 55;
+const MIN_START_AGE = 55;
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-SG", {
@@ -30,18 +30,18 @@ const fmt = (n: number) =>
   }).format(n);
 
 // ─── Simulation ───────────────────────────────────────────────────────────────
-// The balance at 55 is taken as at Dec of the year the member turns 55. Drawdown
-// runs Jan of the following year to Dec of the year they reach endDrawdownAge.
-// Withdrawals leave at month-start; interest accrues monthly on the remaining
-// (lowest) balance and is credited each December.
+// The starting balance is taken as at Jan of the year the member reaches
+// startDrawdownAge. Drawdown runs from that Jan to Dec of the year they reach
+// endDrawdownAge. Withdrawals leave at month-start; interest accrues monthly on
+// the remaining (lowest) balance and is credited each December.
 function simulate(params: CpfOaParams, monthlyDrawdown: number): YearRow[] {
-  const { balanceAt55, birthYear, endDrawdownAge } = params;
+  const { balanceAtStart, birthYear, startDrawdownAge, endDrawdownAge } = params;
 
   const rows: YearRow[] = [];
-  let balance = balanceAt55;
+  let balance = balanceAtStart;
   let cumulativeInterest = 0;
 
-  for (let age = START_AGE + 1; age <= endDrawdownAge; age++) {
+  for (let age = startDrawdownAge; age <= endDrawdownAge; age++) {
     let interestBuffer = 0;
 
     for (let month = 1; month <= 12; month++) {
@@ -76,11 +76,14 @@ function solveMonthlyDrawdown(params: CpfOaParams): number {
 }
 
 function validate(params: CpfOaParams): string | null {
-  if (params.balanceAt55 < 0) {
-    return "OA Balance at 55 cannot be negative.";
+  if (params.startDrawdownAge < MIN_START_AGE) {
+    return `Age to Start Draw Down must be ${MIN_START_AGE} or above.`;
   }
-  if (params.endDrawdownAge <= START_AGE) {
-    return `Age to End Drawdown must be above ${START_AGE}.`;
+  if (params.balanceAtStart < 0) {
+    return `OA Balance at ${params.startDrawdownAge} cannot be negative.`;
+  }
+  if (params.endDrawdownAge < params.startDrawdownAge) {
+    return "Age to End Drawdown must be at or after the start age.";
   }
   if (params.endDrawdownAge > 120) {
     return "Age to End Drawdown is limited to 120.";
@@ -293,11 +296,13 @@ function StatCard({
 // ─── CPF OA Chart ─────────────────────────────────────────────────────────────
 function OaChart({
   rows,
-  balanceAt55,
+  startAge,
+  balanceAtStart,
   birthYear,
 }: {
   rows: YearRow[];
-  balanceAt55: number;
+  startAge: number;
+  balanceAtStart: number;
   birthYear: number;
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -309,12 +314,14 @@ function OaChart({
   const CW = W - PAD.left - PAD.right;
   const CH = H - PAD.top - PAD.bottom;
 
-  // Plot by age; the first point is the Dec balance at 55
+  // Plot by age; the first point is the opening balance, placed at the Dec
+  // just before drawdown begins so each later point is a year-end balance
+  const openingAge = startAge - 1;
   const points = [
-    { age: START_AGE, balance: balanceAt55 },
+    { age: openingAge, balance: balanceAtStart },
     ...rows.map((r) => ({ age: r.age, balance: r.balance })),
   ];
-  const minAge = START_AGE;
+  const minAge = openingAge;
   const maxAge = points[points.length - 1].age;
   const span = maxAge - minAge;
 
@@ -333,9 +340,9 @@ function OaChart({
   const xLabels: number[] = [];
   for (let a = Math.ceil(minAge / xStep) * xStep; a <= maxAge; a += xStep) xLabels.push(a);
 
-  // Include the opening balance at 55 so the leftmost edge is hoverable
+  // Include the opening balance so the leftmost edge is hoverable
   const hoverRows = [
-    { year: birthYear + START_AGE, age: START_AGE, balance: balanceAt55, withdrawals: 0 },
+    { year: birthYear + openingAge, age: openingAge, balance: balanceAtStart, withdrawals: 0 },
     ...rows,
   ];
 
@@ -344,7 +351,7 @@ function OaChart({
     const svgX = ((e.clientX - rect.left) / rect.width) * W;
     const fraction = Math.max(0, Math.min(1, (svgX - PAD.left) / CW));
     const age = minAge + fraction * span;
-    setHoveredIdx(Math.max(0, Math.min(hoverRows.length - 1, Math.round(age) - START_AGE)));
+    setHoveredIdx(Math.max(0, Math.min(hoverRows.length - 1, Math.round(age) - openingAge)));
   };
 
   const hd = hoveredIdx !== null ? hoverRows[hoveredIdx] : null;
@@ -359,7 +366,7 @@ function OaChart({
       style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
     >
       <p className="text-[0.9375rem] font-semibold mb-4" style={{ color: "var(--on-surface)" }}>
-        CPF OA Drawdown (Age {START_AGE + 1} – {maxAge}, {birthYear + START_AGE + 1} – {birthYear + maxAge})
+        CPF OA Drawdown (Age {startAge} – {maxAge}, {birthYear + startAge} – {birthYear + maxAge})
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
@@ -517,17 +524,18 @@ export default function CpfOaAnnuityCalculatorPage() {
     }
   }, [profile, router]);
 
-  const balanceAt55    = profile?.balanceAt55 ?? 0;
-  const birthYear      = profile?.birthYear ?? 0;
-  const endDrawdownAge = profile?.endDrawdownAge ?? 0;
+  const birthYear        = profile?.birthYear ?? 0;
+  const startDrawdownAge = profile?.startDrawdownAge ?? 0;
+  const balanceAtStart   = profile?.balanceAtStart ?? 0;
+  const endDrawdownAge   = profile?.endDrawdownAge ?? 0;
 
   const { rows, monthlyDrawdown, error } = useMemo(() => {
-    const params: CpfOaParams = { balanceAt55, birthYear, endDrawdownAge };
+    const params: CpfOaParams = { birthYear, startDrawdownAge, balanceAtStart, endDrawdownAge };
     const err = validate(params);
     if (err) return { rows: [] as YearRow[], monthlyDrawdown: 0, error: err };
     const w = solveMonthlyDrawdown(params);
     return { rows: simulate(params, w), monthlyDrawdown: w, error: null };
-  }, [balanceAt55, birthYear, endDrawdownAge]);
+  }, [birthYear, startDrawdownAge, balanceAtStart, endDrawdownAge]);
 
   if (!profile) return null;
 
@@ -536,8 +544,8 @@ export default function CpfOaAnnuityCalculatorPage() {
 
   const set = (changes: Partial<CpfOaParams>) => updateProfile(profileId, changes);
 
-  const drawdownYears = endDrawdownAge - START_AGE;
-  const startYear = birthYear + START_AGE + 1;
+  const drawdownYears = endDrawdownAge - startDrawdownAge + 1;
+  const startYear = birthYear + startDrawdownAge;
   const endYear = birthYear + endDrawdownAge;
   const totalWithdrawn = rows.reduce((s, r) => s + r.withdrawals, 0);
   const totalInterest = rows.at(-1)?.cumulativeInterest ?? 0;
@@ -594,7 +602,7 @@ export default function CpfOaAnnuityCalculatorPage() {
                   className="mt-2 text-base max-w-xl"
                   style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}
                 >
-                  See the constant monthly payout your OA balance at 55 can fund until your chosen age.
+                  See the constant monthly payout your OA balance can fund from your chosen start age until your chosen end age.
                 </p>
               </div>
             </div>
@@ -619,31 +627,40 @@ export default function CpfOaAnnuityCalculatorPage() {
               </p>
 
               <div className="space-y-5">
+                <FocusInput
+                  label="Birth Year"
+                  value={birthYear}
+                  onChange={(v) => set({ birthYear: Math.round(v) })}
+                  min={1930}
+                  max={currentYear}
+                  step={1}
+                />
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FocusInput
-                    label="OA Balance at 55 (S$)"
-                    value={balanceAt55}
-                    onChange={(v) => set({ balanceAt55: v })}
-                    min={0}
-                    step={1000}
+                    label="Age to Start Draw Down (Jan)"
+                    value={startDrawdownAge}
+                    onChange={(v) => set({ startDrawdownAge: Math.round(v) })}
+                    min={MIN_START_AGE}
+                    max={120}
+                    step={1}
                   />
                   <FocusInput
-                    label="Birth Year"
-                    value={birthYear}
-                    onChange={(v) => set({ birthYear: Math.round(v) })}
-                    min={1930}
-                    max={currentYear}
+                    label="Age to End Drawdown (Dec)"
+                    value={endDrawdownAge}
+                    onChange={(v) => set({ endDrawdownAge: Math.round(v) })}
+                    min={startDrawdownAge}
+                    max={120}
                     step={1}
                   />
                 </div>
 
                 <FocusInput
-                  label="Age to End Drawdown (Dec)"
-                  value={endDrawdownAge}
-                  onChange={(v) => set({ endDrawdownAge: Math.round(v) })}
-                  min={START_AGE + 1}
-                  max={120}
-                  step={1}
+                  label={`OA Balance at ${startDrawdownAge} (S$)`}
+                  value={balanceAtStart}
+                  onChange={(v) => set({ balanceAtStart: v })}
+                  min={0}
+                  step={1000}
                 />
               </div>
 
@@ -653,8 +670,8 @@ export default function CpfOaAnnuityCalculatorPage() {
                 </p>
               ) : (
                 <p className="text-[0.75rem] mt-5" style={{ color: "var(--on-surface-sub)" }}>
-                  Balance at 55 is taken as at Dec {birthYear + START_AGE}. Drawdown runs from
-                  Jan {startYear} (age {START_AGE + 1}) to Dec {endYear} (age {endDrawdownAge}).
+                  Balance at {startDrawdownAge} is taken as at Jan {startYear}. Drawdown runs from
+                  Jan {startYear} (age {startDrawdownAge}) to Dec {endYear} (age {endDrawdownAge}).
                 </p>
               )}
             </div>
@@ -673,15 +690,15 @@ export default function CpfOaAnnuityCalculatorPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <StatCard
                     label="Total Withdrawn"
-                    sublabel={`Age ${START_AGE + 1} – ${endDrawdownAge}`}
+                    sublabel={`Age ${startDrawdownAge} – ${endDrawdownAge}`}
                     value={fmt(totalWithdrawn)}
                   />
                   <StatCard
                     label="Total Interest Earned"
                     sublabel="During drawdown"
                     value={fmt(totalInterest)}
-                    caption={balanceAt55 > 0
-                      ? `${((totalInterest / balanceAt55) * 100).toFixed(1)}% on balance at 55`
+                    caption={balanceAtStart > 0
+                      ? `${((totalInterest / balanceAtStart) * 100).toFixed(1)}% on balance at ${startDrawdownAge}`
                       : undefined}
                   />
                 </div>
@@ -691,7 +708,12 @@ export default function CpfOaAnnuityCalculatorPage() {
 
           {/* ── Chart ─────────────────────────────────────────────────────── */}
           {rows.length > 0 && (
-            <OaChart rows={rows} balanceAt55={balanceAt55} birthYear={birthYear} />
+            <OaChart
+              rows={rows}
+              startAge={startDrawdownAge}
+              balanceAtStart={balanceAtStart}
+              birthYear={birthYear}
+            />
           )}
 
           {/* ── Yearly Table ──────────────────────────────────────────────── */}
@@ -734,7 +756,7 @@ export default function CpfOaAnnuityCalculatorPage() {
                 },
                 {
                   heading: "Drawdown Period",
-                  body: "Your OA balance at 55 is taken as at December of the year you turn 55. Drawdown runs from January of the following year to December of the year you reach your chosen end age, giving (end age − 55) years.",
+                  body: "Your OA balance is taken as at January of the year you reach your chosen start age. Drawdown runs from that January to December of the year you reach your chosen end age, giving (end age − start age + 1) years.",
                 },
                 {
                   heading: "Monthly Payout",

@@ -142,9 +142,9 @@ function ProfileCard({
 
       {/* Summary stats */}
       <div className="space-y-1.5">
-        <StatLine label="Balance at 55" value={`S$${profile.balanceAt55.toLocaleString("en-SG")}`} />
         <StatLine label="Born" value={`${profile.birthYear}`} />
-        <StatLine label="Drawdown" value={`Age 56 – ${profile.endDrawdownAge} (${profile.endDrawdownAge - 55} yrs)`} />
+        <StatLine label="Drawdown" value={`Age ${profile.startDrawdownAge} – ${profile.endDrawdownAge} (${profile.endDrawdownAge - profile.startDrawdownAge + 1} yrs)`} />
+        <StatLine label={`Balance at ${profile.startDrawdownAge}`} value={`S$${profile.balanceAtStart.toLocaleString("en-SG")}`} />
       </div>
 
       {/* Open link */}

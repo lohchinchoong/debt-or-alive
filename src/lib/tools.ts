@@ -38,7 +38,7 @@ export const tools: Tool[] = [
   {
     slug: "cpf-oa-annuity-calculator",
     name: "CPF Ordinary Account (OA) Annuity Calculator",
-    tagline: "See the constant monthly payout your OA balance at 55 can fund.",
+    tagline: "See the constant monthly payout your OA balance can fund from your chosen start age.",
     category: "CPF",
     icon: "Banknote",
   },
