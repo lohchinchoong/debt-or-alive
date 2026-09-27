@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useToolState } from "@/hooks/useToolState";
@@ -619,14 +620,12 @@ export function MortgageCalculatorPage() {
   const { propertyPrice, downPaymentPct, annualRate, tenureYears } = s;
 
   // ── Partial repayments (localStorage only, like FIRE's dynamic arrays) ──
-  const [partialRepayments, setPartialRepaymentsRaw] = useState<PartialRepayment[]>([]);
-  const [mounted, setMounted] = useState(false);
-  const [paymentRegimeIndex, setPaymentRegimeIndex] = useState(0);
-
-  useEffect(() => {
-    setPartialRepaymentsRaw(loadArray<PartialRepayment>("mortgage:partial-repayments", []));
-    setMounted(true);
-  }, []);
+  const [partialRepayments, setPartialRepaymentsRaw] = useState<PartialRepayment[]>(() =>
+    loadArray<PartialRepayment>("mortgage:partial-repayments", []),
+  );
+  const mounted = useIsClient();
+  // Selected regime, tagged with the regime count it was chosen for
+  const [regimeSelection, setRegimeSelection] = useState({ count: 0, index: 0 });
 
   const setPartialRepayments = useCallback((fn: (prev: PartialRepayment[]) => PartialRepayment[]) => {
     setPartialRepaymentsRaw((prev) => {
@@ -697,10 +696,11 @@ export function MortgageCalculatorPage() {
     return regimes;
   }, [yearly]);
 
-  // Reset regime index when regimes change
-  useEffect(() => {
-    setPaymentRegimeIndex(0);
-  }, [paymentRegimes.length]);
+  // Selection resets to the first regime whenever the number of regimes changes
+  const paymentRegimeIndex =
+    regimeSelection.count === paymentRegimes.length ? regimeSelection.index : 0;
+  const setPaymentRegimeIndex = (fn: (i: number) => number) =>
+    setRegimeSelection({ count: paymentRegimes.length, index: fn(paymentRegimeIndex) });
 
   const currentRegime = paymentRegimes[paymentRegimeIndex] ?? paymentRegimes[0];
   const hasMultipleRegimes = paymentRegimes.length > 1;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -521,10 +521,7 @@ export default function CpfSaCalculatorPage() {
 
   const set = (changes: Partial<CpfParams>) => updateProfile(profileId, changes);
 
-  const rows = useMemo(
-    () => simulate(currentBalance, monthlyContrib, startYear, endContribYear, birthYear),
-    [currentBalance, monthlyContrib, startYear, endContribYear, birthYear]
-  );
+  const rows = simulate(currentBalance, monthlyContrib, startYear, endContribYear, birthYear);
 
   const endContribRow = rows.find((r) => r.year === endContribYear);
   const age55Year = birthYear + 55;

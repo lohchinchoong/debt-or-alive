@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useToolState } from "@/hooks/useToolState";
@@ -575,13 +576,10 @@ export function EmergencyFundPage() {
   const projectionYears: number = 5;
 
   // ── Savings sources (dynamic array, localStorage) ──
-  const [sources, setSourcesRaw] = useState<SavingsSource[]>([]);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setSourcesRaw(loadArray<SavingsSource>("emergency-fund:sources", []));
-    setMounted(true);
-  }, []);
+  const [sources, setSourcesRaw] = useState<SavingsSource[]>(() =>
+    loadArray<SavingsSource>("emergency-fund:sources", []),
+  );
+  const mounted = useIsClient();
 
   const setSources = useCallback((fn: (prev: SavingsSource[]) => SavingsSource[]) => {
     setSourcesRaw((prev) => {

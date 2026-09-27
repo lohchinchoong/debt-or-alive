@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -598,10 +598,7 @@ export default function CpfMaCalculatorPage() {
   const currentYear = new Date().getFullYear();
   const set = (changes: Partial<CpfMaParams>) => updateProfile(profileId, changes);
 
-  const rows = useMemo(
-    () => simulate(currentBalance, monthlyContrib, startYear, endContribYear, birthYear, annualMedishieldPremium),
-    [currentBalance, monthlyContrib, startYear, endContribYear, birthYear, annualMedishieldPremium]
-  );
+  const rows = simulate(currentBalance, monthlyContrib, startYear, endContribYear, birthYear, annualMedishieldPremium);
 
   // Key milestone rows
   const endContribRow = rows.find((r) => r.year === endContribYear);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { fmtAxis, niceMax, loadArray, saveArray, genId, todayISO } from "@/lib/utils";
@@ -86,7 +87,7 @@ function projectSRS(
   const rates = deposits.map((d) => d.interestRate / 100);
   const depositYears = deposits.map((d) => yearFromISO(d.startDate));
 
-  let cumulativeDeposits = deposits.reduce((s, d) => s + Math.max(0, d.amount), 0);
+  const cumulativeDeposits = deposits.reduce((s, d) => s + Math.max(0, d.amount), 0);
   let cumulativeInterest = 0;
   let cumulativeWithdrawals = 0;
 
@@ -148,63 +149,6 @@ function projectSRS(
   }
 
   return points;
-}
-
-// ─── FocusInput ──────────────────────────────────────────────────────────────
-function FocusInput({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step = 1,
-  hint,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min?: number;
-  max?: number;
-  step?: number;
-  hint?: string;
-}) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <div>
-      <p className="text-[0.8125rem] font-medium mb-1.5" style={{ color: "var(--on-surface-sub)" }}>
-        {label}
-      </p>
-      <input
-        type="number"
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        style={{
-          width: "100%",
-          background: "var(--surface-container-highest)",
-          border: "none",
-          borderBottom: `2px solid ${focused ? "var(--primary)" : "var(--outline-variant)"}`,
-          borderRadius: "0.25rem 0.25rem 0 0",
-          padding: "0.625rem 0.5rem",
-          fontSize: "0.9375rem",
-          fontFamily: "Manrope, sans-serif",
-          fontWeight: 500,
-          color: "var(--on-surface)",
-          outline: "none",
-          transition: "border-color 0.15s ease",
-        }}
-      />
-      {hint && (
-        <p className="text-xs mt-1" style={{ color: "var(--on-surface-sub)" }}>
-          {hint}
-        </p>
-      )}
-    </div>
-  );
 }
 
 // ─── DepositRow ───────────────────────────────────────────────────────────────
@@ -565,40 +509,36 @@ const DEFAULT_DEPOSITS: Deposit[] = [
 
 export function SRSCalculatorPage() {
   // ── Deposits array ──
-  const [deposits, setDeposits] = useState<Deposit[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+  const [deposits, setDeposits] = useState<Deposit[]>(() => loadArray<Deposit>(DEPOSITS_KEY, DEFAULT_DEPOSITS));
+  const hydrated = useIsClient();
 
   // ── Withdrawal settings ──
-  const [withdrawal, setWithdrawal] = useState<WithdrawalSettings>(DEFAULT_WITHDRAWAL);
-
-  useEffect(() => {
-    setDeposits(loadArray<Deposit>(DEPOSITS_KEY, DEFAULT_DEPOSITS));
+  const [withdrawal, setWithdrawal] = useState<WithdrawalSettings>(() => {
+    if (typeof window === "undefined") return DEFAULT_WITHDRAWAL;
     const raw = localStorage.getItem(WITHDRAWAL_KEY);
     if (raw) {
       try {
-        setWithdrawal(JSON.parse(raw));
+        return JSON.parse(raw) as WithdrawalSettings;
       } catch {
         // ignore
       }
     }
-    setHydrated(true);
-  }, []);
+    return DEFAULT_WITHDRAWAL;
+  });
 
   // Persist deposits
   useEffect(() => {
-    if (!hydrated) return;
     saveArray(DEPOSITS_KEY, deposits);
-  }, [deposits, hydrated]);
+  }, [deposits]);
 
   // Persist withdrawal settings
   useEffect(() => {
-    if (!hydrated) return;
     try {
       localStorage.setItem(WITHDRAWAL_KEY, JSON.stringify(withdrawal));
     } catch {
       // ignore
     }
-  }, [withdrawal, hydrated]);
+  }, [withdrawal]);
 
   // ── Deposit CRUD ──
   const addDeposit = useCallback(() => {

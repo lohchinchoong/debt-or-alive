@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useToolState } from "@/hooks/useToolState";
@@ -466,14 +467,13 @@ function PieChart({
     );
   }
 
-  let cursor = 0;
-  const builtSlices = slices.map((sl) => {
+  type BuiltSlice = SliceData & { startAngle: number; endAngle: number; fraction: number };
+  const builtSlices = slices.reduce<BuiltSlice[]>((acc, sl) => {
     const fraction = sl.value / total;
-    const startAngle = cursor;
-    const endAngle = cursor + fraction * Math.PI * 2;
-    cursor = endAngle;
-    return { ...sl, startAngle, endAngle, fraction };
-  });
+    const startAngle = acc.length > 0 ? acc[acc.length - 1].endAngle : 0;
+    const endAngle = startAngle + fraction * Math.PI * 2;
+    return [...acc, { ...sl, startAngle, endAngle, fraction }];
+  }, []);
 
   const hoveredSlice = hovered ? builtSlices.find((s) => s.key === hovered) ?? null : null;
 
@@ -751,14 +751,9 @@ export function BudgetPlannerPage() {
   const [s, set] = useToolState(STORAGE_KEY_STATE, { annualSalary: 72000 });
   const monthlyIncome = s.annualSalary / 12;
 
-  const [items, setItemsRaw] = useState<BudgetItem[]>([]);
+  const [items, setItemsRaw] = useState<BudgetItem[]>(() => loadArray<BudgetItem>(STORAGE_KEY_ITEMS, []));
   const [itemsExpanded, setItemsExpanded] = useState(true);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setItemsRaw(loadArray<BudgetItem>(STORAGE_KEY_ITEMS, []));
-    setMounted(true);
-  }, []);
+  const mounted = useIsClient();
 
   const setItems = useCallback((fn: (prev: BudgetItem[]) => BudgetItem[]) => {
     setItemsRaw((prev) => {

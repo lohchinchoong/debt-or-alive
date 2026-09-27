@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { useToolState } from "@/hooks/useToolState";
@@ -495,11 +496,9 @@ function FireChart({
 
 function IncomeChart({
   data,
-  retirementAge,
   monthlyExpense,
 }: {
   data: YearRow[];
-  retirementAge: number;
   monthlyExpense: number;
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -922,24 +921,18 @@ export function FireCalculatorPage() {
   const { monthlyExpense, currentAge, retirementAge, deathAge } = s;
 
   // ── Persisted dynamic arrays (localStorage only) ──
-  const [yieldSources, setYieldSourcesRaw] = useState<YieldSource[]>([]);
-  const [drawdownSources, setDrawdownSourcesRaw] = useState<DrawdownSource[]>([]);
-  const [mounted, setMounted] = useState(false);
-
-  // Load from localStorage after mount
-  useEffect(() => {
-    setYieldSourcesRaw(
-      loadArray<YieldSource>("fire:yield-sources-v2", [
-        { id: genId("src"), name: "Dividend ETF", value: 50000, yieldRate: 5, startAge: 30 },
-      ]),
-    );
-    setDrawdownSourcesRaw(
-      loadArray<DrawdownSource>("fire:drawdown-sources-v2", [
-        { id: genId("src"), name: "Growth Portfolio", value: 100000, startAge: 55, endAge: 80 },
-      ]),
-    );
-    setMounted(true);
-  }, []);
+  // Lazily loaded from localStorage; content is gated on `mounted` so hydration matches
+  const [yieldSources, setYieldSourcesRaw] = useState<YieldSource[]>(() =>
+    loadArray<YieldSource>("fire:yield-sources-v2", [
+      { id: genId("src"), name: "Dividend ETF", value: 50000, yieldRate: 5, startAge: 30 },
+    ]),
+  );
+  const [drawdownSources, setDrawdownSourcesRaw] = useState<DrawdownSource[]>(() =>
+    loadArray<DrawdownSource>("fire:drawdown-sources-v2", [
+      { id: genId("src"), name: "Growth Portfolio", value: 100000, startAge: 55, endAge: 80 },
+    ]),
+  );
+  const mounted = useIsClient();
 
   // Persist arrays on change
   const setYieldSources = useCallback((fn: (prev: YieldSource[]) => YieldSource[]) => {
@@ -1379,7 +1372,7 @@ export function FireCalculatorPage() {
               <FireChart data={projection} retirementAge={retirementAge} fireNumber={fireNumber} />
 
               {/* Monthly income chart */}
-              <IncomeChart data={projection} retirementAge={retirementAge} monthlyExpense={monthlyExpense} />
+              <IncomeChart data={projection} monthlyExpense={monthlyExpense} />
             </div>
           </div>
 

@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useSavingsGoal, SavingsItem, SavingsScenario } from "@/hooks/useSavingsGoal";
+import { useSavingsGoal, SavingsItem } from "@/hooks/useSavingsGoal";
 import { fmtAxis, niceMax, todayISO } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

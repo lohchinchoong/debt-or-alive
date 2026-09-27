@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from "react";
+import { useIsClient } from "@/hooks/useIsClient";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { fmtAxis, niceMax, loadArray, saveArray, genId } from "@/lib/utils";
@@ -435,24 +436,27 @@ function GrowthChart({
   );
 }
 
+// Colors for bar chart
+const BAR_COLORS = [
+  "#2d6a4f", "#40916c", "#52b788", "#74c69d", "#95d5b2",
+  "#1b4332", "#b7e4c7", "#d8f3dc", "#367658", "#4a9e73",
+];
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function DividendCalculatorPage() {
-  const [sources, setSourcesRaw] = useState<YieldSource[]>([]);
-  const [projectionYears, setProjectionYears] = useState(20);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setSourcesRaw(
-      loadArray<YieldSource>("dividend:sources", [
-        { id: genId("div"), name: "Dividend ETF", value: 50000, yieldRate: 5, withholdingTax: false },
-        { id: genId("div"), name: "REITs", value: 30000, yieldRate: 6, withholdingTax: false },
-      ]),
-    );
+  const [sources, setSourcesRaw] = useState<YieldSource[]>(() =>
+    loadArray<YieldSource>("dividend:sources", [
+      { id: genId("div"), name: "Dividend ETF", value: 50000, yieldRate: 5, withholdingTax: false },
+      { id: genId("div"), name: "REITs", value: 30000, yieldRate: 6, withholdingTax: false },
+    ]),
+  );
+  const [projectionYears, setProjectionYears] = useState(() => {
+    if (typeof window === "undefined") return 20;
     const savedYears = localStorage.getItem("dividend:projection-years");
-    if (savedYears) setProjectionYears(parseInt(savedYears) || 20);
-    setMounted(true);
-  }, []);
+    return (savedYears && parseInt(savedYears)) || 20;
+  });
+  const mounted = useIsClient();
 
   const setSources = useCallback((fn: (prev: YieldSource[]) => YieldSource[]) => {
     setSourcesRaw((prev) => {
@@ -473,19 +477,13 @@ export function DividendCalculatorPage() {
   const totalMonthlyIncome = totalAnnualIncome / 12;
   const weightedYield = totalValue > 0 ? (totalAnnualIncome / totalValue) * 100 : 0;
 
-  // Colors for bar chart
-  const barColors = [
-    "#2d6a4f", "#40916c", "#52b788", "#74c69d", "#95d5b2",
-    "#1b4332", "#b7e4c7", "#d8f3dc", "#367658", "#4a9e73",
-  ];
-
   const chartSources = useMemo(
     () =>
       sources
         .map((src, i) => ({
           name: src.name || "Untitled",
           annualIncome: src.value * (netYieldRate(src) / 100),
-          color: barColors[i % barColors.length],
+          color: BAR_COLORS[i % BAR_COLORS.length],
         }))
         .sort((a, b) => b.annualIncome - a.annualIncome),
     [sources],
@@ -717,7 +715,7 @@ export function DividendCalculatorPage() {
                           ...src,
                           netRate: netYieldRate(src),
                           annual: src.value * (netYieldRate(src) / 100),
-                          color: barColors[i % barColors.length],
+                          color: BAR_COLORS[i % BAR_COLORS.length],
                         }))
                         .sort((a, b) => b.annual - a.annual)
                         .map((src) => (
