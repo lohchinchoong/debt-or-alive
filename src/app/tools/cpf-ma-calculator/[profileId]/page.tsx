@@ -13,6 +13,7 @@ const BHS = 79_000; // Basic Healthcare Sum 2026
 // ─── Types ────────────────────────────────────────────────────────────────────
 type YearRow = {
   year:               number;
+  firstMonth:         number; // 1–12; > 1 only for a partial first year
   balance:            number;
   totalContributions: number;
   interestEarned:     number;
@@ -22,6 +23,11 @@ type YearRow = {
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const yearLabel = (row: YearRow) =>
+  row.firstMonth > 1 ? `${row.year} (${MONTHS[row.firstMonth - 1]}–Dec)` : `${row.year}`;
+
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-SG", {
     style: "currency",
@@ -52,6 +58,7 @@ function simulate(
   initialBalance:          number,
   monthlyContrib:          number,
   startYear:               number,
+  startMonth:              number,
   endContribYear:          number,
   birthYear:               number,
   annualMedishieldPremium: number
@@ -68,10 +75,11 @@ function simulate(
 
   for (let year = startYear; year <= endProjectionYear; year++) {
     const age = year - birthYear;
+    const firstMonth = year === startYear ? startMonth : 1;
     let interestBuffer = 0;
     const monthlyPremium = annualMedishieldPremium / 12;
 
-    for (let month = 1; month <= 12; month++) {
+    for (let month = firstMonth; month <= 12; month++) {
       // Interest on beginning-of-month balance (before this month's contribution)
       interestBuffer += cpfMaMonthlyInterest(balance, age);
 
@@ -103,6 +111,7 @@ function simulate(
 
         rows.push({
           year,
+          firstMonth,
           balance,
           totalContributions,
           interestEarned:  interestBuffer,
@@ -253,6 +262,55 @@ function FocusInput({
   );
 }
 
+// ─── FocusSelect ──────────────────────────────────────────────────────────────
+function FocusSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  options: { value: number; label: string }[];
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div>
+      <p className="text-[0.8125rem] font-medium mb-1.5" style={{ color: "var(--on-surface-sub)" }}>
+        {label}
+      </p>
+      <select
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          width: "100%",
+          background: "var(--surface-container-highest)",
+          border: "none",
+          borderBottom: `2px solid ${focused ? "var(--primary)" : "var(--outline-variant)"}`,
+          borderRadius: "0.25rem 0.25rem 0 0",
+          padding: "0.625rem 0.5rem",
+          fontSize: "0.9375rem",
+          fontFamily: "Manrope, sans-serif",
+          fontWeight: 500,
+          color: "var(--on-surface)",
+          outline: "none",
+          cursor: "pointer",
+          transition: "border-color 0.15s ease",
+        }}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // ─── StatCard ─────────────────────────────────────────────────────────────────
 function StatCard({
   label,
@@ -329,10 +387,12 @@ function StatCard({
 function MaChart({
   rows,
   startYear,
+  startMonth,
   endContribYear,
 }: {
   rows:           YearRow[];
   startYear:      number;
+  startMonth:     number;
   endContribYear: number;
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -390,7 +450,7 @@ function MaChart({
       style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
     >
       <p className="text-[0.9375rem] font-semibold mb-4" style={{ color: "var(--on-surface)" }}>
-        CPF MA ({startYear} – {maxYear})
+        CPF MA ({MONTHS[startMonth - 1]} {startYear} – {maxYear})
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
@@ -466,7 +526,7 @@ function MaChart({
             <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5"
               fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
             <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700"
-              fill="var(--primary)" fontFamily="Manrope, sans-serif">{`${hd.year}`}</text>
+              fill="var(--primary)" fontFamily="Manrope, sans-serif">{yearLabel(hd)}</text>
             <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)"
               fontFamily="Manrope, sans-serif">{`Balance: $${fmtAxis(hd.balance)}`}</text>
             <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="var(--on-surface-sub)"
@@ -535,7 +595,7 @@ function YearlyTable({ rows, showOverflow, showPremiums }: { rows: YearRow[]; sh
                   <tr key={row.year} style={{
                     backgroundColor: i % 2 === 0 ? "var(--surface-container-lowest)" : "var(--surface-container-low)",
                   }}>
-                    <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "var(--on-surface)" }}>{row.year}</td>
+                    <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "var(--on-surface)" }}>{yearLabel(row)}</td>
                     <td className="px-6 py-3.5 text-sm font-medium" style={{
                       color: row.balance >= BHS ? "var(--amber)" : "var(--on-surface)",
                       fontWeight: row.balance >= BHS ? 700 : 500,
@@ -589,6 +649,7 @@ export default function CpfMaCalculatorPage() {
     currentBalance,
     monthlyContrib,
     startYear,
+    startMonth,
     endContribYear,
     birthYear,
     annualMedishieldPremium,
@@ -598,7 +659,14 @@ export default function CpfMaCalculatorPage() {
   const currentYear = new Date().getFullYear();
   const set = (changes: Partial<CpfMaParams>) => updateProfile(profileId, changes);
 
-  const rows = simulate(currentBalance, monthlyContrib, startYear, endContribYear, birthYear, annualMedishieldPremium);
+  const rows = simulate(currentBalance, monthlyContrib, startYear, startMonth, endContribYear, birthYear, annualMedishieldPremium);
+
+  // Keep a saved year outside the default window selectable so the dropdown never shows blank
+  const startYearOptions = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i);
+  if (!startYearOptions.includes(startYear)) {
+    startYearOptions.push(startYear);
+    startYearOptions.sort((a, b) => a - b);
+  }
 
   // Key milestone rows
   const endContribRow = rows.find((r) => r.year === endContribYear);
@@ -617,7 +685,7 @@ export default function CpfMaCalculatorPage() {
 
   const projNote =
     rows.length > 0
-      ? `Projection runs from Jan ${startYear} to end of ${rows[rows.length - 1].year}.`
+      ? `Projection runs from ${MONTHS[startMonth - 1]} ${startYear} to end of ${rows[rows.length - 1].year}.`
       : "";
 
   return (
@@ -715,14 +783,22 @@ export default function CpfMaCalculatorPage() {
                   />
                 </div>
 
-                <FocusInput
-                  label="Starting Year (Jan)"
-                  value={startYear}
-                  onChange={(v) => set({ startYear: Math.round(v) })}
-                  min={2000}
-                  max={2100}
-                  step={1}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FocusSelect
+                    label="Starting Month"
+                    value={startMonth}
+                    onChange={(v) => set({ startMonth: v })}
+                    options={MONTHS.map((m, i) => ({ value: i + 1, label: m }))}
+                  />
+                  <FocusSelect
+                    label="Starting Year"
+                    value={startYear}
+                    onChange={(v) =>
+                      set({ startYear: v, ...(endContribYear < v && { endContribYear: v }) })
+                    }
+                    options={startYearOptions.map((y) => ({ value: y, label: `${y}` }))}
+                  />
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FocusInput
@@ -863,7 +939,7 @@ export default function CpfMaCalculatorPage() {
                       label="Total Premiums Deducted"
                       sublabel="MediShield Life"
                       value={fmt(rows[rows.length - 1].premiumsPaid)}
-                      caption={`Over ${rows[rows.length - 1].year - startYear + 1} years`}
+                      caption={`${MONTHS[startMonth - 1]} ${startYear} – Dec ${rows[rows.length - 1].year}`}
                     />
                   )}
                 </div>
@@ -873,7 +949,7 @@ export default function CpfMaCalculatorPage() {
 
           {/* ── Chart ─────────────────────────────────────────────────────── */}
           {rows.length > 1 && (
-            <MaChart rows={rows} startYear={startYear} endContribYear={endContribYear} />
+            <MaChart rows={rows} startYear={startYear} startMonth={startMonth} endContribYear={endContribYear} />
           )}
 
           {/* ── Yearly Table ──────────────────────────────────────────────── */}
@@ -927,7 +1003,7 @@ export default function CpfMaCalculatorPage() {
                   heading: "Interest Crediting",
                   body: (
                     <>
-                      Monthly interest accrues in a buffer throughout the year and is credited to your principal at the <strong>end of December</strong>. Credited interest compounds in subsequent years, driving significant long-term growth.
+                      Monthly interest accrues in a buffer throughout the year and is credited to your principal at the <strong>end of December</strong>. Credited interest compounds in subsequent years, driving significant long-term growth. If you start mid-year, contributions and interest begin from your chosen starting month and the partial first year&apos;s interest is still credited in December.
                     </>
                   ),
                 },

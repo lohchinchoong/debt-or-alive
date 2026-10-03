@@ -8,6 +8,7 @@ export type CpfParams = {
   currentBalance: number;
   monthlyContrib: number;
   startYear:      number;
+  startMonth:     number; // 1–12
   endContribYear: number;
   birthYear:      number;
 };
@@ -18,6 +19,7 @@ export const CPF_DEFAULT_PARAMS: CpfParams = {
   currentBalance: 10_000,
   monthlyContrib: 500,
   startYear:      new Date().getFullYear(),
+  startMonth:     new Date().getMonth() + 1,
   endContribYear: new Date().getFullYear() + 11,
   birthYear:      1982,
 };
@@ -38,7 +40,8 @@ function readProfiles(): CpfProfile[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as CpfProfile[];
+    // Profiles saved before startMonth existed always started in January
+    if (raw) return (JSON.parse(raw) as CpfProfile[]).map((p) => ({ ...p, startMonth: p.startMonth ?? 1 }));
 
     // One-time migration: promote old single-profile key to the new array format
     const oldRaw = localStorage.getItem("tool:cpf-sa-calculator");
@@ -48,6 +51,7 @@ function readProfiles(): CpfProfile[] {
         id:   `p_${Date.now()}`,
         name: "My Scenario",
         ...CPF_DEFAULT_PARAMS,
+        startMonth: 1,
         ...old,
       };
       writeProfiles([migrated]);

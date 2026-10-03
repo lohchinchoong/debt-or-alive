@@ -10,6 +10,7 @@ import { fmtAxis, niceMax } from "@/lib/utils";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type YearRow = {
   year: number;
+  firstMonth: number; // 1–12; > 1 only for a partial first year
   balance: number;
   totalContributions: number;
   interestEarned: number;
@@ -17,6 +18,11 @@ type YearRow = {
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const yearLabel = (row: YearRow) =>
+  row.firstMonth > 1 ? `${row.year} (${MONTHS[row.firstMonth - 1]}–Dec)` : `${row.year}`;
+
 const fmt = (n: number) =>
   new Intl.NumberFormat("en-SG", {
     style: "currency",
@@ -45,6 +51,7 @@ function simulate(
   initialBalance: number,
   monthlyContrib: number,
   startYear: number,
+  startMonth: number,
   endContribYear: number,
   birthYear: number
 ): YearRow[] {
@@ -58,9 +65,10 @@ function simulate(
 
   for (let year = startYear; year <= endProjectionYear; year++) {
     const age = year - birthYear;
+    const firstMonth = year === startYear ? startMonth : 1;
     let interestBuffer = 0;
 
-    for (let month = 1; month <= 12; month++) {
+    for (let month = firstMonth; month <= 12; month++) {
       interestBuffer += cpfMonthlyInterest(balance, age);
 
       if (year <= endContribYear) {
@@ -73,6 +81,7 @@ function simulate(
         cumulativeInterest += interestBuffer;
         rows.push({
           year,
+          firstMonth,
           balance,
           totalContributions,
           interestEarned: interestBuffer,
@@ -221,6 +230,55 @@ function FocusInput({
   );
 }
 
+// ─── FocusSelect ──────────────────────────────────────────────────────────────
+function FocusSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  options: { value: number; label: string }[];
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div>
+      <p className="text-[0.8125rem] font-medium mb-1.5" style={{ color: "var(--on-surface-sub)" }}>
+        {label}
+      </p>
+      <select
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          width: "100%",
+          background: "var(--surface-container-highest)",
+          border: "none",
+          borderBottom: `2px solid ${focused ? "var(--primary)" : "var(--outline-variant)"}`,
+          borderRadius: "0.25rem 0.25rem 0 0",
+          padding: "0.625rem 0.5rem",
+          fontSize: "0.9375rem",
+          fontFamily: "Manrope, sans-serif",
+          fontWeight: 500,
+          color: "var(--on-surface)",
+          outline: "none",
+          cursor: "pointer",
+          transition: "border-color 0.15s ease",
+        }}
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 // ─── StatCard ────────────────────────────────────────────────────────────────
 function StatCard({
   label,
@@ -291,10 +349,12 @@ function StatCard({
 function CpfChart({
   rows,
   startYear,
+  startMonth,
   endContribYear,
 }: {
   rows: YearRow[];
   startYear: number;
+  startMonth: number;
   endContribYear: number;
 }) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
@@ -352,7 +412,7 @@ function CpfChart({
       style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
     >
       <p className="text-[0.9375rem] font-semibold mb-4" style={{ color: "var(--on-surface)" }}>
-        CPF SA ({startYear} – {maxYear})
+        CPF SA ({MONTHS[startMonth - 1]} {startYear} – {maxYear})
       </p>
       <svg
         viewBox={`0 0 ${W} ${H}`}
@@ -415,7 +475,7 @@ function CpfChart({
             <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5"
               fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
             <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700"
-              fill="var(--primary)" fontFamily="Manrope, sans-serif">{`${hd.year}`}</text>
+              fill="var(--primary)" fontFamily="Manrope, sans-serif">{yearLabel(hd)}</text>
             <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)"
               fontFamily="Manrope, sans-serif">{`Balance: $${fmtAxis(hd.balance)}`}</text>
             <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="var(--on-surface-sub)"
@@ -482,7 +542,7 @@ function YearlyTable({ rows }: { rows: YearRow[] }) {
                   <tr key={row.year} style={{
                     backgroundColor: i % 2 === 0 ? "var(--surface-container-lowest)" : "var(--surface-container-low)",
                   }}>
-                    <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "var(--on-surface)" }}>{row.year}</td>
+                    <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "var(--on-surface)" }}>{yearLabel(row)}</td>
                     <td className="px-6 py-3.5 text-sm font-medium" style={{ color: "var(--on-surface)" }}>{fmt(row.balance)}</td>
                     <td className="px-6 py-3.5 text-sm" style={{ color: "var(--on-surface)" }}>{fmt(row.totalContributions)}</td>
                     <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "var(--primary)" }}>+{fmt(row.interestEarned)}</td>
@@ -516,12 +576,19 @@ export default function CpfSaCalculatorPage() {
 
   if (!profile) return null;
 
-  const { currentBalance, monthlyContrib, startYear, endContribYear, birthYear, name } = profile;
+  const { currentBalance, monthlyContrib, startYear, startMonth, endContribYear, birthYear, name } = profile;
   const currentYear = new Date().getFullYear();
 
   const set = (changes: Partial<CpfParams>) => updateProfile(profileId, changes);
 
-  const rows = simulate(currentBalance, monthlyContrib, startYear, endContribYear, birthYear);
+  const rows = simulate(currentBalance, monthlyContrib, startYear, startMonth, endContribYear, birthYear);
+
+  // Keep a saved year outside the default window selectable so the dropdown never shows blank
+  const startYearOptions = Array.from({ length: 21 }, (_, i) => currentYear - 10 + i);
+  if (!startYearOptions.includes(startYear)) {
+    startYearOptions.push(startYear);
+    startYearOptions.sort((a, b) => a - b);
+  }
 
   const endContribRow = rows.find((r) => r.year === endContribYear);
   const age55Year = birthYear + 55;
@@ -531,7 +598,7 @@ export default function CpfSaCalculatorPage() {
 
   const projNote =
     rows.length > 0
-      ? `Projection runs from Jan ${startYear} to end of ${rows[rows.length - 1].year}.`
+      ? `Projection runs from ${MONTHS[startMonth - 1]} ${startYear} to end of ${rows[rows.length - 1].year}.`
       : "";
 
   return (
@@ -627,14 +694,22 @@ export default function CpfSaCalculatorPage() {
                   />
                 </div>
 
-                <FocusInput
-                  label="Starting Year (Jan)"
-                  value={startYear}
-                  onChange={(v) => set({ startYear: Math.round(v) })}
-                  min={2000}
-                  max={2100}
-                  step={1}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FocusSelect
+                    label="Starting Month"
+                    value={startMonth}
+                    onChange={(v) => set({ startMonth: v })}
+                    options={MONTHS.map((m, i) => ({ value: i + 1, label: m }))}
+                  />
+                  <FocusSelect
+                    label="Starting Year"
+                    value={startYear}
+                    onChange={(v) =>
+                      set({ startYear: v, ...(endContribYear < v && { endContribYear: v }) })
+                    }
+                    options={startYearOptions.map((y) => ({ value: y, label: `${y}` }))}
+                  />
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FocusInput
@@ -725,7 +800,7 @@ export default function CpfSaCalculatorPage() {
 
           {/* ── Chart ─────────────────────────────────────────────────────── */}
           {rows.length > 1 && (
-            <CpfChart rows={rows} startYear={startYear} endContribYear={endContribYear} />
+            <CpfChart rows={rows} startYear={startYear} startMonth={startMonth} endContribYear={endContribYear} />
           )}
 
           {/* ── Yearly Table ──────────────────────────────────────────────── */}
@@ -778,7 +853,7 @@ export default function CpfSaCalculatorPage() {
                 },
                 {
                   heading: "Contributions",
-                  body: "Added at the end of each month within your specified contribution window. After the end contribution year, the balance continues to grow from interest alone — the projection extends to age 65 to show the long-term picture.",
+                  body: "Added at the end of each month within your specified contribution window, starting from your chosen starting month. If you start mid-year, the first year is a partial year and its interest is still credited in December. After the end contribution year, the balance continues to grow from interest alone — the projection extends to age 65 to show the long-term picture.",
                 },
               ].map(({ heading, body }) => (
                 <li

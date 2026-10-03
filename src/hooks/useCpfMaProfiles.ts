@@ -8,6 +8,7 @@ export type CpfMaParams = {
   currentBalance:          number;
   monthlyContrib:          number;
   startYear:               number;
+  startMonth:              number; // 1–12
   endContribYear:          number;
   birthYear:               number;
   annualMedishieldPremium: number;
@@ -19,6 +20,7 @@ export const CPF_MA_DEFAULT_PARAMS: CpfMaParams = {
   currentBalance:          10_000,
   monthlyContrib:          300,
   startYear:               new Date().getFullYear(),
+  startMonth:              new Date().getMonth() + 1,
   endContribYear:          new Date().getFullYear() + 11,
   birthYear:               1982,
   annualMedishieldPremium: 0,
@@ -40,7 +42,8 @@ function readProfiles(): CpfMaProfile[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as CpfMaProfile[];
+    // Profiles saved before startMonth existed always started in January
+    if (raw) return (JSON.parse(raw) as CpfMaProfile[]).map((p) => ({ ...p, startMonth: p.startMonth ?? 1 }));
   } catch {}
   return [];
 }
