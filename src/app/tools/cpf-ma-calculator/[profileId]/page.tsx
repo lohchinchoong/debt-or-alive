@@ -670,6 +670,9 @@ export default function CpfMaCalculatorPage() {
 
   // Key milestone rows
   const endContribRow = rows.find((r) => r.year === endContribYear);
+  const currentAge    = currentYear - birthYear;
+  const age21Year     = birthYear + 21;
+  const age21Row      = rows.find((r) => r.year === age21Year);
   const age55Year     = birthYear + 55;
   const age65Year     = birthYear + 65;
   const age55Row      = rows.find((r) => r.year === age55Year);
@@ -890,6 +893,21 @@ export default function CpfMaCalculatorPage() {
                         ? `${((endContribRow.accruedInterest / endContribRow.totalContributions) * 100).toFixed(1)}% return on contributions`
                         : undefined
                     }
+                  />
+                </div>
+              )}
+
+              {currentAge < 21 && age21Row && age21Year >= startYear && age21Year !== endContribYear && (
+                <div className="grid grid-cols-2 gap-4">
+                  <StatCard
+                    label={`By Age 21 (${age21Year})`}
+                    sublabel="Projected Balance"
+                    value={fmt(age21Row.balance)}
+                  />
+                  <StatCard
+                    label={`By Age 21 (${age21Year})`}
+                    sublabel="Total Interest Earned"
+                    value={fmt(age21Row.accruedInterest)}
                   />
                 </div>
               )}
