@@ -897,7 +897,7 @@ export default function CpfMaCalculatorPage() {
                 </div>
               )}
 
-              {currentAge < 21 && age21Row && age21Year >= startYear && age21Year !== endContribYear && (
+              {currentAge < 21 && age21Row && (
                 <div className="grid grid-cols-2 gap-4">
                   <StatCard
                     label={`By Age 21 (${age21Year})`}
