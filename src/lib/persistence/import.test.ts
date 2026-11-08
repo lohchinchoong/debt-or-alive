@@ -16,6 +16,19 @@ const fullBackup = {
 };
 
 describe("importBackup", () => {
+
+  it("removes the retired Amt keys from imported HYSA entries", () => {
+    const storage = createMemoryStorage();
+    const entry = { year: 2026, month: 1, salaryAmount: 5000, salaryInterest: 10, cardSpendAmount: 1, cardInterest: 0, insureAmount: 2, insureInterest: 0, investAmount: 3, investInterest: 0, investmentPL: 5 };
+
+    const result = importBackup(storage, { "hysa-tracker:scenarios": [{ id: "h1", name: "Bank", entries: [entry], savedAt: SAVED }] });
+
+    expect(result).toMatchObject({ ok: true, toolsImported: 1 });
+    const [stored] = JSON.parse(storage.getItem("hysa-tracker:scenarios") as string)[0].entries;
+    expect(Object.keys(stored).sort()).toEqual(["cardInterest", "insureInterest", "investInterest", "investmentPL", "month", "salaryInterest", "year"]);
+    expect(stored.salaryInterest).toBe(10);
+    expect(stored.investmentPL).toBe(5);
+  });
   it("restores data and dates for every tool in the file", () => {
     const storage = createMemoryStorage();
 

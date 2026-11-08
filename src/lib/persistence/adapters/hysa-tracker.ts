@@ -7,13 +7,9 @@ import type { ProfileAdapter } from "../types";
 export type HysaMonthEntry = {
   year:            number;
   month:           number; // 1-12
-  salaryAmount:    number; // salary credited this month
   salaryInterest:  number; // interest earned from salary bonus
-  cardSpendAmount: number; // card spend this month
   cardInterest:    number; // interest earned from card spend bonus
-  insureAmount:    number; // insurance premium / qualifying amount
   insureInterest:  number; // interest earned from insure bonus
-  investAmount:    number; // qualifying investment amount
   investInterest:  number; // interest earned from invest bonus
   investmentPL:    number; // investment portfolio P&L
 };
@@ -50,10 +46,8 @@ export function addMonth(scenario: HysaScenario, today: Date = new Date()): Hysa
       ...scenario.entries,
       {
         year, month,
-        salaryAmount: 0, salaryInterest: 0,
-        cardSpendAmount: 0, cardInterest: 0,
-        insureAmount: 0, insureInterest: 0,
-        investAmount: 0, investInterest: 0,
+        salaryInterest: 0, cardInterest: 0,
+        insureInterest: 0, investInterest: 0,
         investmentPL: 0,
       },
     ],
@@ -62,6 +56,31 @@ export function addMonth(scenario: HysaScenario, today: Date = new Date()): Hysa
 
 export function removeLastMonth(scenario: HysaScenario): HysaScenario {
   return { ...scenario, entries: scenario.entries.slice(0, -1) };
+}
+
+// ─── Legacy data ──────────────────────────────────────────────────────────────
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Removes the retired Amt keys (salaryAmount, cardSpendAmount, insureAmount,
+ * investAmount) from every entry of a stored scenario. Every other key is kept.
+ * Anything that is not a scenario with an `entries` array passes through
+ * unchanged, so this never throws and never drops a record.
+ */
+export function stripLegacyAmounts(scenario: unknown): unknown {
+  if (!isRecord(scenario) || !Array.isArray(scenario.entries)) return scenario;
+  return {
+    ...scenario,
+    entries: scenario.entries.map((entry: unknown) => {
+      if (!isRecord(entry)) return entry;
+      const { salaryAmount, cardSpendAmount, insureAmount, investAmount, ...rest } = entry;
+      void salaryAmount; void cardSpendAmount; void insureAmount; void investAmount;
+      return rest;
+    }),
+  };
 }
 
 // ─── Adapter ──────────────────────────────────────────────────────────────────
@@ -75,7 +94,10 @@ export const hysaAdapter: ProfileAdapter<HysaScenario> = {
   readAll(storage) {
     try {
       const raw = storage.getItem(KEY);
-      return raw ? (JSON.parse(raw) as HysaScenario[]) : [];
+      if (!raw) return [];
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return parsed as HysaScenario[];
+      return parsed.map(stripLegacyAmounts) as HysaScenario[];
     } catch {
       return [];
     }
