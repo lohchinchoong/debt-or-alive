@@ -19,6 +19,9 @@ npm install
 
 # Start the development server
 npm run dev
+
+# Run the unit tests (vitest)
+npm test
 ```
 
 > <!-- TODO: Add any required environment variables and setup steps (e.g., .env.local) -->
