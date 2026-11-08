@@ -1,6 +1,6 @@
 import { liftColor } from "@/lib/theme";
 
-export type ToolCategory = "Property" | "CPF" | "Debt" | "Savings" | "Investment" | "Planning";
+export type ToolCategory = "Property" | "CPF" | "Savings" | "Investment" | "Planning";
 
 export type Tool = {
   slug: string;
@@ -8,12 +8,9 @@ export type Tool = {
   tagline: string;
   category: ToolCategory;
   icon: string; // lucide icon name
-  accent?: "primary" | "tertiary";
-  comingSoon?: boolean;
 };
 
 export const tools: Tool[] = [
-  // ── Live tools (shown first) ──────────────────────────────────────────────
   {
     slug: "compound-interest",
     name: "Compound Interest",
@@ -98,64 +95,11 @@ export const tools: Tool[] = [
     category: "Planning",
     icon: "Target",
   },
-  // ── Coming soon ───────────────────────────────────────────────────────────
-  {
-    slug: "rent-vs-buy",
-    name: "Rent vs Buy",
-    tagline: "Is buying really cheaper? Model the true cost over time.",
-    category: "Property",
-    icon: "Scale",
-    comingSoon: true,
-  },
-  {
-    slug: "cpf-oa-to-sa",
-    name: "CPF OA → SA Transfer",
-    tagline: "Model the long-term effect of transferring OA funds to SA.",
-    category: "CPF",
-    icon: "ArrowRightLeft",
-    comingSoon: true,
-  },
-  {
-    slug: "debt-repayment",
-    name: "Debt Repayment Planner",
-    tagline: "Avalanche or snowball — find your fastest path to debt-free.",
-    category: "Debt",
-    icon: "TrendingDown",
-    accent: "tertiary",
-    comingSoon: true,
-  },
-  {
-    slug: "loan-comparison",
-    name: "Loan Comparison",
-    tagline: "Compare multiple loan offers side-by-side on total cost.",
-    category: "Debt",
-    icon: "GitCompare",
-    accent: "tertiary",
-    comingSoon: true,
-  },
-  {
-    slug: "net-worth",
-    name: "Net Worth Tracker",
-    tagline: "Sum your assets and liabilities to find your true financial position.",
-    category: "Planning",
-    icon: "Wallet",
-    comingSoon: true,
-  },
-];
-
-export const categoryOrder: ToolCategory[] = [
-  "Property",
-  "CPF",
-  "Debt",
-  "Savings",
-  "Investment",
-  "Planning",
 ];
 
 export const categoryColors: Record<ToolCategory, string> = {
   Property:   liftColor("#00351f"),
   CPF:        liftColor("#1a4d35"),
-  Debt:       liftColor("#4f1b1f"),
   Savings:    liftColor("#1c3d2c"),
   Investment: liftColor("#0d3d28"),
   Planning:   liftColor("#2b3d32"),

@@ -7,13 +7,9 @@ type ToolCardProps = Tool;
 // Inline SVG paths for the icons we use (subset of lucide)
 const ICONS: Record<string, string> = {
   House:         "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10",
-  Scale:         "M12 3v18 M3 6h18 M6 6l3 12 M18 6l-3 12",
   PiggyBank:     "M19 5c-1.5 0-2.5 1-2.5 1H5a3 3 0 0 0 0 6h.5v4a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1h2v1a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-3.5c1.1-.4 2-1.4 2-2.5V8c0-1.7-1.3-3-3-3z M12 5V3",
   HeartPulse:    "M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z M3.22 12H9.5l1.5-3 2 6 1.5-3h3.28",
-  ArrowRightLeft:"M21 7H3 M3 7l4-4M3 7l4 4 M3 17h18 M21 17l-4-4M21 17l-4 4",
   Receipt:       "M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z M8 10h8 M8 14h4",
-  TrendingDown:  "M22 17l-8.5-8.5-5 5L2 7 M16 17h6v-6",
-  GitCompare:    "M18 3a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h12z M8 12h8 M12 8v8",
   ShieldCheck:   "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4",
   Target:        "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12z M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4z",
   TrendingUp:    "M22 7l-8.5 8.5-5-5L2 17 M16 7h6v6",
@@ -45,58 +41,10 @@ function ToolIcon({ name, color }: { name: string; color: string }) {
   );
 }
 
-export function ToolCard({ slug, name, tagline, category, icon, accent, comingSoon }: ToolCardProps) {
-  const accentColor = accent === "tertiary" ? "var(--tertiary)" : "var(--primary)";
+export function ToolCard({ slug, name, tagline, category, icon }: ToolCardProps) {
+  const accentColor = "var(--primary)";
   const categoryColor = categoryColors[category];
   const categoryTint = (pct: number) => `color-mix(in srgb, ${categoryColor} ${pct}%, transparent)`;
-
-  if (comingSoon) {
-    return (
-      <div
-        className="block rounded-xl p-5"
-        style={{
-          backgroundColor: "var(--surface-container-lowest)",
-          boxShadow: "var(--shadow-botanical)",
-          cursor: "default",
-        }}
-      >
-        {/* Top row: icon + coming soon pill */}
-        <div className="flex items-start justify-between mb-4">
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: categoryTint(5) }}
-          >
-            <ToolIcon name={icon} color="var(--on-surface-sub)" />
-          </div>
-          <span
-            className="text-[10px] font-semibold tracking-widest uppercase px-2 py-0.5 rounded-full"
-            style={{
-              backgroundColor: "var(--surface-container-high)",
-              color: "var(--on-surface-sub)",
-            }}
-          >
-            Coming soon
-          </span>
-        </div>
-
-        {/* Name */}
-        <h3
-          className="font-bold text-[15px] leading-snug mb-2"
-          style={{ color: "var(--on-surface)", letterSpacing: "-0.01em", opacity: 0.55 }}
-        >
-          {name}
-        </h3>
-
-        {/* Tagline */}
-        <p
-          className="text-xs leading-relaxed"
-          style={{ color: "var(--on-surface-sub)", lineHeight: "1.6", opacity: 0.7 }}
-        >
-          {tagline}
-        </p>
-      </div>
-    );
-  }
 
   return (
     <GuardedLink
