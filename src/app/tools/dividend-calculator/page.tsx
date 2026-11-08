@@ -1,20 +1,16 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import { useIsClient } from "@/hooks/useIsClient";
-import Link from "next/link";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { fmtAxis, niceMax, loadArray, saveArray, genId } from "@/lib/utils";
+import { useToolDraft } from "@/hooks/useToolDraft";
+import { dividendAdapter, type DividendSource as YieldSource } from "@/lib/persistence/adapters/dividend-calculator";
+import { fmtAxis, niceMax, genId } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type YieldSource = {
-  id: string;
-  name: string;
-  value: number;
-  yieldRate: number; // annual %
-  withholdingTax?: boolean; // subject to 30% dividend withholding tax
-};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -445,31 +441,20 @@ const BAR_COLORS = [
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function DividendCalculatorPage() {
-  const [sources, setSourcesRaw] = useState<YieldSource[]>(() =>
-    loadArray<YieldSource>("dividend:sources", [
-      { id: genId("div"), name: "Dividend ETF", value: 50000, yieldRate: 5, withholdingTax: false },
-      { id: genId("div"), name: "REITs", value: 30000, yieldRate: 6, withholdingTax: false },
-    ]),
+  const draft = useToolDraft(dividendAdapter);
+  const { setDraft } = draft;
+  const { sources, projectionYears } = draft.draft;
+  const mounted = draft.status === "ready";
+
+  const setSources = useCallback(
+    (fn: (prev: YieldSource[]) => YieldSource[]) => setDraft((d) => ({ ...d, sources: fn(d.sources) })),
+    [setDraft],
   );
-  const [projectionYears, setProjectionYears] = useState(() => {
-    if (typeof window === "undefined") return 20;
-    const savedYears = localStorage.getItem("dividend:projection-years");
-    return (savedYears && parseInt(savedYears)) || 20;
-  });
-  const mounted = useIsClient();
 
-  const setSources = useCallback((fn: (prev: YieldSource[]) => YieldSource[]) => {
-    setSourcesRaw((prev) => {
-      const next = fn(prev);
-      saveArray("dividend:sources", next);
-      return next;
-    });
-  }, []);
-
-  const handleYearsChange = useCallback((v: number) => {
-    setProjectionYears(v);
-    try { localStorage.setItem("dividend:projection-years", String(v)); } catch {}
-  }, []);
+  const handleYearsChange = useCallback(
+    (v: number) => setDraft((d) => ({ ...d, projectionYears: v })),
+    [setDraft],
+  );
 
   // Computed values
   const totalValue = sources.reduce((s, src) => s + src.value, 0);
@@ -507,9 +492,11 @@ export function DividendCalculatorPage() {
       >
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <ManualSaveNotice />
+
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <div>
-            <Link
+            <GuardedLink
               href="/"
               className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
               style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -518,7 +505,7 @@ export function DividendCalculatorPage() {
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               Back to Home
-            </Link>
+            </GuardedLink>
 
             <div className="flex items-start gap-4">
               <div
@@ -545,6 +532,9 @@ export function DividendCalculatorPage() {
                 <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                   Track your dividend portfolio. Add yield sources and see your annual and monthly passive income at a glance.
                 </p>
+            <div className="mt-2">
+              <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+            </div>
               </div>
             </div>
           </div>
@@ -770,6 +760,15 @@ export function DividendCalculatorPage() {
           </div>
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={draft.save}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }

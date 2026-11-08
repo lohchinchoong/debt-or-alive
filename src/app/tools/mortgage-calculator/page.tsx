@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useIsClient } from "@/hooks/useIsClient";
-import Link from "next/link";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useToolState } from "@/hooks/useToolState";
-import { fmtAxis, niceMax, loadArray, saveArray, genId } from "@/lib/utils";
+import { useToolDraft } from "@/hooks/useToolDraft";
+import { mortgageAdapter, type PartialRepayment } from "@/lib/persistence/adapters/singleStateTools";
+import { fmtAxis, niceMax, genId } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type MonthRow = {
@@ -23,12 +26,6 @@ type YearRow = {
   interest: number;
   balance: number;
   partialRepayment: number; // lump sum applied at start of this year
-};
-
-type PartialRepayment = {
-  id: string;
-  year: number;  // loan year (1-based)
-  amount: number;
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -610,30 +607,21 @@ function YearlyTable({ data }: { data: YearRow[] }) {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export function MortgageCalculatorPage() {
-  const [s, set] = useToolState("tool:mortgage-calculator", {
-    propertyPrice: 500_000,
-    downPaymentPct: 25,
-    annualRate: 3.5,
-    tenureYears: 25,
-  });
+  const draft = useToolDraft(mortgageAdapter);
+  const { setDraft } = draft;
+  const s = draft.draft.inputs;
+  const set = (changes: Partial<typeof s>) => setDraft((d) => ({ ...d, inputs: { ...d.inputs, ...changes } }));
 
   const { propertyPrice, downPaymentPct, annualRate, tenureYears } = s;
-
-  // ── Partial repayments (localStorage only, like FIRE's dynamic arrays) ──
-  const [partialRepayments, setPartialRepaymentsRaw] = useState<PartialRepayment[]>(() =>
-    loadArray<PartialRepayment>("mortgage:partial-repayments", []),
-  );
-  const mounted = useIsClient();
+  const { partialRepayments } = draft.draft;
+  const mounted = draft.status === "ready";
   // Selected regime, tagged with the regime count it was chosen for
   const [regimeSelection, setRegimeSelection] = useState({ count: 0, index: 0 });
 
-  const setPartialRepayments = useCallback((fn: (prev: PartialRepayment[]) => PartialRepayment[]) => {
-    setPartialRepaymentsRaw((prev) => {
-      const next = fn(prev);
-      saveArray("mortgage:partial-repayments", next);
-      return next;
-    });
-  }, []);
+  const setPartialRepayments = useCallback(
+    (fn: (prev: PartialRepayment[]) => PartialRepayment[]) => setDraft((d) => ({ ...d, partialRepayments: fn(d.partialRepayments) })),
+    [setDraft],
+  );
 
   const downPayment = propertyPrice * (downPaymentPct / 100);
   const loanAmount = Math.max(0, propertyPrice - downPayment);
@@ -723,9 +711,11 @@ export function MortgageCalculatorPage() {
       >
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <ManualSaveNotice />
+
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <div>
-            <Link
+            <GuardedLink
               href="/"
               className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
               style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -734,7 +724,7 @@ export function MortgageCalculatorPage() {
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               Back to Home
-            </Link>
+            </GuardedLink>
 
             <div className="flex items-start gap-4">
               <div
@@ -760,6 +750,9 @@ export function MortgageCalculatorPage() {
                 <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                   Estimate your monthly repayments and see how interest adds up over the life of your home loan.
                 </p>
+            <div className="mt-2">
+              <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+            </div>
               </div>
             </div>
           </div>
@@ -1137,6 +1130,15 @@ export function MortgageCalculatorPage() {
           </div>
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={draft.save}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }

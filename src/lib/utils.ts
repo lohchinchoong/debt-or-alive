@@ -14,26 +14,6 @@ export function niceMax(rawMax: number): number {
   return nice * mag;
 }
 
-// ─── localStorage helpers ─────────────────────────────────────────────────────
-
-export function loadArray<T>(key: string, fallback: T[]): T[] {
-  if (typeof window === "undefined") return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T[]) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export function saveArray<T>(key: string, data: T[]): void {
-  try {
-    localStorage.setItem(key, JSON.stringify(data));
-  } catch {
-    // storage full — fail silently
-  }
-}
-
 // ─── ID generation ────────────────────────────────────────────────────────────
 
 let idCounter = 0;
