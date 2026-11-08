@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { useToolDraft } from "@/hooks/useToolDraft";
 import { fireAdapter, type DrawdownSource, type YieldSource } from "@/lib/persistence/adapters/singleStateTools";
 import { fmtAxis, niceMax, genId } from "@/lib/utils";
+import { toolMeta } from "@/lib/persistence/toolMeta";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1000,7 +1001,7 @@ export function FireCalculatorPage() {
                   className="text-3xl sm:text-4xl font-bold"
                   style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
                 >
-                  FIRE Calculator
+                  {toolMeta("fire-calculator").name}
                 </h1>
                 <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                   Model your path to Financial Independence, Retire Early. Add your income sources and see when your passive income covers your lifestyle.

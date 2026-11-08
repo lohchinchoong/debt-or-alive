@@ -25,7 +25,7 @@ export default function HomePage() {
               className="mt-4 text-base leading-relaxed"
               style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}
             >
-              No account required. Every calculator runs in your browser — your numbers stay yours.
+              No account required. Everything runs in your browser — your numbers stay yours.
             </p>
             <p
               className="mt-3 text-xs leading-relaxed"
@@ -61,7 +61,7 @@ export default function HomePage() {
               Debt or Alive
             </span>
             <p className="text-xs mt-1" style={{ color: "var(--on-surface-sub)" }}>
-              Personal finance tools. No sign-up. No data stored.
+              Personal finance tools. No sign-up. Your data stays in this browser.
             </p>
           </div>
           <p className="text-xs" style={{ color: "var(--outline-variant)" }}>

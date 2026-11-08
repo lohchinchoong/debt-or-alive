@@ -11,6 +11,7 @@ import { useGuardedRouter } from "@/hooks/useGuardedRouter";
 import { NEW_PROFILE_ID, useProfileDraft } from "@/hooks/useProfileDraft";
 import { cpfOaAdapter, type CpfOaParams } from "@/lib/persistence/adapters/cpf-oa";
 import { fmtAxis, niceMax } from "@/lib/utils";
+import { toolMeta } from "@/lib/persistence/toolMeta";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type YearRow = {
@@ -616,7 +617,7 @@ export default function CpfOaAnnuityCalculatorPage() {
                   className="text-3xl sm:text-4xl font-bold"
                   style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
                 >
-                  CPF Ordinary Account (OA) Annuity Calculator
+                  {toolMeta("cpf-oa-annuity-calculator").name}
                 </h1>
                 <p
                   className="mt-2 text-base max-w-xl"
