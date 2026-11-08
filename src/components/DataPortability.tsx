@@ -1,30 +1,11 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { importBackup } from "@/lib/persistence/import";
+import { REGISTERED_KEYS } from "@/lib/persistence/registry";
 
-// ─── All localStorage keys managed by the app ────────────────────────────────
-const STORAGE_KEYS = [
-  "tool:compound-interest",
-  "cpf-sa:profiles",
-  "cpf-ma:profiles",
-  "cpf-oa:profiles",
-  "tool:fire-calculator",
-  "tool:mortgage-calculator",
-  "tool:emergency-fund",
-  "fire:yield-sources-v2",
-  "fire:drawdown-sources-v2",
-  "mortgage:partial-repayments",
-  "emergency-fund:sources",
-  "tool:srs-calculator",
-  "srs:deposits",
-  "srs:withdrawal",
-  "tool:budget-planner",
-  "budget:items",
-  "savings-goal:scenarios",
-  "hysa-tracker:scenarios",
-  "dividend:sources",
-  "dividend:projection-years",
-];
+// Export covers every key owned by a registered adapter; import goes through
+// the same adapters and the save module, so it succeeds or fails as a whole.
 
 const APP_ID = "debtoralive";
 const FORMAT_VERSION = 1;
@@ -41,7 +22,7 @@ type ExportPayload = {
 function exportData() {
   const data: Record<string, unknown> = {};
 
-  for (const key of STORAGE_KEYS) {
+  for (const key of REGISTERED_KEYS) {
     const raw = localStorage.getItem(key);
     if (raw !== null) {
       try {
@@ -82,7 +63,7 @@ function exportData() {
 
 // ─── Import ──────────────────────────────────────────────────────────────────
 
-function importData(file: File): Promise<{ keysImported: number; keysSkipped: string[] }> {
+function importData(file: File): Promise<{ toolsImported: number; keysSkipped: string[] }> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -102,19 +83,12 @@ function importData(file: File): Promise<{ keysImported: number; keysSkipped: st
           return;
         }
 
-        let keysImported = 0;
-        const keysSkipped: string[] = [];
-
-        for (const [key, value] of Object.entries(payload.data)) {
-          if (STORAGE_KEYS.includes(key)) {
-            localStorage.setItem(key, JSON.stringify(value));
-            keysImported++;
-          } else {
-            keysSkipped.push(key);
-          }
+        const result = importBackup(localStorage, payload.data);
+        if (!result.ok) {
+          reject(new Error(`Couldn't import. Nothing was changed. (${result.error.message})`));
+          return;
         }
-
-        resolve({ keysImported, keysSkipped });
+        resolve({ toolsImported: result.toolsImported, keysSkipped: result.keysSkipped });
       } catch (err) {
         reject(new Error(`Failed to parse file: ${err instanceof Error ? err.message : "unknown error"}`));
       }
@@ -136,12 +110,12 @@ export function DataPortability() {
     if (!file) return;
 
     try {
-      const { keysImported, keysSkipped } = await importData(file);
+      const { toolsImported, keysSkipped } = await importData(file);
 
-      if (keysImported === 0) {
+      if (toolsImported === 0) {
         setImportStatus({ type: "error", message: "No recognised data found in file." });
       } else {
-        const msg = `Imported ${keysImported} tool${keysImported !== 1 ? "s" : ""} successfully.${
+        const msg = `Imported ${toolsImported} tool${toolsImported !== 1 ? "s" : ""} successfully.${
           keysSkipped.length > 0 ? ` ${keysSkipped.length} unknown key${keysSkipped.length !== 1 ? "s" : ""} skipped.` : ""
         }`;
         setImportStatus({ type: "success", message: msg });

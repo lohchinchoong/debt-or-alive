@@ -501,6 +501,13 @@ interface changes found in stage 3 touch only one adapter.
 *   **Profiles have no `null` date state.** A profile exists in storage only
     after its first Save (author).
 *   **One field name everywhere:** `savedAt`.
+*   **Implementation notes (stages 3-6).** The five former `useToolState`
+    tools share one factory, `createInputsAdapter` in
+    `src/lib/persistence/inputsAdapter.ts`, with their adapters in one file,
+    `adapters/singleStateTools.ts`. SRS and dividend have their own files. The
+    registry exports `REGISTERED_KEYS` (the plan's `EXPORT_KEYS`), which export,
+    import and the release notice all use. HYSA and savings-goal edits live as
+    pure helpers in their adapter files.
 *   **Two draft hooks, not one.** They differ in loading, not-found handling,
     `new` mode and merge-on-save, and they share the pure core.
 
