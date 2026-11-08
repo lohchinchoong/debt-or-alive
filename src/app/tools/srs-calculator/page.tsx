@@ -1,25 +1,16 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { useIsClient } from "@/hooks/useIsClient";
-import Link from "next/link";
+import { useState, useMemo, useCallback } from "react";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { fmtAxis, niceMax, loadArray, saveArray, genId, todayISO } from "@/lib/utils";
+import { useToolDraft } from "@/hooks/useToolDraft";
+import { srsAdapter, type Deposit, type WithdrawalSettings } from "@/lib/persistence/adapters/srs-calculator";
+import { fmtAxis, niceMax, genId, todayISO } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Deposit = {
-  id: string;
-  name: string;       // e.g. "T-Bills", "OCBC FD"
-  amount: number;     // SGD
-  startDate: string;  // YYYY-MM-DD
-  interestRate: number; // % p.a.
-};
-
-type WithdrawalSettings = {
-  startDate: string;   // YYYY-MM-DD — first withdrawal year
-  years: number;       // 1–10 consecutive years
-};
-
 type ProjectionPoint = {
   year: number;         // calendar year
   balance: number;      // portfolio balance at end of year
@@ -495,50 +486,21 @@ function ProjectionChart({ data, withdrawalStartYear, withdrawalEndYear }: {
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-const DEPOSITS_KEY = "srs:deposits";
-const WITHDRAWAL_KEY = "srs:withdrawal";
-
-const DEFAULT_WITHDRAWAL: WithdrawalSettings = {
-  startDate: `${new Date().getFullYear() + 20}-01-01`,
-  years: 10,
-};
-
-const DEFAULT_DEPOSITS: Deposit[] = [
-  { id: "srs_default_1", name: "T-Bills", amount: 15400, startDate: todayISO(), interestRate: 3.5 },
-];
-
 export function SRSCalculatorPage() {
-  // ── Deposits array ──
-  const [deposits, setDeposits] = useState<Deposit[]>(() => loadArray<Deposit>(DEPOSITS_KEY, DEFAULT_DEPOSITS));
-  const hydrated = useIsClient();
+  // ── Draft (Save is the only write) ──
+  const draft = useToolDraft(srsAdapter);
+  const { setDraft } = draft;
+  const { deposits, withdrawal } = draft.draft;
+  const hydrated = draft.status === "ready";
 
-  // ── Withdrawal settings ──
-  const [withdrawal, setWithdrawal] = useState<WithdrawalSettings>(() => {
-    if (typeof window === "undefined") return DEFAULT_WITHDRAWAL;
-    const raw = localStorage.getItem(WITHDRAWAL_KEY);
-    if (raw) {
-      try {
-        return JSON.parse(raw) as WithdrawalSettings;
-      } catch {
-        // ignore
-      }
-    }
-    return DEFAULT_WITHDRAWAL;
-  });
-
-  // Persist deposits
-  useEffect(() => {
-    saveArray(DEPOSITS_KEY, deposits);
-  }, [deposits]);
-
-  // Persist withdrawal settings
-  useEffect(() => {
-    try {
-      localStorage.setItem(WITHDRAWAL_KEY, JSON.stringify(withdrawal));
-    } catch {
-      // ignore
-    }
-  }, [withdrawal]);
+  const setDeposits = useCallback(
+    (fn: (prev: Deposit[]) => Deposit[]) => setDraft((d) => ({ ...d, deposits: fn(d.deposits) })),
+    [setDraft],
+  );
+  const setWithdrawal = useCallback(
+    (fn: (prev: WithdrawalSettings) => WithdrawalSettings) => setDraft((d) => ({ ...d, withdrawal: fn(d.withdrawal) })),
+    [setDraft],
+  );
 
   // ── Deposit CRUD ──
   const addDeposit = useCallback(() => {
@@ -546,7 +508,7 @@ export function SRSCalculatorPage() {
       ...prev,
       { id: genId("srs"), name: "", amount: 10000, startDate: todayISO(), interestRate: 3.5 },
     ]);
-  }, []);
+  }, [setDeposits]);
 
   const updateDeposit = useCallback(
     (id: string, field: keyof Deposit, value: string | number) => {
@@ -554,19 +516,19 @@ export function SRSCalculatorPage() {
         prev.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
       );
     },
-    [],
+    [setDeposits],
   );
 
   const deleteDeposit = useCallback((id: string) => {
     setDeposits((prev) => prev.filter((d) => d.id !== id));
-  }, []);
+  }, [setDeposits]);
 
   // ── Withdrawal helpers ──
   const updateWithdrawal = useCallback(
     (field: keyof WithdrawalSettings, value: string | number) => {
       setWithdrawal((prev) => ({ ...prev, [field]: value }));
     },
-    [],
+    [setWithdrawal],
   );
 
   // ── Derived stats ──
@@ -609,8 +571,10 @@ export function SRSCalculatorPage() {
       <SiteHeader />
 
       <main className="max-w-screen-xl mx-auto px-4 sm:px-6 py-8">
+
+        <ManualSaveNotice />
         {/* Back link */}
-        <Link
+        <GuardedLink
           href="/"
           className="inline-flex items-center gap-1.5 text-sm mb-6 transition-opacity hover:opacity-70"
           style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -619,7 +583,7 @@ export function SRSCalculatorPage() {
             <path d="M19 12H5M5 12l7 7M5 12l7-7" />
           </svg>
           Back to Home
-        </Link>
+        </GuardedLink>
 
         {/* Page header */}
         <div className="flex items-center gap-3 mb-8">
@@ -647,6 +611,9 @@ export function SRSCalculatorPage() {
             <p className="text-sm mt-0.5" style={{ color: "var(--on-surface-sub)" }}>
               Track SRS deposits and investments. Plan your tax-efficient drawdown over up to 10 years.
             </p>
+            <div className="mt-2">
+              <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+            </div>
           </div>
         </div>
 
@@ -1060,6 +1027,15 @@ export function SRSCalculatorPage() {
           </ol>
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={draft.save}
+        onDiscard={draft.discard}
+      />
     </div>
   );
 }

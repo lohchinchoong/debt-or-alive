@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useCpfOaProfiles, CpfOaParams } from "@/hooks/useCpfOaProfiles";
+import { useGuardedRouter } from "@/hooks/useGuardedRouter";
+import { NEW_PROFILE_ID, useProfileDraft } from "@/hooks/useProfileDraft";
+import { cpfOaAdapter, type CpfOaParams } from "@/lib/persistence/adapters/cpf-oa";
 import { fmtAxis, niceMax } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -94,16 +99,16 @@ function validate(params: CpfOaParams): string | null {
 // ─── ProfileNameEditor ────────────────────────────────────────────────────────
 function ProfileNameEditor({
   name,
-  onSave,
+  onCommit,
 }: {
   name: string;
-  onSave: (name: string) => void;
+  onCommit: (name: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
 
   const commit = () => {
-    onSave(draft.trim() || "Unnamed");
+    onCommit(draft.trim() || "Unnamed");
     setEditing(false);
   };
 
@@ -511,18 +516,16 @@ function YearlyTable({ rows }: { rows: YearRow[] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function CpfOaAnnuityCalculatorPage() {
   const { profileId } = useParams<{ profileId: string }>();
-  const router = useRouter();
-  const { profiles, updateProfile } = useCpfOaProfiles();
-
-  const profile = profiles.find((p) => p.id === profileId);
+  const { replaceWithoutPrompt } = useGuardedRouter();
+  const draft = useProfileDraft(cpfOaAdapter, profileId);
+  const { notFound } = draft;
 
   useEffect(() => {
-    // Profiles are read synchronously from localStorage on the client, so a
-    // missing profile here means the id is stale (even when no profiles remain).
-    if (!profile) {
-      router.replace("/tools/cpf-oa-annuity-calculator");
-    }
-  }, [profile, router]);
+    // A stale id (including one deleted in another tab) goes back to the list.
+    if (notFound) replaceWithoutPrompt(cpfOaAdapter.listPath);
+  }, [notFound, replaceWithoutPrompt]);
+
+  const profile = draft.draft;
 
   const birthYear        = profile?.birthYear ?? 0;
   const startDrawdownAge = profile?.startDrawdownAge ?? 0;
@@ -537,12 +540,27 @@ export default function CpfOaAnnuityCalculatorPage() {
     return { rows: simulate(params, w), monthlyDrawdown: w, error: null };
   }, [birthYear, startDrawdownAge, balanceAtStart, endDrawdownAge]);
 
-  if (!profile) return null;
+  if (draft.status !== "ready" || profile === null) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="min-h-screen" style={{ backgroundColor: "var(--surface-container-low)" }} />
+      </>
+    );
+  }
 
   const { name } = profile;
   const currentYear = new Date().getFullYear();
 
-  const set = (changes: Partial<CpfOaParams>) => updateProfile(profileId, changes);
+  const set = (changes: Partial<CpfOaParams>) => draft.setDraft((p) => ({ ...p, ...changes }));
+
+  const handleSave = () => {
+    const result = draft.save();
+    // The first Save of a new item moves the URL from /new to its real id.
+    if (result.ok && profileId === NEW_PROFILE_ID) {
+      replaceWithoutPrompt(`${cpfOaAdapter.listPath}/${profile.id}`);
+    }
+  };
 
   const drawdownYears = endDrawdownAge - startDrawdownAge + 1;
   const startYear = birthYear + startDrawdownAge;
@@ -559,9 +577,11 @@ export default function CpfOaAnnuityCalculatorPage() {
       >
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <ManualSaveNotice />
+
           {/* ── Page Header ───────────────────────────────────────────────── */}
           <div>
-            <Link
+            <GuardedLink
               href="/tools/cpf-oa-annuity-calculator"
               className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
               style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -570,7 +590,7 @@ export default function CpfOaAnnuityCalculatorPage() {
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               All Scenarios
-            </Link>
+            </GuardedLink>
 
             <div className="flex items-start gap-4">
               <div
@@ -590,7 +610,7 @@ export default function CpfOaAnnuityCalculatorPage() {
               <div>
                 <ProfileNameEditor
                   name={name}
-                  onSave={(newName) => updateProfile(profileId, { name: newName })}
+                  onCommit={(newName) => draft.setDraft((p) => ({ ...p, name: newName }))}
                 />
                 <h1
                   className="text-3xl sm:text-4xl font-bold"
@@ -604,6 +624,9 @@ export default function CpfOaAnnuityCalculatorPage() {
                 >
                   See the constant monthly payout your OA balance can fund from your chosen start age until your chosen end age.
                 </p>
+                <div className="mt-2">
+                  <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+                </div>
               </div>
             </div>
           </div>
@@ -800,6 +823,15 @@ export default function CpfOaAnnuityCalculatorPage() {
 
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={handleSave}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }

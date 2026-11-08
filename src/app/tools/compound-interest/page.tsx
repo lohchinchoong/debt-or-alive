@@ -1,9 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useToolState } from "@/hooks/useToolState";
+import { useToolDraft } from "@/hooks/useToolDraft";
+import { compoundInterestAdapter } from "@/lib/persistence/adapters/singleStateTools";
 import { fmtAxis, niceMax } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -508,15 +512,10 @@ function YearlyTable({ data }: { data: YearData[] }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function CompoundInterestPage() {
-  // ── Persisted state (localStorage + URL params) ──
-  const [s, set] = useToolState("tool:compound-interest", {
-    initial: 10_000,
-    monthly: 500,
-    rate: 5,
-    years: 10,
-    compFreq: 12 as number,
-    timing: "end",
-  });
+  const draft = useToolDraft(compoundInterestAdapter);
+  const { setDraft } = draft;
+  const s = draft.draft.inputs;
+  const set = (changes: Partial<typeof s>) => setDraft((d) => ({ ...d, inputs: { ...d.inputs, ...changes } }));
 
   const initial   = s.initial;
   const monthly   = s.monthly;
@@ -544,6 +543,15 @@ export function CompoundInterestPage() {
   const totalContributed = finalRow?.totalContribution ?? 0;
   const returnPct = totalContributed > 0 ? (totalInterest / totalContributed) * 100 : 0;
 
+  if (draft.status !== "ready") {
+    return (
+      <>
+        <SiteHeader />
+        <main className="min-h-screen" style={{ backgroundColor: "var(--surface-container-low)" }} />
+      </>
+    );
+  }
+
   return (
     <>
       <SiteHeader />
@@ -553,9 +561,11 @@ export function CompoundInterestPage() {
       >
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <ManualSaveNotice />
+
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <div>
-            <Link
+            <GuardedLink
               href="/"
               className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
               style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -573,7 +583,7 @@ export function CompoundInterestPage() {
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               Back to Home
-            </Link>
+            </GuardedLink>
 
             <div className="flex items-start gap-4">
               {/* Icon badge */}
@@ -612,6 +622,9 @@ export function CompoundInterestPage() {
                 >
                   Plan your future by visualising how small, regular contributions grow exponentially over time.
                 </p>
+            <div className="mt-2">
+              <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+            </div>
               </div>
             </div>
           </div>
@@ -910,6 +923,15 @@ export function CompoundInterestPage() {
           </div>
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={draft.save}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }

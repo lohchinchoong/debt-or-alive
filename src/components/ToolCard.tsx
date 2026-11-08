@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { GuardedLink } from "@/components/GuardedLink";
 import type { Tool } from "@/lib/tools";
 import { categoryColors } from "@/lib/tools";
 
@@ -99,7 +99,7 @@ export function ToolCard({ slug, name, tagline, category, icon, accent, comingSo
   }
 
   return (
-    <Link
+    <GuardedLink
       href={`/tools/${slug}`}
       className="group block rounded-xl p-5 transition-all duration-200 tool-card-link"
       style={{
@@ -161,6 +161,6 @@ export function ToolCard({ slug, name, tagline, category, icon, accent, comingSo
           <path d="M5 12h14M12 5l7 7-7 7" />
         </svg>
       </div>
-    </Link>
+    </GuardedLink>
   );
 }

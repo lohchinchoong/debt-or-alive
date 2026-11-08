@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { GuardedLink } from "@/components/GuardedLink";
 import { useState, useRef, useEffect } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -107,14 +107,14 @@ export function SiteHeader() {
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* Wordmark */}
-        <Link href="/" className="flex items-center gap-1 select-none">
+        <GuardedLink href="/" className="flex items-center gap-1 select-none">
           <span
             className="text-sm font-bold tracking-tight"
             style={{ color: "var(--primary)", letterSpacing: "-0.01em" }}
           >
             Debt or Alive
           </span>
-        </Link>
+        </GuardedLink>
 
         <div className="flex items-center gap-4">
           {/* Nav */}

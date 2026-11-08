@@ -1,21 +1,16 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useIsClient } from "@/hooks/useIsClient";
-import Link from "next/link";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useToolState } from "@/hooks/useToolState";
-import { fmtAxis, niceMax, loadArray, saveArray, genId, todayISO } from "@/lib/utils";
+import { useToolDraft } from "@/hooks/useToolDraft";
+import { emergencyFundAdapter, type SavingsSource } from "@/lib/persistence/adapters/singleStateTools";
+import { fmtAxis, niceMax, genId, todayISO } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type SavingsSource = {
-  id: string;
-  name: string;
-  balance: number;
-  startDate: string; // YYYY-MM-DD
-  interestRate: number; // % p.a.
-};
-
 type ProjectionPoint = {
   month: number;
   total: number;
@@ -567,27 +562,20 @@ function SourcesTable({ sources }: { sources: SavingsSource[] }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export function EmergencyFundPage() {
-  const [s, set] = useToolState("tool:emergency-fund", {
-    monthlyExpenses: 3000,
-    targetMonths: 6,
-  });
+  const draft = useToolDraft(emergencyFundAdapter);
+  const { setDraft } = draft;
+  const s = draft.draft.inputs;
+  const set = (changes: Partial<typeof s>) => setDraft((d) => ({ ...d, inputs: { ...d.inputs, ...changes } }));
 
   const { monthlyExpenses, targetMonths } = s;
   const projectionYears: number = 5;
+  const { sources } = draft.draft;
+  const mounted = draft.status === "ready";
 
-  // ── Savings sources (dynamic array, localStorage) ──
-  const [sources, setSourcesRaw] = useState<SavingsSource[]>(() =>
-    loadArray<SavingsSource>("emergency-fund:sources", []),
+  const setSources = useCallback(
+    (fn: (prev: SavingsSource[]) => SavingsSource[]) => setDraft((d) => ({ ...d, sources: fn(d.sources) })),
+    [setDraft],
   );
-  const mounted = useIsClient();
-
-  const setSources = useCallback((fn: (prev: SavingsSource[]) => SavingsSource[]) => {
-    setSourcesRaw((prev) => {
-      const next = fn(prev);
-      saveArray("emergency-fund:sources", next);
-      return next;
-    });
-  }, []);
 
   const addSource = useCallback(() => {
     setSources((prev) => [
@@ -648,9 +636,11 @@ export function EmergencyFundPage() {
       >
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <ManualSaveNotice />
+
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <div>
-            <Link
+            <GuardedLink
               href="/"
               className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
               style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -659,7 +649,7 @@ export function EmergencyFundPage() {
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               Back to Home
-            </Link>
+            </GuardedLink>
 
             <div className="flex items-start gap-4">
               <div
@@ -684,6 +674,9 @@ export function EmergencyFundPage() {
                 <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                   Track your savings across multiple accounts. See how interest grows your safety net and whether you&apos;ve hit your target.
                 </p>
+            <div className="mt-2">
+              <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+            </div>
               </div>
             </div>
           </div>
@@ -982,6 +975,15 @@ export function EmergencyFundPage() {
           </div>
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={draft.save}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }

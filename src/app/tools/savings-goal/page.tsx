@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { GuardedLink } from "@/components/GuardedLink";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useSavingsGoal, SavingsScenario } from "@/hooks/useSavingsGoal";
+import { useGuardedRouter } from "@/hooks/useGuardedRouter";
+import { useProfileList } from "@/hooks/useProfileList";
+import { savingsGoalAdapter, type SavingsScenario } from "@/lib/persistence/adapters/savings-goal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -17,80 +17,6 @@ const fmtMonthYear = (iso: string) => {
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   return `${months[parseInt(m) - 1]} ${y}`;
 };
-
-// ─── ScenarioNameEditor ───────────────────────────────────────────────────────
-
-function ScenarioNameEditor({
-  name,
-  onSave,
-}: {
-  name: string;
-  onSave: (name: string) => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(name);
-
-  const commit = () => {
-    onSave(draft.trim() || "Unnamed");
-    setEditing(false);
-  };
-
-  if (editing) {
-    return (
-      <input
-        autoFocus
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") e.currentTarget.blur();
-          if (e.key === "Escape") { setDraft(name); setEditing(false); }
-        }}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "var(--surface-container-highest)",
-          border: "none",
-          borderBottom: "2px solid var(--primary)",
-          borderRadius: "0.25rem 0.25rem 0 0",
-          outline: "none",
-          fontSize: "1rem",
-          fontFamily: "Manrope, sans-serif",
-          fontWeight: 700,
-          color: "var(--on-surface)",
-          padding: "0.25rem 0.375rem",
-          width: "100%",
-        }}
-      />
-    );
-  }
-
-  return (
-    <button
-      onClick={(e) => { e.stopPropagation(); setDraft(name); setEditing(true); }}
-      title="Click to rename"
-      style={{
-        background: "none",
-        border: "none",
-        cursor: "text",
-        padding: 0,
-        fontFamily: "Manrope, sans-serif",
-        fontWeight: 700,
-        fontSize: "1rem",
-        color: "var(--on-surface)",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "0.375rem",
-        textAlign: "left",
-      }}
-    >
-      {name}
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.4, flexShrink: 0 }}>
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-      </svg>
-    </button>
-  );
-}
 
 // ─── StatLine ─────────────────────────────────────────────────────────────────
 
@@ -108,13 +34,11 @@ function StatLine({ label, value }: { label: string; value: string }) {
 function ScenarioCard({
   scenario,
   onDelete,
-  onRename,
 }: {
   scenario: SavingsScenario;
   onDelete: () => void;
-  onRename: (name: string) => void;
 }) {
-  const router = useRouter();
+  const { push } = useGuardedRouter();
 
   const total = scenario.items.reduce((sum, item) => sum + item.amount, 0);
   const progress =
@@ -129,7 +53,7 @@ function ScenarioCard({
 
   return (
     <div
-      onClick={() => router.push(`/tools/savings-goal/${scenario.id}`)}
+      onClick={() => push(`${savingsGoalAdapter.listPath}/${scenario.id}`)}
       className="rounded-xl p-5 flex flex-col gap-4 cursor-pointer transition-colors"
       style={{
         backgroundColor: "var(--surface-container-lowest)",
@@ -141,7 +65,7 @@ function ScenarioCard({
       {/* Header row */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <ScenarioNameEditor name={scenario.name} onSave={onRename} />
+          <p className="font-bold text-base truncate" style={{ color: "var(--on-surface)", fontFamily: "Manrope, sans-serif" }}>{scenario.name}</p>
         </div>
         <button
           onClick={handleDelete}
@@ -254,13 +178,25 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SavingsGoalLandingPage() {
-  const router = useRouter();
-  const { scenarios, addScenario, removeScenario, updateScenario } = useSavingsGoal();
+  const { push } = useGuardedRouter();
+  const { status, profiles: scenarios, remove } = useProfileList(savingsGoalAdapter);
 
-  const handleAdd = () => {
-    const id = addScenario();
-    router.push(`/tools/savings-goal/${id}`);
+  // Nothing is written until the new item's first Save on its detail page.
+  const handleAdd = () => push(`${savingsGoalAdapter.listPath}/new`);
+
+  const handleDelete = (id: string) => {
+    const result = remove(id);
+    if (!result.ok) alert("Couldn't delete. Please try again.");
   };
+
+  if (status !== "ready") {
+    return (
+      <>
+        <SiteHeader />
+        <main className="min-h-screen" style={{ backgroundColor: "var(--surface-container-low)" }} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -273,7 +209,7 @@ export default function SavingsGoalLandingPage() {
 
           {/* ── Page Header ───────────────────────────────────────────────── */}
           <div>
-            <Link
+            <GuardedLink
               href="/"
               className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
               style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -282,7 +218,7 @@ export default function SavingsGoalLandingPage() {
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               Back to Home
-            </Link>
+            </GuardedLink>
 
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex items-start gap-4">
@@ -343,8 +279,7 @@ export default function SavingsGoalLandingPage() {
                 <ScenarioCard
                   key={scenario.id}
                   scenario={scenario}
-                  onDelete={() => removeScenario(scenario.id)}
-                  onRename={(name) => updateScenario(scenario.id, { name })}
+                  onDelete={() => handleDelete(scenario.id)}
                 />
               ))}
             </div>

@@ -1,29 +1,16 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useIsClient } from "@/hooks/useIsClient";
-import Link from "next/link";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useToolState } from "@/hooks/useToolState";
-import { fmtAxis, niceMax, loadArray, saveArray, genId } from "@/lib/utils";
+import { useToolDraft } from "@/hooks/useToolDraft";
+import { fireAdapter, type DrawdownSource, type YieldSource } from "@/lib/persistence/adapters/singleStateTools";
+import { fmtAxis, niceMax, genId } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type YieldSource = {
-  id: string;
-  name: string;
-  value: number;
-  yieldRate: number; // annual %
-  startAge: number;  // age at which yield income begins (compounds before this)
-};
-
-type DrawdownSource = {
-  id: string;
-  name: string;
-  value: number;
-  startAge: number;
-  endAge: number;
-};
 
 type YearRow = {
   age: number;
@@ -910,46 +897,24 @@ function SourceRow({
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export function FireCalculatorPage() {
-  // ── Persisted scalar state ──
-  const [s, set] = useToolState("tool:fire-calculator", {
-    monthlyExpense: 3000,
-    currentAge: 30,
-    retirementAge: 55,
-    deathAge: 80,
-  });
+  const draft = useToolDraft(fireAdapter);
+  const { setDraft } = draft;
+  const s = draft.draft.inputs;
+  const set = (changes: Partial<typeof s>) => setDraft((d) => ({ ...d, inputs: { ...d.inputs, ...changes } }));
 
   const { monthlyExpense, currentAge, retirementAge, deathAge } = s;
+  const { yieldSources, drawdownSources } = draft.draft;
+  const mounted = draft.status === "ready";
 
-  // ── Persisted dynamic arrays (localStorage only) ──
-  // Lazily loaded from localStorage; content is gated on `mounted` so hydration matches
-  const [yieldSources, setYieldSourcesRaw] = useState<YieldSource[]>(() =>
-    loadArray<YieldSource>("fire:yield-sources-v2", [
-      { id: genId("src"), name: "Dividend ETF", value: 50000, yieldRate: 5, startAge: 30 },
-    ]),
+  const setYieldSources = useCallback(
+    (fn: (prev: YieldSource[]) => YieldSource[]) => setDraft((d) => ({ ...d, yieldSources: fn(d.yieldSources) })),
+    [setDraft],
   );
-  const [drawdownSources, setDrawdownSourcesRaw] = useState<DrawdownSource[]>(() =>
-    loadArray<DrawdownSource>("fire:drawdown-sources-v2", [
-      { id: genId("src"), name: "Growth Portfolio", value: 100000, startAge: 55, endAge: 80 },
-    ]),
+
+  const setDrawdownSources = useCallback(
+    (fn: (prev: DrawdownSource[]) => DrawdownSource[]) => setDraft((d) => ({ ...d, drawdownSources: fn(d.drawdownSources) })),
+    [setDraft],
   );
-  const mounted = useIsClient();
-
-  // Persist arrays on change
-  const setYieldSources = useCallback((fn: (prev: YieldSource[]) => YieldSource[]) => {
-    setYieldSourcesRaw((prev) => {
-      const next = fn(prev);
-      saveArray("fire:yield-sources-v2", next);
-      return next;
-    });
-  }, []);
-
-  const setDrawdownSources = useCallback((fn: (prev: DrawdownSource[]) => DrawdownSource[]) => {
-    setDrawdownSourcesRaw((prev) => {
-      const next = fn(prev);
-      saveArray("fire:drawdown-sources-v2", next);
-      return next;
-    });
-  }, []);
 
   // ── Derived calculations ──
   const projection = useMemo(
@@ -1002,9 +967,11 @@ export function FireCalculatorPage() {
       >
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <ManualSaveNotice />
+
           {/* ── Page Header ─────────────────────────────────────────────── */}
           <div>
-            <Link
+            <GuardedLink
               href="/"
               className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
               style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -1013,7 +980,7 @@ export function FireCalculatorPage() {
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               Back to Home
-            </Link>
+            </GuardedLink>
 
             <div className="flex items-start gap-4">
               <div
@@ -1038,6 +1005,9 @@ export function FireCalculatorPage() {
                 <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                   Model your path to Financial Independence, Retire Early. Add your income sources and see when your passive income covers your lifestyle.
                 </p>
+            <div className="mt-2">
+              <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+            </div>
               </div>
             </div>
           </div>
@@ -1459,6 +1429,15 @@ export function FireCalculatorPage() {
           </div>
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={draft.save}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }

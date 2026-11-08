@@ -1,37 +1,17 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { useIsClient } from "@/hooks/useIsClient";
-import Link from "next/link";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useToolState } from "@/hooks/useToolState";
-import { loadArray, saveArray, genId } from "@/lib/utils";
+import { useToolDraft } from "@/hooks/useToolDraft";
+import { budgetAdapter, type BudgetCategory, type BudgetItem } from "@/lib/persistence/adapters/singleStateTools";
+import { genId } from "@/lib/utils";
 import { liftColor } from "@/lib/theme";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-type BudgetCategory =
-  | "Insurance"
-  | "Utilities"
-  | "Food"
-  | "Education"
-  | "Tuition"
-  | "Allowance"
-  | "Car"
-  | "Home"
-  | "Holiday"
-  | "Saving"
-  | "Investment"
-  | "Grocery"
-  | "Entertainment"
-  | "Tax";
-
-type BudgetItem = {
-  id: string;
-  label: string;
-  category: BudgetCategory;
-  planned: number; // monthly SGD
-};
 
 type SliceData = {
   key: string;
@@ -41,9 +21,6 @@ type SliceData = {
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const STORAGE_KEY_ITEMS = "budget:items";
-const STORAGE_KEY_STATE = "tool:budget-planner";
 
 const CATEGORIES: BudgetCategory[] = [
   "Allowance",
@@ -748,20 +725,20 @@ function SpendingSplitChart({
 // ─── BudgetPlannerPage ────────────────────────────────────────────────────────
 
 export function BudgetPlannerPage() {
-  const [s, set] = useToolState(STORAGE_KEY_STATE, { annualSalary: 72000 });
+  const draft = useToolDraft(budgetAdapter);
+  const { setDraft } = draft;
+  const s = draft.draft.inputs;
+  const set = (changes: Partial<typeof s>) => setDraft((d) => ({ ...d, inputs: { ...d.inputs, ...changes } }));
   const monthlyIncome = s.annualSalary / 12;
 
-  const [items, setItemsRaw] = useState<BudgetItem[]>(() => loadArray<BudgetItem>(STORAGE_KEY_ITEMS, []));
+  const { items } = draft.draft;
   const [itemsExpanded, setItemsExpanded] = useState(true);
-  const mounted = useIsClient();
+  const mounted = draft.status === "ready";
 
-  const setItems = useCallback((fn: (prev: BudgetItem[]) => BudgetItem[]) => {
-    setItemsRaw((prev) => {
-      const next = fn(prev);
-      saveArray(STORAGE_KEY_ITEMS, next);
-      return next;
-    });
-  }, []);
+  const setItems = useCallback(
+    (fn: (prev: BudgetItem[]) => BudgetItem[]) => setDraft((d) => ({ ...d, items: fn(d.items) })),
+    [setDraft],
+  );
 
   const addItem = useCallback(() => {
     setItems((prev) => [...prev, { id: genId("bi"), label: "", category: "Food", planned: 0 }]);
@@ -828,9 +805,11 @@ export function BudgetPlannerPage() {
       >
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <ManualSaveNotice />
+
           {/* ── Page Header ─────────────────────────────────────────── */}
           <div>
-            <Link
+            <GuardedLink
               href="/"
               className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
               style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -839,7 +818,7 @@ export function BudgetPlannerPage() {
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               Back to Home
-            </Link>
+            </GuardedLink>
 
             <div className="flex items-start gap-4">
               <div
@@ -867,6 +846,9 @@ export function BudgetPlannerPage() {
                 <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                   Plan your monthly spending, see where your money goes, and understand how much flexibility you really have.
                 </p>
+            <div className="mt-2">
+              <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+            </div>
               </div>
             </div>
           </div>
@@ -1233,6 +1215,15 @@ export function BudgetPlannerPage() {
 
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={draft.save}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }
