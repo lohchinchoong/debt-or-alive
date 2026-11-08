@@ -1,10 +1,15 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useSavingsGoal, SavingsItem } from "@/hooks/useSavingsGoal";
+import { useGuardedRouter } from "@/hooks/useGuardedRouter";
+import { NEW_PROFILE_ID, useProfileDraft } from "@/hooks/useProfileDraft";
+import { addItem, moveItem, removeItem, savingsGoalAdapter, updateItem, type SavingsItem } from "@/lib/persistence/adapters/savings-goal";
 import { fmtAxis, niceMax, todayISO } from "@/lib/utils";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -40,16 +45,16 @@ function monthsBetween(fromISO: string, toISO: string): number {
 
 function ScenarioNameEditor({
   name,
-  onSave,
+  onCommit,
 }: {
   name: string;
-  onSave: (name: string) => void;
+  onCommit: (name: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
 
   const commit = () => {
-    onSave(draft.trim() || "Unnamed");
+    onCommit(draft.trim() || "Unnamed");
     setEditing(false);
   };
 
@@ -584,20 +589,18 @@ function ItemSavingsRow({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SavingsGoalDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const scenarioId = params.scenarioId as string;
-
-  const { scenarios, updateScenario, addItem, removeItem, updateItem, updateItems } = useSavingsGoal();
-  const scenario = scenarios.find((s) => s.id === scenarioId);
+  const { scenarioId } = useParams<{ scenarioId: string }>();
+  const { replaceWithoutPrompt } = useGuardedRouter();
+  const draft = useProfileDraft(savingsGoalAdapter, scenarioId);
+  const { notFound } = draft;
 
   useEffect(() => {
-    if (scenarios.length > 0 && !scenario) {
-      router.replace("/tools/savings-goal");
-    }
-  }, [scenario, scenarios.length, router]);
+    // A stale id (including one deleted in another tab) goes back to the list.
+    if (notFound) replaceWithoutPrompt(savingsGoalAdapter.listPath);
+  }, [notFound, replaceWithoutPrompt]);
 
-  if (!scenario) {
+  const scenario = draft.draft;
+  if (draft.status !== "ready" || scenario === null) {
     return (
       <>
         <SiteHeader />
@@ -605,6 +608,17 @@ export default function SavingsGoalDetailPage() {
       </>
     );
   }
+
+  const setScenario = (changes: { name?: string; targetAmount?: number; targetDate?: string }) =>
+    draft.setDraft((s) => ({ ...s, ...changes }));
+
+  const handleSave = () => {
+    const result = draft.save();
+    // The first Save of a new item moves the URL from /new to its real id.
+    if (result.ok && scenarioId === NEW_PROFILE_ID) {
+      replaceWithoutPrompt(`${savingsGoalAdapter.listPath}/${scenario.id}`);
+    }
+  };
 
   const { name, targetAmount, targetDate, items } = scenario;
 
@@ -615,19 +629,15 @@ export default function SavingsGoalDetailPage() {
   const monthlyNeeded = monthsLeft > 0 ? remaining / monthsLeft : 0;
 
   const handleAddItem = () => {
-    addItem(scenarioId, { name: "", amount: 0, date: todayISO() });
+    draft.setDraft((s) => addItem(s, { name: "", amount: 0, date: todayISO() }));
   };
 
   const handleDelete = (itemId: string) => {
-    removeItem(scenarioId, itemId);
+    draft.setDraft((s) => removeItem(s, itemId));
   };
 
   const handleMove = (index: number, direction: -1 | 1) => {
-    const newItems = [...items];
-    const target = index + direction;
-    if (target < 0 || target >= newItems.length) return;
-    [newItems[index], newItems[target]] = [newItems[target], newItems[index]];
-    updateItems(scenarioId, newItems);
+    draft.setDraft((s) => moveItem(s, index, direction));
   };
 
   const statusCaption = targetAmount === 0
@@ -645,9 +655,11 @@ export default function SavingsGoalDetailPage() {
       >
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <ManualSaveNotice />
+
           {/* ── Back link ─────────────────────────────────────────────────── */}
           <div>
-            <Link
+            <GuardedLink
               href="/tools/savings-goal"
               className="inline-flex items-center gap-1.5 text-sm font-medium mb-6"
               style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}
@@ -656,7 +668,7 @@ export default function SavingsGoalDetailPage() {
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               All Goals
-            </Link>
+            </GuardedLink>
 
             {/* Header */}
             <div className="flex items-start gap-4">
@@ -676,7 +688,7 @@ export default function SavingsGoalDetailPage() {
               <div>
                 <ScenarioNameEditor
                   name={name}
-                  onSave={(newName) => updateScenario(scenarioId, { name: newName })}
+                  onCommit={(newName) => setScenario({ name: newName })}
                 />
                 <h1
                   className="text-3xl sm:text-4xl font-bold"
@@ -687,6 +699,9 @@ export default function SavingsGoalDetailPage() {
                 <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                   Define your target, add every line item contributing to it, and see your projected progress.
                 </p>
+                <div className="mt-2">
+                  <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+                </div>
               </div>
             </div>
           </div>
@@ -713,7 +728,7 @@ export default function SavingsGoalDetailPage() {
                 <FocusInput
                   label="Desired Savings Amount (S$)"
                   value={targetAmount}
-                  onChange={(v) => updateScenario(scenarioId, { targetAmount: parseFloat(v) || 0 })}
+                  onChange={(v) => setScenario({ targetAmount: parseFloat(v) || 0 })}
                   type="number"
                   min={0}
                   step={1000}
@@ -722,7 +737,7 @@ export default function SavingsGoalDetailPage() {
                 <FocusInput
                   label="Target Date"
                   value={targetDate}
-                  onChange={(v) => updateScenario(scenarioId, { targetDate: v })}
+                  onChange={(v) => setScenario({ targetDate: v })}
                   type="date"
                   hint={
                     monthsLeft > 0
@@ -825,7 +840,7 @@ export default function SavingsGoalDetailPage() {
                 <ItemSavingsRow
                   key={item.id}
                   item={item}
-                  onUpdate={(changes) => updateItem(scenarioId, item.id, changes)}
+                  onUpdate={(changes) => draft.setDraft((s) => updateItem(s, item.id, changes))}
                   onDelete={() => handleDelete(item.id)}
                   onMoveUp={idx > 0 ? () => handleMove(idx, -1) : undefined}
                   onMoveDown={idx < items.length - 1 ? () => handleMove(idx, 1) : undefined}
@@ -954,6 +969,15 @@ export default function SavingsGoalDetailPage() {
 
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={handleSave}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }

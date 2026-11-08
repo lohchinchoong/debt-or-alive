@@ -1,10 +1,15 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useHysaScenarios, HysaMonthEntry } from "@/hooks/useHysaScenarios";
+import { useGuardedRouter } from "@/hooks/useGuardedRouter";
+import { NEW_PROFILE_ID, useProfileDraft } from "@/hooks/useProfileDraft";
+import { addMonth, hysaAdapter, removeLastMonth, updateEntry, type HysaMonthEntry } from "@/lib/persistence/adapters/hysa-tracker";
 import { fmtAxis, niceMax } from "@/lib/utils";
 import { liftColor } from "@/lib/theme";
 
@@ -31,11 +36,11 @@ function toRows(entries: HysaMonthEntry[]): Row[] {
 
 // ─── ProfileNameEditor ────────────────────────────────────────────────────────
 
-function ProfileNameEditor({ name, onSave }: { name: string; onSave: (name: string) => void }) {
+function ProfileNameEditor({ name, onCommit }: { name: string; onCommit: (name: string) => void }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(name);
 
-  const commit = () => { onSave(draft.trim() || "Unnamed"); setEditing(false); };
+  const commit = () => { onCommit(draft.trim() || "Unnamed"); setEditing(false); };
 
   if (editing) {
     return (
@@ -633,22 +638,39 @@ function SpreadsheetTable({ rows, onUpdate }: {
 
 export default function HysaTrackerPage() {
   const { scenarioId } = useParams<{ scenarioId: string }>();
-  const router         = useRouter();
-  const { scenarios, updateScenario, updateEntry, addMonth, removeLastMonth } = useHysaScenarios();
-
-  const scenario = scenarios.find((s) => s.id === scenarioId);
+  const { replaceWithoutPrompt } = useGuardedRouter();
+  const draft = useProfileDraft(hysaAdapter, scenarioId);
+  const { notFound } = draft;
 
   useEffect(() => {
-    if (scenarios.length > 0 && !scenario) router.replace("/tools/hysa-tracker");
-  }, [scenario, scenarios.length, router]);
+    // A stale id (including one deleted in another tab) goes back to the list.
+    if (notFound) replaceWithoutPrompt(hysaAdapter.listPath);
+  }, [notFound, replaceWithoutPrompt]);
 
+  const scenario = draft.draft;
   const rows = useMemo(() => (scenario ? toRows(scenario.entries) : []), [scenario]);
 
-  if (!scenario) return null;
+  if (draft.status !== "ready" || scenario === null) {
+    return (
+      <>
+        <SiteHeader />
+        <main className="min-h-screen" style={{ backgroundColor: "var(--surface-container-low)" }} />
+      </>
+    );
+  }
 
-  const set      = (changes: Partial<Omit<typeof scenario, "id" | "entries">>) => updateScenario(scenarioId, changes);
+  const set      = (changes: Partial<Omit<typeof scenario, "id" | "entries">>) =>
+    draft.setDraft((s) => ({ ...s, ...changes }));
   const onUpdate = (year: number, month: number, changes: Partial<HysaMonthEntry>) =>
-    updateEntry(scenarioId, year, month, changes);
+    draft.setDraft((s) => updateEntry(s, year, month, changes));
+
+  const handleSave = () => {
+    const result = draft.save();
+    // The first Save of a new item moves the URL from /new to its real id.
+    if (result.ok && scenarioId === NEW_PROFILE_ID) {
+      replaceWithoutPrompt(`${hysaAdapter.listPath}/${scenario.id}`);
+    }
+  };
 
   const totalInterest = rows.reduce((s, r) => s + r.totalInterest, 0);
   const totalNetGain  = rows.reduce((s, r) => s + r.netGain, 0);
@@ -666,14 +688,16 @@ export default function HysaTrackerPage() {
       <main className="min-h-screen px-5 sm:px-8 lg:px-16 py-10" style={{ backgroundColor: "var(--surface-container-low)" }}>
         <div className="max-w-7xl mx-auto space-y-8">
 
+          <ManualSaveNotice />
+
           {/* ── Page Header ───────────────────────────────────────────────── */}
           <div>
-            <Link href="/tools/hysa-tracker" className="inline-flex items-center gap-1.5 text-sm font-medium mb-6" style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}>
+            <GuardedLink href="/tools/hysa-tracker" className="inline-flex items-center gap-1.5 text-sm font-medium mb-6" style={{ color: "var(--on-surface-sub)", textDecoration: "none" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
               All Scenarios
-            </Link>
+            </GuardedLink>
 
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
@@ -684,13 +708,16 @@ export default function HysaTrackerPage() {
                 </svg>
               </div>
               <div>
-                <ProfileNameEditor name={scenario.name} onSave={(name) => set({ name })} />
+                <ProfileNameEditor name={scenario.name} onCommit={(name) => set({ name })} />
                 <h1 className="text-3xl sm:text-4xl font-bold" style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}>
                   High Yield Savings Account Tracker
                 </h1>
                 <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                   {rows.length > 0 ? `${rangeLabel} · ${rows.length} ${rows.length === 1 ? "month" : "months"} logged` : "No months logged yet"}
                 </p>
+                <div className="mt-2">
+                  <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+                </div>
               </div>
             </div>
           </div>
@@ -731,7 +758,7 @@ export default function HysaTrackerPage() {
           {/* ── Add / Remove Month ────────────────────────────────────────── */}
           <div className="flex items-center gap-3 flex-wrap">
             <button
-              onClick={() => addMonth(scenarioId)}
+              onClick={() => draft.setDraft((s) => addMonth(s))}
               className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm"
               style={{
                 background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
@@ -749,8 +776,8 @@ export default function HysaTrackerPage() {
               <button
                 onClick={() => {
                   const last = scenario.entries[scenario.entries.length - 1];
-                  if (confirm(`Remove ${MONTH_NAMES[last.month - 1]} ${last.year}? This cannot be undone.`)) {
-                    removeLastMonth(scenarioId);
+                  if (confirm(`Remove ${MONTH_NAMES[last.month - 1]} ${last.year}?`)) {
+                    draft.setDraft((s) => removeLastMonth(s));
                   }
                 }}
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm"
@@ -819,6 +846,15 @@ export default function HysaTrackerPage() {
 
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={handleSave}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }
