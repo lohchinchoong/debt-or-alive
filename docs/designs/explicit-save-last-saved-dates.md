@@ -690,7 +690,7 @@ app building and linting. From stage 2 onwards, tests also pass.
         the installed version in the commit message.
     *   Add `"test": "vitest run"`.
 
-##### 3. `vitest.config.ts` (Create)
+##### 3. `vitest.config.mts` (Create)
 
 *   **Type / Scope**: Test configuration.
 *   **Proposed Changes**:
@@ -701,6 +701,9 @@ app building and linting. From stage 2 onwards, tests also pass.
     *   Leave `globals` off. Tests import `describe`, `it` and `expect` from
         `vitest`. This is needed because `next build` type-checks test files
         through `tsconfig.json`'s `**/*.ts`.
+    *   The `.mts` extension is used because the package is CommonJS; a
+        `.ts` config triggers Vite's "ESM syntax in a file loaded as CommonJS"
+        warning.
     *   Map `@` to `fileURLToPath(new URL("./src", import.meta.url))`.
 
 ##### 4. `src/lib/formatSavedDate.ts` and `src/lib/formatSavedDate.test.ts` (Create)
@@ -831,9 +834,13 @@ app building and linting. From stage 2 onwards, tests also pass.
 ##### 10. `src/lib/persistence/testing/memoryStorage.ts` (Create)
 
 *   **Type / Scope**: Test helper. App code never imports it.
-*   **Proposed Changes**: `createMemoryStorage(initial?)` returns a
-    `StorageLike` backed by a `Map`. It also has a `writes` counter and a
-    `failOnSet(n)` option that throws on the nth `setItem`.
+*   **Proposed Changes**: `createMemoryStorage(initial?, options?)` returns a
+    `StorageLike` backed by a `Map`, plus:
+    *   `writes`, which counts `setItem` and `removeItem` calls;
+    *   `dump()`, which returns the current contents.
+
+    `options.failOnSet(call, key)` is a predicate. Returning true makes that
+    `setItem` call throw. `call` is 1-based and counts every `setItem` call.
 
 #### Stage 3: CPF SA as the first full slice
 
