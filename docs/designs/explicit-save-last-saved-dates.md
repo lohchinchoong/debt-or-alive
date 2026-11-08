@@ -366,9 +366,9 @@ This section is the only definition of the guard API.
 *   **Unsaved store** (`src/lib/unsavedStore.ts`). A module-level store.
     `setUnsaved(ownerId, toolName | null)` registers or clears a page.
     `confirmLeave()` returns true when nothing is dirty. Otherwise it returns the
-    result of `window.confirm`. Components read the store with
-    `useSyncExternalStore`, so no React Context provider is needed and the root
-    layout stays a server component.
+    result of `globalThis.confirm`. The guards read it synchronously, so no
+    React Context provider is needed and the root layout stays a server
+    component.
 *   **`GuardedLink`** is the only file that imports `next/link`. Its
     `onNavigate` works as follows:
     *   if `confirmLeave()` returns false, it calls `e.preventDefault()` and
@@ -890,7 +890,6 @@ app building and linting. From stage 2 onwards, tests also pass.
         *   `setUnsaved(ownerId: string, toolName: string | null)`;
         *   `getUnsaved()`, which returns the first dirty tool name in
             insertion order, or `null`;
-        *   `subscribe(listener)`;
         *   `confirmLeave()`, which returns true when clean and otherwise
             returns ``globalThis.confirm(`You have unsaved changes to ${name}. Leave anyway?`)``.
             It uses `globalThis`, like the existing bare `confirm(...)` calls,

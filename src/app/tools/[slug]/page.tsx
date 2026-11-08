@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { GuardedLink } from "@/components/GuardedLink";
 import { tools } from "@/lib/tools";
 
 export function generateStaticParams() {
@@ -29,7 +29,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
       <p className="text-base mb-8 max-w-sm" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
         This tool is on the workbench. Check back soon.
       </p>
-      <Link
+      <GuardedLink
         href="/"
         className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-sm"
         style={{
@@ -38,7 +38,7 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
         }}
       >
         ← Back to all tools
-      </Link>
+      </GuardedLink>
     </div>
   );
 }
