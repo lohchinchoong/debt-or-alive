@@ -3,7 +3,7 @@
 *   **Author:** Des with Agents
 *   **Status:** Proposed
 *   **Date:** 2026-11-08
-*   **Builds on:** PR #2 (branch `feat/explicit-save`, not merged)
+*   **Builds on:** PR #2, explicit Save and last-saved dates (merged to `main` on 2026-11-08)
 
 --------------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@ The home page shows all 17 tools in one flat grid. Twelve are live and five are 
 
 The word "Calculator" is dropped from the name of each of the ten Tracking Tools wherever it is shown. URL slugs do not change, so bookmarks and saved browser data keep working. A display name is the text shown to users, for example "FIRE Planner". A slug is the URL segment, for example `fire-calculator`; slugs keep the old word.
 
-**Dependency on PR #2.** `toolMeta()` (`src/lib/persistence/toolMeta.ts`) exists only on `feat/explicit-save`. It reads tool names from `src/lib/tools.ts` and feeds them to the persistence adapters and the "You have unsaved changes to X" prompt, so renaming a tool also renames that prompt. This work is branched from `feat/explicit-save`, PR #2 merges first, and this branch is rebased if PR #2 changes `tools.ts` or `toolMeta.ts` before then.
+**Dependency on PR #2.** `toolMeta()` (`src/lib/persistence/toolMeta.ts`), added by PR #2, reads tool names from `src/lib/tools.ts` and feeds them to the persistence adapters and the "You have unsaved changes to X" prompt, so renaming a tool also renames that prompt. PR #2 is merged, and this work is branched from `main`.
 
 ## The Problem
 
@@ -196,7 +196,7 @@ No stored data changes. Slugs, storage keys and the export format are untouched.
 
 | Risk | Mitigation | Check |
 | :-- | :-- | :-- |
-| PR #2 changes `tools.ts` or `toolMeta.ts` before it merges, causing conflicts. | This branch starts from `feat/explicit-save`; PR #2 merges first; rebase if it changes. | `npm test` and `npm run build` pass after any rebase. |
+| Another change to `tools.ts` or `toolMeta.ts` lands on `main` while this is in review, causing conflicts. | Keep the three commits small; rebase this branch onto `main` before merging. | `npm test` and `npm run build` pass after any rebase. |
 | `shadcn init` overwrites tokens in `globals.css` or helpers in `utils.ts`. | Fixed install sequence with revert steps and a bounded end state (file 15). | `git diff src/app/globals.css src/lib/utils.ts` is empty; `git status` lists only the files named in the end state. |
 | A force-mounted inactive panel stays visible, so both grids show. | The class `data-[state=inactive]:hidden` on each `TabsContent`. | Manual check: only one grid visible per tab; view-source shows both panels. |
 | First-time visitors miss the Calculators tab. | Accepted by the author; the tab subtitles say what each tab holds. | None. |
@@ -224,7 +224,7 @@ Three commits on one branch, in this order. Each leaves build, lint and tests pa
 2.  **Group field, renames and copy.** Items 5 to 14, including the intro and footer copy in `page.tsx`. After this commit `page.tsx` still renders one grid.
 3.  **Tabs.** Items 15 to 18.
 
-Line numbers are correct at the current commit of `feat/explicit-save`; they shift as earlier commits land, so each item also names the text to find.
+Line numbers are correct at the current commit of `main` (`6d7d965`); they shift as earlier commits land, so each item also names the text to find.
 
 ### Target Files to Create/Modify
 
