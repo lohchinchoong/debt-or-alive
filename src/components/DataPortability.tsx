@@ -21,6 +21,7 @@ const STORAGE_KEYS = [
   "tool:budget-planner",
   "budget:items",
   "savings-goal:scenarios",
+  "hysa-tracker:scenarios",
   "dividend:sources",
   "dividend:projection-years",
 ];
