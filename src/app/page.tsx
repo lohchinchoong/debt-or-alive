@@ -2,7 +2,20 @@ import { ToolCard } from "@/components/ToolCard";
 import { HeroSection } from "@/components/HeroSection";
 import { SiteHeader } from "@/components/SiteHeader";
 import { DataPortability } from "@/components/DataPortability";
-import { tools } from "@/lib/tools";
+import { HomeTabs } from "@/components/HomeTabs";
+import { groupMeta, tools, type ToolGroup } from "@/lib/tools";
+
+function ToolGrid({ group }: { group: ToolGroup }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {tools
+        .filter((tool) => tool.group === group)
+        .map((tool) => (
+          <ToolCard key={tool.slug} {...tool} />
+        ))}
+    </div>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -25,7 +38,7 @@ export default function HomePage() {
               className="mt-4 text-base leading-relaxed"
               style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}
             >
-              No account required. Every calculator runs in your browser — your numbers stay yours.
+              No account required. Everything runs in your browser — your numbers stay yours.
             </p>
             <p
               className="mt-3 text-xs leading-relaxed"
@@ -42,11 +55,11 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {tools.map((tool) => (
-              <ToolCard key={tool.slug} {...tool} />
-            ))}
-          </div>
+          <HomeTabs
+            labels={groupMeta}
+            tracking={<ToolGrid group="tracking" />}
+            calculators={<ToolGrid group="calculators" />}
+          />
         </div>
       </section>
 
@@ -61,7 +74,7 @@ export default function HomePage() {
               Debt or Alive
             </span>
             <p className="text-xs mt-1" style={{ color: "var(--on-surface-sub)" }}>
-              Personal finance tools. No sign-up. No data stored.
+              Personal finance tools. No sign-up. Your data stays in this browser.
             </p>
           </div>
           <p className="text-xs" style={{ color: "var(--outline-variant)" }}>

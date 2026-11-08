@@ -11,6 +11,7 @@ import { useGuardedRouter } from "@/hooks/useGuardedRouter";
 import { NEW_PROFILE_ID, useProfileDraft } from "@/hooks/useProfileDraft";
 import { cpfMaAdapter, type CpfMaParams } from "@/lib/persistence/adapters/cpf-ma";
 import { fmtAxis, niceMax } from "@/lib/utils";
+import { toolMeta } from "@/lib/persistence/toolMeta";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const BHS = 79_000; // Basic Healthcare Sum 2026
@@ -755,7 +756,7 @@ export default function CpfMaCalculatorPage() {
                   className="text-3xl sm:text-4xl font-bold"
                   style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
                 >
-                  CPF Medisave Account (MA) Calculator
+                  {toolMeta("cpf-ma-calculator").name}
                 </h1>
                 <p
                   className="mt-2 text-base max-w-xl"

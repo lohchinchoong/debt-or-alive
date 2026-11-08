@@ -61,7 +61,7 @@ function AboutPopover() {
             A curated suite of personal finance tools — built for anyone who&apos;d rather
             crunch numbers than pretend they don&apos;t exist. No fluff, no upsells,
             no &ldquo;speak to a financial advisor&rdquo; pop-ups every 30 seconds.
-            Just honest calculators that help you think clearly about money.
+            Just honest tools that help you think clearly about money.
           </p>
 
           {/* Privacy note */}

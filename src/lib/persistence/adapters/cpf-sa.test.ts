@@ -19,7 +19,7 @@ const legacy: CpfProfile = {
 describe("cpfSaAdapter", () => {
   it("uses the canonical slug, name and list path", () => {
     expect(cpfSaAdapter.slug).toBe("cpf-sa-calculator");
-    expect(cpfSaAdapter.name).toBe("CPF Special Account (SA) Calculator");
+    expect(cpfSaAdapter.name).toBe("CPF Special Account (SA)");
     expect(cpfSaAdapter.listPath).toBe("/tools/cpf-sa-calculator");
   });
 

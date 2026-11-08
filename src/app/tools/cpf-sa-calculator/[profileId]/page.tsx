@@ -11,6 +11,7 @@ import { useGuardedRouter } from "@/hooks/useGuardedRouter";
 import { NEW_PROFILE_ID, useProfileDraft } from "@/hooks/useProfileDraft";
 import { cpfSaAdapter, type CpfParams } from "@/lib/persistence/adapters/cpf-sa";
 import { fmtAxis, niceMax } from "@/lib/utils";
+import { toolMeta } from "@/lib/persistence/toolMeta";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type YearRow = {
@@ -668,7 +669,7 @@ export default function CpfSaCalculatorPage() {
                   className="text-3xl sm:text-4xl font-bold"
                   style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
                 >
-                  CPF Special Account (SA) Calculator
+                  {toolMeta("cpf-sa-calculator").name}
                 </h1>
                 <p
                   className="mt-2 text-base max-w-xl"

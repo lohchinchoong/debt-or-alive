@@ -1,14 +1,6 @@
 import { GuardedLink } from "@/components/GuardedLink";
-import { tools } from "@/lib/tools";
 
-export function generateStaticParams() {
-  return tools.map((t) => ({ slug: t.slug }));
-}
-
-export default async function ToolPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const tool = tools.find((t) => t.slug === slug);
-
+export default function NotFound() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-5 text-center"
@@ -18,16 +10,16 @@ export default async function ToolPage({ params }: { params: Promise<{ slug: str
         className="text-xs font-semibold tracking-widest uppercase mb-4"
         style={{ color: "var(--primary)" }}
       >
-        Coming soon
+        Page not found
       </p>
       <h1
         className="text-4xl font-bold mb-4"
         style={{ color: "var(--on-surface)", letterSpacing: "-0.02em" }}
       >
-        {tool?.name ?? slug}
+        That page doesn&apos;t exist.
       </h1>
       <p className="text-base mb-8 max-w-sm" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
-        This tool is on the workbench. Check back soon.
+        The link may be old or mistyped. Every tool is on the home page.
       </p>
       <GuardedLink
         href="/"

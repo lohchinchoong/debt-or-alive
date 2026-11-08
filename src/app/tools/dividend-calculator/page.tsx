@@ -9,6 +9,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { useToolDraft } from "@/hooks/useToolDraft";
 import { dividendAdapter, type DividendSource as YieldSource } from "@/lib/persistence/adapters/dividend-calculator";
 import { fmtAxis, niceMax, genId } from "@/lib/utils";
+import { toolMeta } from "@/lib/persistence/toolMeta";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -527,7 +528,7 @@ export function DividendCalculatorPage() {
                   className="text-3xl sm:text-4xl font-bold"
                   style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
                 >
-                  Dividend Calculator
+                  {toolMeta("dividend-calculator").name}
                 </h1>
                 <p className="mt-2 text-base max-w-xl" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
                   Track your dividend portfolio. Add yield sources and see your annual and monthly passive income at a glance.

@@ -9,8 +9,8 @@ afterEach(() => {
 
 describe("unsavedStore", () => {
   it("registers and clears an owner", () => {
-    setUnsaved("a", "FIRE Calculator");
-    expect(getUnsaved()).toBe("FIRE Calculator");
+    setUnsaved("a", "FIRE Planner");
+    expect(getUnsaved()).toBe("FIRE Planner");
     setUnsaved("a", null);
     expect(getUnsaved()).toBeNull();
   });

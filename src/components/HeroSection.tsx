@@ -56,7 +56,7 @@ export function HeroSection() {
             className="text-lg sm:text-xl mb-10 max-w-lg"
             style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}
           >
-            A curated suite of personal finance calculators — from mortgage repayments to debt payoff strategies.
+            A curated suite of personal finance tools — track your CPF, savings and budget, or run a quick calculation.
           </p>
 
           <a

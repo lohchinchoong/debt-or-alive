@@ -1,6 +1,8 @@
 import { liftColor } from "@/lib/theme";
 
-export type ToolCategory = "Property" | "CPF" | "Debt" | "Savings" | "Investment" | "Planning";
+export type ToolCategory = "Property" | "CPF" | "Savings" | "Investment" | "Planning";
+
+export type ToolGroup = "tracking" | "calculators";
 
 export type Tool = {
   slug: string;
@@ -8,39 +10,41 @@ export type Tool = {
   tagline: string;
   category: ToolCategory;
   icon: string; // lucide icon name
-  accent?: "primary" | "tertiary";
-  comingSoon?: boolean;
+  group: ToolGroup;
 };
 
 export const tools: Tool[] = [
-  // ── Live tools (shown first) ──────────────────────────────────────────────
   {
     slug: "compound-interest",
-    name: "Compound Interest",
+    name: "Compound Interest Calculator",
     tagline: "Visualise how time and rate transform your invested capital.",
     category: "Investment",
     icon: "TrendingUp",
+    group: "calculators",
   },
   {
     slug: "cpf-sa-calculator",
-    name: "CPF Special Account (SA) Calculator",
+    name: "CPF Special Account (SA)",
     tagline: "Project your Special Account balance with tiered interest and annual crediting.",
     category: "CPF",
     icon: "PiggyBank",
+    group: "tracking",
   },
   {
     slug: "cpf-ma-calculator",
-    name: "CPF Medisave Account (MA) Calculator",
+    name: "CPF Medisave Account (MA)",
     tagline: "Project your Medisave balance, track the BHS ceiling, and model MediShield Life premiums.",
     category: "CPF",
     icon: "HeartPulse",
+    group: "tracking",
   },
   {
     slug: "cpf-oa-annuity-calculator",
-    name: "CPF Ordinary Account (OA) Annuity Calculator",
+    name: "CPF Ordinary Account (OA) Annuity",
     tagline: "See the constant monthly payout your OA balance can fund from your chosen start age.",
     category: "CPF",
     icon: "Banknote",
+    group: "tracking",
   },
   {
     slug: "hysa-tracker",
@@ -48,13 +52,15 @@ export const tools: Tool[] = [
     tagline: "Log monthly interest and investment gains across your high-yield savings accounts.",
     category: "Savings",
     icon: "TableProperties",
+    group: "tracking",
   },
   {
     slug: "fire-calculator",
-    name: "FIRE Calculator",
-    tagline: "When can you retire? Project your FIRE number and timeline.",
+    name: "FIRE Planner",
+    tagline: "Financial independence, retire early: find your FIRE number and when you can retire.",
     category: "Planning",
     icon: "Flame",
+    group: "tracking",
   },
   {
     slug: "mortgage-calculator",
@@ -62,6 +68,7 @@ export const tools: Tool[] = [
     tagline: "Estimate monthly repayments for HDB or private property loans.",
     category: "Property",
     icon: "House",
+    group: "calculators",
   },
   {
     slug: "emergency-fund",
@@ -69,6 +76,7 @@ export const tools: Tool[] = [
     tagline: "Track multiple savings sources. See how interest grows your safety net over time.",
     category: "Savings",
     icon: "ShieldCheck",
+    group: "tracking",
   },
   {
     slug: "srs-calculator",
@@ -76,13 +84,15 @@ export const tools: Tool[] = [
     tagline: "Track SRS deposits, investments, and plan your tax-efficient drawdown.",
     category: "Savings",
     icon: "Receipt",
+    group: "tracking",
   },
   {
     slug: "dividend-calculator",
-    name: "Dividend Calculator",
+    name: "Dividend Planner",
     tagline: "Track your dividend portfolio. See annual and monthly income from every yield source.",
     category: "Investment",
     icon: "Percent",
+    group: "tracking",
   },
   {
     slug: "budget-planner",
@@ -90,6 +100,7 @@ export const tools: Tool[] = [
     tagline: "Allocate income across needs, wants, and savings with clarity.",
     category: "Planning",
     icon: "LayoutList",
+    group: "tracking",
   },
   {
     slug: "savings-goal",
@@ -97,66 +108,19 @@ export const tools: Tool[] = [
     tagline: "Work backwards from a target amount to a monthly savings plan.",
     category: "Planning",
     icon: "Target",
+    group: "tracking",
   },
-  // ── Coming soon ───────────────────────────────────────────────────────────
-  {
-    slug: "rent-vs-buy",
-    name: "Rent vs Buy",
-    tagline: "Is buying really cheaper? Model the true cost over time.",
-    category: "Property",
-    icon: "Scale",
-    comingSoon: true,
-  },
-  {
-    slug: "cpf-oa-to-sa",
-    name: "CPF OA → SA Transfer",
-    tagline: "Model the long-term effect of transferring OA funds to SA.",
-    category: "CPF",
-    icon: "ArrowRightLeft",
-    comingSoon: true,
-  },
-  {
-    slug: "debt-repayment",
-    name: "Debt Repayment Planner",
-    tagline: "Avalanche or snowball — find your fastest path to debt-free.",
-    category: "Debt",
-    icon: "TrendingDown",
-    accent: "tertiary",
-    comingSoon: true,
-  },
-  {
-    slug: "loan-comparison",
-    name: "Loan Comparison",
-    tagline: "Compare multiple loan offers side-by-side on total cost.",
-    category: "Debt",
-    icon: "GitCompare",
-    accent: "tertiary",
-    comingSoon: true,
-  },
-  {
-    slug: "net-worth",
-    name: "Net Worth Tracker",
-    tagline: "Sum your assets and liabilities to find your true financial position.",
-    category: "Planning",
-    icon: "Wallet",
-    comingSoon: true,
-  },
-];
-
-export const categoryOrder: ToolCategory[] = [
-  "Property",
-  "CPF",
-  "Debt",
-  "Savings",
-  "Investment",
-  "Planning",
 ];
 
 export const categoryColors: Record<ToolCategory, string> = {
   Property:   liftColor("#00351f"),
   CPF:        liftColor("#1a4d35"),
-  Debt:       liftColor("#4f1b1f"),
   Savings:    liftColor("#1c3d2c"),
   Investment: liftColor("#0d3d28"),
   Planning:   liftColor("#2b3d32"),
+};
+
+export const groupMeta: Record<ToolGroup, { label: string; subtitle: string }> = {
+  tracking: { label: "Tracking Tools", subtitle: "Saved on this device, for your own numbers." },
+  calculators: { label: "Calculators", subtitle: "Quick, one-off what-ifs." },
 };
