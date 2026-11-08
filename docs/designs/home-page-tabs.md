@@ -42,7 +42,7 @@ Three further problems sit alongside it:
 ## Non-Goals
 
 *   Changing URL slugs, storage keys or the export file format.
-*   Remembering the last tab, or linking to a tab by URL. This is the author's product decision, not a technical limit (see Alternative B). Back from a tool page reopens on Tracking Tools.
+*   Remembering the last tab, or linking to a tab by URL. This is the author's product decision, not a technical limit (see Alternative B). A fresh load, or a link to the home page, opens on Tracking Tools. The browser's Back button may restore the last tab from its page cache; in Chrome, Back from Mortgage Calculator reopened the Calculators tab.
 *   A note about sensitive data on the Tracking Tools tab. Grouping is the only change to that section.
 *   Redirects for deleted routes. A 404 is accepted.
 *   Changing category badges, the order of tools in `tools.ts`, or the disclaimer paragraph and Export/Import block.
@@ -99,7 +99,7 @@ The `id="tools"` anchor stays on the existing section, above the intro. "Explore
 
 The author chose to run the shadcn CLI. The repo has no `components.json`, no `src/components/ui/` and no Radix package. `shadcn init` writes colour tokens to `src/app/globals.css`, including a `--primary` that already exists with another meaning, and a `cn()` helper to `src/lib/utils.ts`, which already holds chart and ID helpers. The install is therefore a fixed sequence that ends in a bounded set of changes. The exact steps are in file 15 of the implementation plan.
 
-End state: only these files change in commit 3: `package.json`, `package-lock.json`, `components.json`, `src/lib/cn.ts`, `src/components/ui/tabs.tsx`, `src/components/HomeTabs.tsx` and `src/app/page.tsx`. `src/app/globals.css` and `src/lib/utils.ts` are unchanged (`git diff` is empty for both). The only new package is whichever Radix package the generated `tabs.tsx` imports; any other package the CLI adds is uninstalled.
+End state: only these files change in commit 3: `package.json`, `package-lock.json`, `components.json`, `src/lib/cn.ts`, `src/components/ui/tabs.tsx`, `src/components/HomeTabs.tsx` and `src/app/page.tsx`. `src/app/globals.css` and `src/lib/utils.ts` are unchanged (`git diff` is empty for both). The only new package is `@radix-ui/react-tabs` (the CLI installs the unified `radix-ui` package, which pulls in about 50 Radix packages; it is replaced by this one). Any other package the CLI adds is uninstalled.
 
 ### Names in one place
 
@@ -303,12 +303,13 @@ Line numbers are correct at the current commit of `main` (`6d7d965`); they shift
 *   **Type / Scope**: Dependency and tooling setup, run once at the start of commit 3. The trade-off was discussed with the author: one new client package for built-in tab accessibility (Alternatives H and I).
 *   **Proposed Changes**: Run these steps in order.
     1.  Create `src/lib/cn.ts` with a named export `cn(...inputs: ClassValue[])` that returns `twMerge(clsx(inputs))`. `clsx` and `tailwind-merge` are already in `package.json`.
-    2.  Run `npx shadcn@latest init` and accept the default answer to every prompt. Record the CLI version it prints in the commit message. Colour and style output from `init` is reverted in step 4, so those answers do not matter.
-    3.  Open `components.json` and set `aliases.utils` to `@/lib/cn` and `aliases.ui` to `@/components/ui`.
-    4.  Run `git checkout src/app/globals.css src/lib/utils.ts` to discard whatever `init` changed there. If `init` added a package other than the Radix package that `tabs.tsx` will import (for example `tw-animate-css`), uninstall it with `npm uninstall`.
-    5.  Run `npx shadcn@latest add tabs`. This creates `src/components/ui/tabs.tsx` and installs its Radix package. Record the package name in the commit message.
-    6.  Run `git diff --stat`. The files that changed must be exactly: `package.json`, `package-lock.json`, `components.json`, `src/lib/cn.ts` and `src/components/ui/tabs.tsx`. `globals.css` and `utils.ts` must not appear. If another file changed, `git checkout` it.
-    7.  Rewrite `tabs.tsx` as described in item 16.
+    2.  Run `npx shadcn@latest init --base radix --preset nova --template next -y --no-monorepo --no-rtl` (CLI version 4.23.0; record it in the commit message). Without `--base radix` the CLI uses Base UI, and without `--preset` it stops at an interactive prompt. `init` changes more than the colour tokens: it overwrites `src/lib/utils.ts` with a re-export from a bare npm package called `cn`, changes the app font in `src/app/layout.tsx`, adds about 177 lines to `src/app/globals.css`, creates `src/components/ui/button.tsx`, and adds the packages `cn`, `radix-ui`, `shadcn` and `tw-animate-css`.
+    3.  Open `components.json` and set `aliases.utils` to `@/lib/cn`.
+    4.  Run `git checkout src/app/globals.css src/app/layout.tsx src/lib/utils.ts`, delete `src/components/ui/button.tsx`, and run `npm uninstall cn shadcn tw-animate-css`.
+    5.  Run `npx shadcn@latest add tabs -y`. This creates `src/components/ui/tabs.tsx`. The generated file imports `cn` from the bare package name `"cn"`, which is why item 16 rewrites it.
+    6.  Run `git checkout package.json package-lock.json`, then `npm install @radix-ui/react-tabs`. This swaps the unified `radix-ui` package for the single tabs package (the lockfile gains 16 packages instead of 82).
+    7.  Run `git status`. The files that changed must be exactly: `package.json`, `package-lock.json`, `components.json`, `src/lib/cn.ts` and `src/components/ui/tabs.tsx`. `globals.css`, `layout.tsx` and `utils.ts` must not appear.
+    8.  Rewrite `tabs.tsx` as described in item 16, importing `@radix-ui/react-tabs`.
 
 #### 16. `src/components/ui/tabs.tsx` (Create, restyle)
 
@@ -337,7 +338,7 @@ Line numbers are correct at the current commit of `main` (`6d7d965`); they shift
     *   Arrow keys, Home and End move between tabs; the focus ring is visible; each trigger measures at least 44 px tall in devtools.
     *   At 375 px wide: the tab list fits on one row, cards stack in one column, no horizontal scroll.
     *   "Explore all tools" in the hero still scrolls to the tools section.
-    *   Opening a Calculators tool and pressing Back reopens on Tracking Tools (the Non-Goal above).
+    *   Opening a Calculators tool and pressing the browser's Back button may restore the Calculators tab from the page cache; a link to the home page opens on Tracking Tools (the Non-Goal above).
     *   `/tools/rent-vs-buy` shows the not-found page with a link home.
     *   An edit with unsaved changes on FIRE Planner, then a click on the home link, shows "You have unsaved changes to FIRE Planner."
     *   In both light and dark themes the selected trigger has `--surface-container-lowest` background and `--on-surface` text, the tab list has `--surface-container` background, and `git diff src/app/globals.css` is empty.
