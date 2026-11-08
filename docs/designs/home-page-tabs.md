@@ -314,7 +314,7 @@ Line numbers are correct at the current commit of `main` (`6d7d965`); they shift
 #### 16. `src/components/ui/tabs.tsx` (Create, restyle)
 
 *   **Type / Scope**: shadcn Tabs wrapper over the Radix tabs package; named exports `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`.
-*   **Proposed Changes**: Replace every shadcn colour class (`bg-muted`, `text-muted-foreground`, `bg-background`, `text-foreground` and similar) with the repo's variables, using these classes. `TabsList`: `w-full grid grid-cols-2 gap-1 rounded-lg p-1 bg-[var(--surface-container)]`. `TabsTrigger`: `min-h-11 rounded-md px-3 text-sm font-semibold text-[var(--on-surface-sub)] data-[state=active]:bg-[var(--surface-container-lowest)] data-[state=active]:text-[var(--on-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]`. `TabsContent`: `mt-6 data-[state=inactive]:hidden`; it accepts `forceMount` as the Radix component does.
+*   **Proposed Changes**: Replace every shadcn colour class (`bg-muted`, `text-muted-foreground`, `bg-background`, `text-foreground` and similar) with the repo's variables, using these classes. `TabsList`: `w-full grid grid-cols-2 gap-1 rounded-lg p-1 bg-[var(--surface-container)]`. `TabsTrigger`: `min-h-11 rounded-md border-b-2 border-transparent px-3 text-sm font-semibold text-[var(--on-surface-sub)] data-[state=active]:bg-[var(--surface-container-lowest)] data-[state=active]:border-[var(--primary)] data-[state=active]:text-[var(--on-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--primary)]`. `TabsContent`: `mt-6 data-[state=inactive]:hidden`; it accepts `forceMount` as the Radix component does.
 
 #### 17. `src/components/HomeTabs.tsx` (Create)
 
@@ -341,7 +341,7 @@ Line numbers are correct at the current commit of `main` (`6d7d965`); they shift
     *   Opening a Calculators tool and pressing the browser's Back button may restore the Calculators tab from the page cache; a link to the home page opens on Tracking Tools (the Non-Goal above).
     *   `/tools/rent-vs-buy` shows the not-found page with a link home.
     *   An edit with unsaved changes on FIRE Planner, then a click on the home link, shows "You have unsaved changes to FIRE Planner."
-    *   In both light and dark themes the selected trigger has `--surface-container-lowest` background and `--on-surface` text, the tab list has `--surface-container` background, and `git diff src/app/globals.css` is empty.
+    *   In both light and dark themes the selected trigger has `--surface-container-lowest` background, `--on-surface` text and a 2 px `--primary` bottom border, and the tab list has `--surface-container` background. The selected pill alone is too close to the list in the dark theme (contrast 1.07:1), so the border carries the selection cue: measured 9.73:1 in dark and 11.78:1 in light against the list. `git diff src/app/globals.css` is empty.
 
 --------------------------------------------------------------------------------
 
