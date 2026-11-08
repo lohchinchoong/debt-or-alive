@@ -415,13 +415,9 @@ function SpreadsheetTable({ rows, onUpdate }: {
   }
 
   const totals = {
-    salaryAmount:    rows.reduce((s, r) => s + r.salaryAmount, 0),
     salaryInterest:  rows.reduce((s, r) => s + (r.salaryInterest ?? 0), 0),
-    cardSpendAmount: rows.reduce((s, r) => s + r.cardSpendAmount, 0),
     cardInterest:    rows.reduce((s, r) => s + (r.cardInterest ?? 0), 0),
-    insureAmount:    rows.reduce((s, r) => s + r.insureAmount, 0),
     insureInterest:  rows.reduce((s, r) => s + (r.insureInterest ?? 0), 0),
-    investAmount:    rows.reduce((s, r) => s + r.investAmount, 0),
     investInterest:  rows.reduce((s, r) => s + (r.investInterest ?? 0), 0),
     investmentPL:    rows.reduce((s, r) => s + (r.investmentPL ?? 0), 0),
     totalInterest:   rows.reduce((s, r) => s + r.totalInterest, 0),
@@ -437,8 +433,7 @@ function SpreadsheetTable({ rows, onUpdate }: {
     borderBottom: "1px solid var(--divider)",
   };
   const thLeft: React.CSSProperties = { ...thBase, textAlign: "left" as const };
-  const thCenter: React.CSSProperties = { ...thBase, textAlign: "center" as const };
-  const tdNum: React.CSSProperties = {
+    const tdNum: React.CSSProperties = {
     padding: "0.35rem 0.5rem", textAlign: "right", fontSize: "0.8125rem",
     fontFamily: "Manrope, sans-serif", whiteSpace: "nowrap",
   };
@@ -456,8 +451,8 @@ function SpreadsheetTable({ rows, onUpdate }: {
 
   function groupTh(label: string, color: string): React.ReactNode {
     return (
-      <th colSpan={2} style={{
-        ...thCenter, color, borderBottom: "1px solid var(--divider)",
+      <th style={{
+        ...thBase, color, borderBottom: "1px solid var(--divider)",
         fontSize: "0.625rem", fontWeight: 700,
         borderLeft: "1px solid var(--divider-subtle)",
       }}>{label}</th>
@@ -466,13 +461,9 @@ function SpreadsheetTable({ rows, onUpdate }: {
 
   function SubtotalRow({ yr, yearRows }: { yr: number; yearRows: Row[] }) {
     const yt = {
-      salaryAmount:    yearRows.reduce((s, r) => s + r.salaryAmount, 0),
       salaryInterest:  yearRows.reduce((s, r) => s + (r.salaryInterest ?? 0), 0),
-      cardSpendAmount: yearRows.reduce((s, r) => s + r.cardSpendAmount, 0),
       cardInterest:    yearRows.reduce((s, r) => s + (r.cardInterest ?? 0), 0),
-      insureAmount:    yearRows.reduce((s, r) => s + r.insureAmount, 0),
       insureInterest:  yearRows.reduce((s, r) => s + (r.insureInterest ?? 0), 0),
-      investAmount:    yearRows.reduce((s, r) => s + r.investAmount, 0),
       investInterest:  yearRows.reduce((s, r) => s + (r.investInterest ?? 0), 0),
       investmentPL:    yearRows.reduce((s, r) => s + (r.investmentPL ?? 0), 0),
       totalInterest:   yearRows.reduce((s, r) => s + r.totalInterest, 0),
@@ -488,14 +479,10 @@ function SpreadsheetTable({ rows, onUpdate }: {
     return (
       <tr>
         <td style={{ ...tdMonth, ...stBg, fontSize: "0.75rem", color: "var(--primary)" }}>{yr} Total</td>
-        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid var(--divider-subtle)" }}>{dash(yt.salaryAmount)}</td>
-        <td style={{ ...st, color: "var(--success)" }}>{fmt(yt.salaryInterest)}</td>
-        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid var(--divider-subtle)" }}>{dash(yt.cardSpendAmount)}</td>
-        <td style={{ ...st, color: "var(--success)" }}>{fmt(yt.cardInterest)}</td>
-        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid var(--divider-subtle)" }}>{dash(yt.insureAmount)}</td>
-        <td style={{ ...st, color: "var(--success)" }}>{fmt(yt.insureInterest)}</td>
-        <td style={{ ...st, color: "var(--on-surface-sub)", borderLeft: "1px solid var(--divider-subtle)" }}>{dash(yt.investAmount)}</td>
-        <td style={{ ...st, color: "var(--success)" }}>{fmt(yt.investInterest)}</td>
+        <td style={{ ...st, color: "var(--success)", borderLeft: "1px solid var(--divider-subtle)" }}>{fmt(yt.salaryInterest)}</td>
+        <td style={{ ...st, color: "var(--success)", borderLeft: "1px solid var(--divider-subtle)" }}>{fmt(yt.cardInterest)}</td>
+        <td style={{ ...st, color: "var(--success)", borderLeft: "1px solid var(--divider-subtle)" }}>{fmt(yt.insureInterest)}</td>
+        <td style={{ ...st, color: "var(--success)", borderLeft: "1px solid var(--divider-subtle)" }}>{fmt(yt.investInterest)}</td>
         <td style={{ ...st, color: intColor(yt.investmentPL) }}>{dash(yt.investmentPL)}</td>
         <td style={{ ...st, color: intColor(yt.netGain) }}>{fmt(yt.netGain)}</td>
       </tr>
@@ -507,30 +494,20 @@ function SpreadsheetTable({ rows, onUpdate }: {
       <div style={{ backgroundColor: "var(--surface-container-lowest)" }} className="px-6 py-4">
         <p className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>Monthly Tracker</p>
         <p className="text-xs mt-0.5" style={{ color: "var(--on-surface-sub)" }}>
-          Click any cell to edit. Each category has an Amount column and an Interest column. Net Gain is computed.
+          Click any cell to edit. Each category has an Interest column. Net Gain is computed.
         </p>
       </div>
       <div className="overflow-x-auto" style={{ backgroundColor: "var(--surface-container-lowest)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "920px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}>
           <thead>
             <tr>
-              <th rowSpan={2} style={{ ...thLeft, position: "sticky", left: 0, zIndex: 2, width: "88px" }}>Month</th>
-              {groupTh("Salary", CAT_COLORS.salary)}
-              {groupTh("Card Spend", CAT_COLORS.card)}
-              {groupTh("Insurance", CAT_COLORS.insure)}
-              {groupTh("Investment", CAT_COLORS.invest)}
-              <th rowSpan={2} style={{ ...thBase, color: "var(--amber)" }}>Invest P&amp;L</th>
-              <th rowSpan={2} style={{ ...thBase, color: "var(--on-surface)", fontWeight: 700 }}>Net Gain</th>
-            </tr>
-            <tr>
-              <th style={{ ...thBase, borderLeft: "1px solid var(--divider-subtle)" }}>Amt</th>
-              <th style={{ ...thBase, color: "var(--success)" }}>Interest</th>
-              <th style={{ ...thBase, borderLeft: "1px solid var(--divider-subtle)" }}>Amt</th>
-              <th style={{ ...thBase, color: "var(--success)" }}>Interest</th>
-              <th style={{ ...thBase, borderLeft: "1px solid var(--divider-subtle)" }}>Amt</th>
-              <th style={{ ...thBase, color: "var(--success)" }}>Interest</th>
-              <th style={{ ...thBase, borderLeft: "1px solid var(--divider-subtle)" }}>Amt</th>
-              <th style={{ ...thBase, color: "var(--success)" }}>Interest</th>
+              <th style={{ ...thLeft, position: "sticky", left: 0, zIndex: 2, width: "88px" }}>Month</th>
+              {groupTh("Salary Interest", CAT_COLORS.salary)}
+              {groupTh("Card Spend Interest", CAT_COLORS.card)}
+              {groupTh("Insurance Interest", CAT_COLORS.insure)}
+              {groupTh("Investment Interest", CAT_COLORS.invest)}
+              <th style={{ ...thBase, color: "var(--amber)" }}>Invest P&amp;L</th>
+              <th style={{ ...thBase, color: "var(--on-surface)", fontWeight: 700 }}>Net Gain</th>
             </tr>
           </thead>
           <tbody>
@@ -550,38 +527,22 @@ function SpreadsheetTable({ rows, onUpdate }: {
                         />
                       </td>
                       {/* Salary */}
-                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid var(--divider-subtle)" }}>
-                        <EditableCell value={row.salaryAmount} step={500}
-                          onChange={(v) => onUpdate(row.year, row.month, { salaryAmount: v })} />
-                      </td>
-                      <td style={{ ...tdNum, backgroundColor: intBg }}>
+                      <td style={{ ...tdNum, backgroundColor: intBg, borderLeft: "1px solid var(--divider-subtle)" }}>
                         <EditableCell value={row.salaryInterest ?? 0} step={1}
                           onChange={(v) => onUpdate(row.year, row.month, { salaryInterest: v })} />
                       </td>
                       {/* Card Spend */}
-                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid var(--divider-subtle)" }}>
-                        <EditableCell value={row.cardSpendAmount} step={100}
-                          onChange={(v) => onUpdate(row.year, row.month, { cardSpendAmount: v })} />
-                      </td>
-                      <td style={{ ...tdNum, backgroundColor: intBg }}>
+                      <td style={{ ...tdNum, backgroundColor: intBg, borderLeft: "1px solid var(--divider-subtle)" }}>
                         <EditableCell value={row.cardInterest ?? 0} step={1}
                           onChange={(v) => onUpdate(row.year, row.month, { cardInterest: v })} />
                       </td>
                       {/* Insurance */}
-                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid var(--divider-subtle)" }}>
-                        <EditableCell value={row.insureAmount} step={100}
-                          onChange={(v) => onUpdate(row.year, row.month, { insureAmount: v })} />
-                      </td>
-                      <td style={{ ...tdNum, backgroundColor: intBg }}>
+                      <td style={{ ...tdNum, backgroundColor: intBg, borderLeft: "1px solid var(--divider-subtle)" }}>
                         <EditableCell value={row.insureInterest ?? 0} step={1}
                           onChange={(v) => onUpdate(row.year, row.month, { insureInterest: v })} />
                       </td>
                       {/* Investment */}
-                      <td style={{ ...tdNum, backgroundColor: rowBg, borderLeft: "1px solid var(--divider-subtle)" }}>
-                        <EditableCell value={row.investAmount} step={1000}
-                          onChange={(v) => onUpdate(row.year, row.month, { investAmount: v })} />
-                      </td>
-                      <td style={{ ...tdNum, backgroundColor: intBg }}>
+                      <td style={{ ...tdNum, backgroundColor: intBg, borderLeft: "1px solid var(--divider-subtle)" }}>
                         <EditableCell value={row.investInterest ?? 0} step={1}
                           onChange={(v) => onUpdate(row.year, row.month, { investInterest: v })} />
                       </td>
@@ -609,19 +570,14 @@ function SpreadsheetTable({ rows, onUpdate }: {
             {rows.length > 0 && (() => {
               const p = "var(--primary-fill)";
               const w = "#fff";
-              const mw = "rgba(255,255,255,0.6)";
               const dash = (v: number) => v !== 0 ? fmt(v) : "—";
               return (
                 <tr>
                   <td style={{ ...tdMonth, backgroundColor: p, color: w, fontSize: "0.75rem" }}>Grand Total</td>
-                  <td style={{ ...tdNum, backgroundColor: p, color: mw, borderLeft: "1px solid rgba(255,255,255,0.15)" }}>{dash(totals.salaryAmount)}</td>
-                  <td style={{ ...tdNum, backgroundColor: p, color: w, fontWeight: 700 }}>{fmt(totals.salaryInterest)}</td>
-                  <td style={{ ...tdNum, backgroundColor: p, color: mw, borderLeft: "1px solid rgba(255,255,255,0.15)" }}>{dash(totals.cardSpendAmount)}</td>
-                  <td style={{ ...tdNum, backgroundColor: p, color: w, fontWeight: 700 }}>{fmt(totals.cardInterest)}</td>
-                  <td style={{ ...tdNum, backgroundColor: p, color: mw, borderLeft: "1px solid rgba(255,255,255,0.15)" }}>{dash(totals.insureAmount)}</td>
-                  <td style={{ ...tdNum, backgroundColor: p, color: w, fontWeight: 700 }}>{fmt(totals.insureInterest)}</td>
-                  <td style={{ ...tdNum, backgroundColor: p, color: mw, borderLeft: "1px solid rgba(255,255,255,0.15)" }}>{dash(totals.investAmount)}</td>
-                  <td style={{ ...tdNum, backgroundColor: p, color: w, fontWeight: 700 }}>{fmt(totals.investInterest)}</td>
+                  <td style={{ ...tdNum, backgroundColor: p, color: w, fontWeight: 700, borderLeft: "1px solid rgba(255,255,255,0.15)" }}>{fmt(totals.salaryInterest)}</td>
+                  <td style={{ ...tdNum, backgroundColor: p, color: w, fontWeight: 700, borderLeft: "1px solid rgba(255,255,255,0.15)" }}>{fmt(totals.cardInterest)}</td>
+                  <td style={{ ...tdNum, backgroundColor: p, color: w, fontWeight: 700, borderLeft: "1px solid rgba(255,255,255,0.15)" }}>{fmt(totals.insureInterest)}</td>
+                  <td style={{ ...tdNum, backgroundColor: p, color: w, fontWeight: 700, borderLeft: "1px solid rgba(255,255,255,0.15)" }}>{fmt(totals.investInterest)}</td>
                   <td style={{ ...tdNum, backgroundColor: p, color: "rgba(255,255,255,0.85)" }}>{dash(totals.investmentPL)}</td>
                   <td style={{ ...tdNum, backgroundColor: p, color: w, fontWeight: 700 }}>{fmt(totals.netGain)}</td>
                 </tr>
@@ -813,16 +769,12 @@ export default function HysaTrackerPage() {
             <ul className="space-y-4">
               {[
                 {
-                  heading: "Amount columns",
-                  body: "For each category (Salary, Card Spend, Insurance, Investment), log the dollar amount you spent or used that month — e.g. salary credited, total card spend, insurance premium paid, or investment amount contributed.",
-                },
-                {
                   heading: "Interest columns",
-                  body: "Alongside each amount, enter the actual interest earned from that category as shown on your bank statement. This lets you see which category is generating the most interest over time.",
+                  body: "Enter the bonus interest the bank credited for each category (Salary, Card Spend, Insurance, Investment) in that month, as shown on your statement. This lets you see which category is generating the most interest over time.",
                 },
                 {
                   heading: "Invest P&L",
-                  body: "Separately record your investment portfolio's profit or loss for the month — unrealised or realised gains and losses. Negative values are supported. This flows directly into Net Gain.",
+                  body: "Separately record your investment portfolio's profit or loss for the month — unrealised or realised gains and losses. Negative values are supported. This is separate from the Investment Interest column and flows directly into Net Gain.",
                 },
                 {
                   heading: "Net Gain",
