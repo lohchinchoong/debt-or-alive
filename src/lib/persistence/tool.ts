@@ -1,9 +1,11 @@
-import { saveEntries } from "./save";
+import { removeReplacedKeys, saveEntries } from "./save";
 import type { DateState, SaveResult, StorageEntry, StorageLike, ToolAdapter } from "./types";
 
 /**
  * Saves a single-state tool's record with `now` as its date. Puts the
  * date-carrying entry last, so a failed save never leaves a new date behind.
+ * After a successful save it removes the adapter's legacy keys, which the new
+ * record replaces. A failed removal is logged and ignored.
  */
 export function saveTool<T>(
   storage: StorageLike,
@@ -19,7 +21,9 @@ export function saveTool<T>(
   }
   const rest = entries.filter((e) => e.key !== adapter.dateKey);
   const dated = entries.filter((e) => e.key === adapter.dateKey);
-  return saveEntries(storage, [...rest, ...dated]);
+  const result = saveEntries(storage, [...rest, ...dated]);
+  if (result.ok) removeReplacedKeys(storage, adapter.legacyKeys ?? []);
+  return result;
 }
 
 export function dateStateOf(read: { exists: boolean; savedAt: string | null }): DateState {

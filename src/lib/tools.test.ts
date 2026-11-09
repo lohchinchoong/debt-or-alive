@@ -33,10 +33,21 @@ describe("tools", () => {
   it("uses the agreed names for the renamed tools", () => {
     expect(bySlug("cpf-sa-calculator")?.name).toBe("CPF Special Account (SA)");
     expect(bySlug("cpf-ma-calculator")?.name).toBe("CPF Medisave Account (MA)");
-    expect(bySlug("cpf-oa-annuity-calculator")?.name).toBe("CPF Ordinary Account (OA) Annuity");
+    expect(bySlug("cpf-oa-annuity-calculator")?.name).toBe("CPF Ordinary Account (OA) Annuity Calculator");
     expect(bySlug("fire-calculator")?.name).toBe("FIRE Planner");
     expect(bySlug("dividend-calculator")?.name).toBe("Dividend Planner");
     expect(bySlug("compound-interest")?.name).toBe("Compound Interest Calculator");
+  });
+
+  it("lists the OA annuity calculator first in the Calculators group", () => {
+    const calculators = tools.filter((t) => t.group === "calculators");
+    expect(bySlug("cpf-oa-annuity-calculator")?.group).toBe("calculators");
+    expect(calculators[0]?.slug).toBe("cpf-oa-annuity-calculator");
+  });
+
+  it("has no profile route under the OA calculator", () => {
+    const dir = path.join(process.cwd(), "src/app/tools/cpf-oa-annuity-calculator/[profileId]");
+    expect(existsSync(dir)).toBe(false);
   });
 
   it("has a label and subtitle for both groups", () => {

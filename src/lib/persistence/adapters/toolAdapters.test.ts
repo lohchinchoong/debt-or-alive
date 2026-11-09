@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { cpfOaAdapter } from "@/lib/persistence/adapters/cpf-oa";
 import { dividendAdapter, readProjectionYears } from "@/lib/persistence/adapters/dividend-calculator";
 import {
   budgetAdapter,
@@ -24,6 +25,7 @@ const legacy: { adapter: ToolAdapter<unknown>; data: Record<string, string> }[] 
   { adapter: emergencyFundAdapter as ToolAdapter<unknown>, data: { "tool:emergency-fund": '{"monthlyExpenses":1,"targetMonths":2}', "emergency-fund:sources": "[]" } },
   { adapter: budgetAdapter as ToolAdapter<unknown>, data: { "tool:budget-planner": '{"annualSalary":1}', "budget:items": '[{"id":"b","label":"L","category":"Car","planned":3}]' } },
   { adapter: srsAdapter as ToolAdapter<unknown>, data: { "srs:deposits": "[]", "srs:withdrawal": '{"startDate":"2040-01-01","years":5}' } },
+  { adapter: cpfOaAdapter as ToolAdapter<unknown>, data: { "tool:cpf-oa-annuity-calculator": '{"birthYear":1980,"startDrawdownAge":55,"balanceAtStart":1,"endDrawdownAge":70}' } },
   { adapter: dividendAdapter as ToolAdapter<unknown>, data: { "dividend:sources": "[]", "dividend:projection-years": "15" } },
 ];
 
@@ -110,5 +112,12 @@ describe("dividend projection years", () => {
     const { record } = dividendAdapter.read(storage);
     saveTool(storage, dividendAdapter, record, SAVED);
     expect(JSON.parse(storage.getItem("dividend:projection-years") as string)).toEqual({ years: 15, savedAt: SAVED });
+  });
+});
+
+describe("cpf-oa registration", () => {
+  it("owns the new key and not the legacy key", () => {
+    expect(REGISTERED_KEYS).toContain("tool:cpf-oa-annuity-calculator");
+    expect(REGISTERED_KEYS).not.toContain("cpf-oa:profiles");
   });
 });

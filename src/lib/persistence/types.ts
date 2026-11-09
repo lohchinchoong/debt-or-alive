@@ -21,8 +21,19 @@ export interface ToolAdapter<T> {
   readonly keys: readonly string[];
   /** The key whose stored object carries `savedAt`. */
   readonly dateKey: string;
+  /**
+   * Keys an older build wrote. Import reads them, and they are removed after a
+   * successful Save or import. They are never written.
+   */
+  readonly legacyKeys?: readonly string[];
   defaults(): T;
   read(storage: StorageLike): ToolRead<T>;
+  /**
+   * Reads the record held in the legacy keys, or null when they hold nothing
+   * usable. `discarded` counts the legacy items that were not carried over.
+   * Never writes.
+   */
+  readLegacy?(storage: StorageLike): (ToolRead<T> & { discarded: number }) | null;
   toEntries(record: T, savedAt: string | null): StorageEntry[];
 }
 

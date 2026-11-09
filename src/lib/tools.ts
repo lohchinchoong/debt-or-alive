@@ -15,6 +15,14 @@ export type Tool = {
 
 export const tools: Tool[] = [
   {
+    slug: "cpf-oa-annuity-calculator",
+    name: "CPF Ordinary Account (OA) Annuity Calculator",
+    tagline: "Find the steady monthly payout your OA balance can fund between two ages.",
+    category: "CPF",
+    icon: "Banknote",
+    group: "calculators",
+  },
+  {
     slug: "compound-interest",
     name: "Compound Interest Calculator",
     tagline: "Visualise how time and rate transform your invested capital.",
@@ -36,14 +44,6 @@ export const tools: Tool[] = [
     tagline: "Project your Medisave balance, track the BHS ceiling, and model MediShield Life premiums.",
     category: "CPF",
     icon: "HeartPulse",
-    group: "tracking",
-  },
-  {
-    slug: "cpf-oa-annuity-calculator",
-    name: "CPF Ordinary Account (OA) Annuity",
-    tagline: "See the constant monthly payout your OA balance can fund from your chosen start age.",
-    category: "CPF",
-    icon: "Banknote",
     group: "tracking",
   },
   {

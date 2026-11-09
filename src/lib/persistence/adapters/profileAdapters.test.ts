@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { cpfMaAdapter } from "@/lib/persistence/adapters/cpf-ma";
-import { cpfOaAdapter } from "@/lib/persistence/adapters/cpf-oa";
 import { addMonth, hysaAdapter, removeLastMonth, updateEntry } from "@/lib/persistence/adapters/hysa-tracker";
 import { saveProfile } from "@/lib/persistence/profiles";
 import { addItem, moveItem, removeItem, savingsGoalAdapter, updateItem } from "@/lib/persistence/adapters/savings-goal";
@@ -17,10 +16,6 @@ const cases: Case[] = [
   {
     adapter: cpfMaAdapter as ProfileAdapter<ProfileBase>,
     legacy: { id: "p_1", name: "MA", currentBalance: 1, monthlyContrib: 2, startYear: 2024, startMonth: 3, endContribYear: 2030, birthYear: 1990, annualMedishieldPremium: 0 },
-  },
-  {
-    adapter: cpfOaAdapter as ProfileAdapter<ProfileBase>,
-    legacy: { id: "p_1", name: "OA", birthYear: 1980, startDrawdownAge: 55, balanceAtStart: 100_000, endDrawdownAge: 70 },
   },
   {
     adapter: hysaAdapter as ProfileAdapter<ProfileBase>,
@@ -64,13 +59,6 @@ describe.each(cases)("$adapter.slug adapter", ({ adapter, legacy }) => {
 
   it("is registered for export", () => {
     expect(REGISTERED_KEYS).toContain(adapter.key);
-  });
-});
-
-describe("cpf-oa legacy shape", () => {
-  it("maps balanceAt55 to a start age of 56", () => {
-    const storage = createMemoryStorage({ "cpf-oa:profiles": JSON.stringify([{ id: "p", name: "Old", balanceAt55: 80_000 }]) });
-    expect(cpfOaAdapter.readAll(storage)[0]).toMatchObject({ startDrawdownAge: 56, balanceAtStart: 80_000 });
   });
 });
 

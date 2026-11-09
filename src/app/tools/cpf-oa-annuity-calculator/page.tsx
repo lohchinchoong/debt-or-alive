@@ -1,163 +1,486 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import { GuardedLink } from "@/components/GuardedLink";
+import { LastSaved } from "@/components/LastSaved";
+import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { SaveBar } from "@/components/SaveBar";
 import { SiteHeader } from "@/components/SiteHeader";
-import { useGuardedRouter } from "@/hooks/useGuardedRouter";
-import { useProfileList } from "@/hooks/useProfileList";
-import { cpfOaAdapter, type CpfOaProfile } from "@/lib/persistence/adapters/cpf-oa";
+import { useToolDraft } from "@/hooks/useToolDraft";
+import {
+  cpfOaAdapter,
+  readLegacyOaState,
+  type CpfOaParams,
+} from "@/lib/persistence/adapters/cpf-oa";
+import { fmtAxis, niceMax } from "@/lib/utils";
+import { toolMeta } from "@/lib/persistence/toolMeta";
 
-// ─── ProfileCard ──────────────────────────────────────────────────────────────
-function ProfileCard({
-  profile,
-  onDelete,
-}: {
-  profile: CpfOaProfile;
-  onDelete: () => void;
-}) {
-  const { push } = useGuardedRouter();
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm(`Delete "${profile.name}"? This cannot be undone.`)) {
-      onDelete();
+// ─── Types ────────────────────────────────────────────────────────────────────
+type YearRow = {
+  year: number;
+  age: number;
+  balance: number;
+  withdrawals: number;
+  interestEarned: number;
+  cumulativeInterest: number;
+};
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+const OA_RATE = 0.025;
+const MIN_START_AGE = 55;
+
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-SG", {
+    style: "currency",
+    currency: "SGD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+
+// ─── Simulation ───────────────────────────────────────────────────────────────
+// The starting balance is taken as at Jan of the year the member reaches
+// startDrawdownAge. Drawdown runs from that Jan to Dec of the year they reach
+// endDrawdownAge. Withdrawals leave at month-start; interest accrues monthly on
+// the remaining (lowest) balance and is credited each December.
+function simulate(params: CpfOaParams, monthlyDrawdown: number): YearRow[] {
+  const { balanceAtStart, birthYear, startDrawdownAge, endDrawdownAge } = params;
+
+  const rows: YearRow[] = [];
+  let balance = balanceAtStart;
+  let cumulativeInterest = 0;
+
+  for (let age = startDrawdownAge; age <= endDrawdownAge; age++) {
+    let interestBuffer = 0;
+
+    for (let month = 1; month <= 12; month++) {
+      balance -= monthlyDrawdown;
+      interestBuffer += (balance * OA_RATE) / 12;
     }
+
+    balance += interestBuffer;
+    cumulativeInterest += interestBuffer;
+    rows.push({
+      year: birthYear + age,
+      age,
+      balance,
+      withdrawals: monthlyDrawdown * 12,
+      interestEarned: interestBuffer,
+      cumulativeInterest,
+    });
+  }
+
+  return rows;
+}
+
+// The end balance is affine in the drawdown amount, so two runs give the exact
+// payout that brings the balance to zero.
+function solveMonthlyDrawdown(params: CpfOaParams): number {
+  const endBalance = (w: number) => simulate(params, w).at(-1)?.balance ?? 0;
+  const b0 = endBalance(0);
+  const b1 = endBalance(1);
+  const slope = b0 - b1;
+  if (slope <= 0 || b0 <= 0) return 0;
+  return b0 / slope;
+}
+
+function validate(params: CpfOaParams): string | null {
+  if (params.startDrawdownAge < MIN_START_AGE) {
+    return `Age to Start Draw Down must be ${MIN_START_AGE} or above.`;
+  }
+  if (params.balanceAtStart < 0) {
+    return `OA Balance at ${params.startDrawdownAge} cannot be negative.`;
+  }
+  if (params.endDrawdownAge < params.startDrawdownAge) {
+    return "Age to End Drawdown must be at or after the start age.";
+  }
+  if (params.endDrawdownAge > 120) {
+    return "Age to End Drawdown is limited to 120.";
+  }
+  return null;
+}
+
+// ─── FocusInput ───────────────────────────────────────────────────────────────
+function FocusInput({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step = 1,
+  hint,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min?: number;
+  max?: number;
+  step?: number;
+  hint?: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  // While focused, show the raw text so the field can be cleared mid-edit;
+  // only valid numbers are committed, and blur snaps back to the saved value.
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <div>
+      <p className="text-[0.8125rem] font-medium mb-1.5" style={{ color: "var(--on-surface-sub)" }}>
+        {label}
+      </p>
+      <input
+        type="number"
+        value={draft ?? value}
+        min={min}
+        max={max}
+        step={step}
+        onChange={(e) => {
+          setDraft(e.target.value);
+          const parsed = parseFloat(e.target.value);
+          if (!Number.isNaN(parsed)) onChange(parsed);
+        }}
+        onFocus={() => setFocused(true)}
+        onBlur={() => { setFocused(false); setDraft(null); }}
+        style={{
+          width: "100%",
+          background: "var(--surface-container-highest)",
+          border: "none",
+          borderBottom: `2px solid ${focused ? "var(--primary)" : "var(--outline-variant)"}`,
+          borderRadius: "0.25rem 0.25rem 0 0",
+          padding: "0.625rem 0.5rem",
+          fontSize: "0.9375rem",
+          fontFamily: "Manrope, sans-serif",
+          fontWeight: 500,
+          color: "var(--on-surface)",
+          outline: "none",
+          transition: "border-color 0.15s ease",
+        }}
+      />
+      {hint && (
+        <p className="text-[0.75rem] mt-1" style={{ color: "var(--on-surface-sub)" }}>
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── StatCard ────────────────────────────────────────────────────────────────
+function StatCard({
+  label,
+  sublabel,
+  value,
+  caption,
+  gradient,
+}: {
+  label: string;
+  sublabel?: string;
+  value: string;
+  caption?: string;
+  gradient?: boolean;
+}) {
+  return (
+    <div
+      className="rounded-xl p-5 flex flex-col justify-between"
+      style={{
+        background: gradient
+          ? "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)"
+          : "var(--surface-container-lowest)",
+        boxShadow: gradient
+          ? "0 12px 32px rgba(0,53,31,0.20)"
+          : "var(--shadow-botanical)",
+        minHeight: "7.5rem",
+      }}
+    >
+      <div>
+        <p
+          className="text-[0.6875rem] font-semibold tracking-widest uppercase"
+          style={{ color: gradient ? "rgba(255,255,255,0.65)" : "var(--primary)" }}
+        >
+          {label}
+        </p>
+        {sublabel && (
+          <p
+            className="text-[0.75rem] mt-0.5"
+            style={{ color: gradient ? "rgba(255,255,255,0.50)" : "var(--on-surface-sub)" }}
+          >
+            {sublabel}
+          </p>
+        )}
+      </div>
+      <div>
+        <p
+          className="text-2xl sm:text-3xl font-bold leading-none mt-3"
+          style={{
+            color: gradient ? "#fff" : "var(--on-surface)",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {value}
+        </p>
+        {caption && (
+          <p
+            className="text-xs mt-1.5"
+            style={{ color: gradient ? "rgba(255,255,255,0.55)" : "var(--on-surface-sub)" }}
+          >
+            {caption}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── CPF OA Chart ─────────────────────────────────────────────────────────────
+function OaChart({
+  rows,
+  startAge,
+  balanceAtStart,
+  birthYear,
+}: {
+  rows: YearRow[];
+  startAge: number;
+  balanceAtStart: number;
+  birthYear: number;
+}) {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  if (rows.length < 1) return null;
+
+  const W = 700;
+  const H = 260;
+  const PAD = { top: 24, right: 20, bottom: 44, left: 60 };
+  const CW = W - PAD.left - PAD.right;
+  const CH = H - PAD.top - PAD.bottom;
+
+  // Plot by age; the first point is the opening balance, placed at the Dec
+  // just before drawdown begins so each later point is a year-end balance
+  const openingAge = startAge - 1;
+  const points = [
+    { age: openingAge, balance: balanceAtStart },
+    ...rows.map((r) => ({ age: r.age, balance: r.balance })),
+  ];
+  const minAge = openingAge;
+  const maxAge = points[points.length - 1].age;
+  const span = maxAge - minAge;
+
+  const yMax = niceMax(Math.max(...points.map((p) => p.balance)));
+
+  const xOf = (age: number) => PAD.left + ((age - minAge) / span) * CW;
+  const yOf = (v: number) => PAD.top + CH - (Math.max(v, 0) / yMax) * CH;
+  const baseY = (PAD.top + CH).toFixed(1);
+
+  const line = `M ${points.map((p) => `${xOf(p.age).toFixed(1)},${yOf(p.balance).toFixed(1)}`).join(" L ")}`;
+  const area = `${line} L ${xOf(maxAge).toFixed(1)},${baseY} L ${xOf(minAge).toFixed(1)},${baseY} Z`;
+
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => t * yMax);
+
+  const xStep = span <= 10 ? 1 : span <= 20 ? 2 : 5;
+  const xLabels: number[] = [];
+  for (let a = Math.ceil(minAge / xStep) * xStep; a <= maxAge; a += xStep) xLabels.push(a);
+
+  // Include the opening balance so the leftmost edge is hoverable
+  const hoverRows = [
+    { year: birthYear + openingAge, age: openingAge, balance: balanceAtStart, withdrawals: 0 },
+    ...rows,
+  ];
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * W;
+    const fraction = Math.max(0, Math.min(1, (svgX - PAD.left) / CW));
+    const age = minAge + fraction * span;
+    setHoveredIdx(Math.max(0, Math.min(hoverRows.length - 1, Math.round(age) - openingAge)));
   };
+
+  const hd = hoveredIdx !== null ? hoverRows[hoveredIdx] : null;
+  const hx = hd ? xOf(hd.age) : 0;
+  const TW = 192;
+  const TH = 62;
+  const tooltipX = hd ? (hx < PAD.left + CW / 2 ? hx + 10 : hx - TW - 10) : 0;
 
   return (
     <div
-      onClick={() => push(`${cpfOaAdapter.listPath}/${profile.id}`)}
-      className="rounded-xl p-5 flex flex-col gap-4 cursor-pointer transition-colors"
-      style={{
-        backgroundColor: "var(--surface-container-lowest)",
-        boxShadow: "var(--shadow-botanical)",
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--surface-container-low)")}
-      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--surface-container-lowest)")}
+      className="rounded-xl p-5"
+      style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
     >
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <p className="font-bold text-base truncate" style={{ color: "var(--on-surface)", fontFamily: "Manrope, sans-serif" }}>{profile.name}</p>
-        </div>
-        <button
-          onClick={handleDelete}
-          title="Delete scenario"
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            padding: "0.25rem",
-            color: "var(--on-surface-sub)",
-            opacity: 0.5,
-            flexShrink: 0,
-            display: "flex",
-            alignItems: "center",
-          }}
-          onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "1")}
-          onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = "0.5")}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6" />
-            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-            <path d="M10 11v6M14 11v6" />
-            <path d="M9 6V4h6v2" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Summary stats */}
-      <div className="space-y-1.5">
-        <StatLine label="Born" value={`${profile.birthYear}`} />
-        <StatLine label="Drawdown" value={`Age ${profile.startDrawdownAge} – ${profile.endDrawdownAge} (${profile.endDrawdownAge - profile.startDrawdownAge + 1} yrs)`} />
-        <StatLine label={`Balance at ${profile.startDrawdownAge}`} value={`S$${profile.balanceAtStart.toLocaleString("en-SG")}`} />
-      </div>
-
-      {/* Open link */}
-      <div className="flex justify-end">
-        <span
-          className="text-sm font-semibold inline-flex items-center gap-1"
-          style={{ color: "var(--primary)" }}
-        >
-          Open
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function StatLine({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between text-sm">
-      <span style={{ color: "var(--on-surface-sub)" }}>{label}</span>
-      <span className="font-medium" style={{ color: "var(--on-surface)" }}>{value}</span>
-    </div>
-  );
-}
-
-// ─── EmptyState ───────────────────────────────────────────────────────────────
-function EmptyState({ onAdd }: { onAdd: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 text-center">
-      <div
-        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
-        style={{
-          background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
-          boxShadow: "0 8px 24px rgba(0,53,31,0.15)",
-        }}
-      >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="6" width="20" height="12" rx="2" />
-          <circle cx="12" cy="12" r="2" />
-          <path d="M6 12h.01M18 12h.01" />
-        </svg>
-      </div>
-      <h2
-        className="text-xl font-bold mb-2"
-        style={{ color: "var(--on-surface)", letterSpacing: "-0.01em" }}
-      >
-        No scenarios yet
-      </h2>
-      <p className="text-sm mb-8 max-w-xs" style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}>
-        Create a scenario to start planning your CPF OA drawdown.
+      <p className="text-[0.9375rem] font-semibold mb-4" style={{ color: "var(--on-surface)" }}>
+        CPF OA Drawdown (Age {startAge} – {maxAge}, {birthYear + startAge} – {birthYear + maxAge})
       </p>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: "100%", height: "auto", overflow: "visible", cursor: "crosshair" }}
+        aria-label="CPF OA drawdown projection chart"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredIdx(null)}
+      >
+        <defs>
+          <linearGradient id="oa-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.02" />
+          </linearGradient>
+        </defs>
+
+        {ticks.map((v) => (
+          <line key={v} x1={PAD.left} y1={yOf(v)} x2={W - PAD.right} y2={yOf(v)}
+            stroke="var(--outline-variant)" strokeWidth="0.5" strokeDasharray="3 5" opacity="0.7" />
+        ))}
+
+        {ticks.map((v) => (
+          <text key={v} x={PAD.left - 6} y={yOf(v) + 4} textAnchor="end"
+            fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
+            {fmtAxis(v)}
+          </text>
+        ))}
+
+        {xLabels.map((age) => (
+          <text key={age} x={xOf(age)} y={H - 6} textAnchor="middle"
+            fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">
+            {age}
+          </text>
+        ))}
+        <text x={W - PAD.right} y={H - 22} textAnchor="end"
+          fontSize="9" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif" opacity="0.8">
+          Age
+        </text>
+
+        <path d={area} fill="url(#oa-fill)" />
+        <path d={line} fill="none" stroke="var(--primary)" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round" />
+
+        <g transform={`translate(${PAD.left}, 10)`}>
+          <line x1="0" y1="0" x2="18" y2="0" stroke="var(--primary)" strokeWidth="2" />
+          <text x="23" y="4" fontSize="10" fill="var(--on-surface-sub)" fontFamily="Manrope, sans-serif">OA Balance (Dec)</text>
+        </g>
+
+        {hd && (
+          <g pointerEvents="none">
+            <line x1={hx} y1={PAD.top} x2={hx} y2={PAD.top + CH}
+              stroke="var(--on-surface-sub)" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <circle cx={hx} cy={yOf(hd.balance)} r="4" fill="var(--primary)"
+              stroke="var(--surface-container-lowest)" strokeWidth="1.5" />
+            <rect x={tooltipX} y={PAD.top + 4} width={TW} height={TH} rx="5"
+              fill="var(--surface-container-lowest)" stroke="var(--outline-variant)" strokeWidth="0.75" />
+            <text x={tooltipX + 10} y={PAD.top + 20} fontSize="10" fontWeight="700"
+              fill="var(--primary)" fontFamily="Manrope, sans-serif">{`${hd.year} · Age ${hd.age}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 36} fontSize="10" fill="var(--on-surface-sub)"
+              fontFamily="Manrope, sans-serif">{`Balance: $${fmtAxis(Math.max(hd.balance, 0))}`}</text>
+            <text x={tooltipX + 10} y={PAD.top + 51} fontSize="10" fill="var(--on-surface-sub)"
+              fontFamily="Manrope, sans-serif">{`Withdrawn: $${fmtAxis(hd.withdrawals)}`}</text>
+          </g>
+        )}
+      </svg>
+    </div>
+  );
+}
+
+// ─── Yearly Table ─────────────────────────────────────────────────────────────
+function YearlyTable({ rows }: { rows: YearRow[] }) {
+  const [open, setOpen] = useState(false);
+
+  const COLS = [
+    { key: "year", label: "Year" },
+    { key: "age", label: "Age" },
+    { key: "balance", label: "Year-end Balance" },
+    { key: "withdrawals", label: "Withdrawals" },
+    { key: "interestEarned", label: "Interest Earned" },
+    { key: "cumulativeInterest", label: "Cumulative Interest" },
+  ];
+
+  return (
+    <div className="rounded-xl overflow-hidden" style={{ boxShadow: "var(--shadow-botanical)" }}>
       <button
-        onClick={onAdd}
-        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm"
+        className="w-full flex items-center justify-between px-6 py-5 text-left"
         style={{
-          background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
-          color: "#fff",
+          backgroundColor: "var(--surface-container-lowest)",
           border: "none",
           cursor: "pointer",
-          boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
           fontFamily: "Manrope, sans-serif",
         }}
+        onClick={() => setOpen((o) => !o)}
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <path d="M12 5v14M5 12h14" />
+        <span className="font-semibold text-[0.9375rem]" style={{ color: "var(--on-surface)" }}>
+          CPF OA Balance Over Time (Table)
+        </span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+          stroke="var(--on-surface-sub)" strokeWidth="2" strokeLinecap="round"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", flexShrink: 0 }}>
+          <path d="M18 15l-6-6-6 6" />
         </svg>
-        Add first scenario
       </button>
+
+      {open && (
+        <div style={{ backgroundColor: "var(--surface-container-lowest)" }}>
+          <div style={{ height: "1px", backgroundColor: "var(--outline-variant)", opacity: 0.25 }} />
+          <div className="overflow-x-auto">
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ backgroundColor: "var(--surface-container-low)" }}>
+                  {COLS.map((col) => (
+                    <th key={col.key}
+                      className="px-6 py-3 text-left text-[0.6875rem] font-semibold tracking-widest uppercase whitespace-nowrap"
+                      style={{ color: "var(--on-surface-sub)" }}>
+                      {col.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, i) => (
+                  <tr key={row.year} style={{
+                    backgroundColor: i % 2 === 0 ? "var(--surface-container-lowest)" : "var(--surface-container-low)",
+                  }}>
+                    <td className="px-6 py-3.5 text-sm font-semibold" style={{ color: "var(--on-surface)" }}>{row.year}</td>
+                    <td className="px-6 py-3.5 text-sm" style={{ color: "var(--on-surface)" }}>{row.age}</td>
+                    <td className="px-6 py-3.5 text-sm font-medium whitespace-nowrap" style={{ color: "var(--on-surface)" }}>{fmt(Math.max(row.balance, 0))}</td>
+                    <td className="px-6 py-3.5 text-sm whitespace-nowrap" style={{ color: "var(--on-surface)" }}>−{fmt(row.withdrawals)}</td>
+                    <td className="px-6 py-3.5 text-sm font-semibold whitespace-nowrap" style={{ color: "var(--primary)" }}>+{fmt(row.interestEarned)}</td>
+                    <td className="px-6 py-3.5 text-sm font-medium whitespace-nowrap" style={{ color: "var(--on-surface)" }}>{fmt(row.cumulativeInterest)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
-export default function CpfOaLandingPage() {
-  const { push } = useGuardedRouter();
-  const { status, profiles: profiles, remove } = useProfileList(cpfOaAdapter);
+const TAGLINE = "Find the steady monthly payout your OA balance can fund between two ages.";
 
-  // Nothing is written until the new item's first Save on its detail page.
-  const handleAdd = () => push(`${cpfOaAdapter.listPath}/new`);
+function MigrationNotice({ others }: { others: number }) {
+  const rest = others === 1 ? "The other scenario is not carried over, and saving removes it."
+    : `The other ${others} scenarios are not carried over, and saving removes them.`;
+  return (
+    <div
+      className="rounded-xl p-4 text-sm"
+      style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+    >
+      <p style={{ color: "var(--on-surface)", lineHeight: 1.6 }}>
+        We kept your most recent scenario. {rest}
+      </p>
+    </div>
+  );
+}
 
-  const handleDelete = (id: string) => {
-    const result = remove(id);
-    if (!result.ok) alert("Couldn't delete. Please try again.");
-  };
+export function CpfOaAnnuityCalculatorPage() {
+  const draft = useToolDraft(cpfOaAdapter);
+  // Whether the saved record still has to be written from the legacy key.
+  const [legacy, setLegacy] = useState(() =>
+    typeof window === "undefined" ? { pending: false, others: 0 } : readLegacyOaState(localStorage),
+  );
 
-  if (status !== "ready") {
+  const { birthYear, startDrawdownAge, balanceAtStart, endDrawdownAge } = draft.draft.inputs;
+
+  const { rows, monthlyDrawdown, error } = useMemo(() => {
+    const params: CpfOaParams = { birthYear, startDrawdownAge, balanceAtStart, endDrawdownAge };
+    const err = validate(params);
+    if (err) return { rows: [] as YearRow[], monthlyDrawdown: 0, error: err };
+    const w = solveMonthlyDrawdown(params);
+    return { rows: simulate(params, w), monthlyDrawdown: w, error: null };
+  }, [birthYear, startDrawdownAge, balanceAtStart, endDrawdownAge]);
+
+  if (draft.status !== "ready") {
     return (
       <>
         <SiteHeader />
@@ -165,6 +488,23 @@ export default function CpfOaLandingPage() {
       </>
     );
   }
+
+  const currentYear = new Date().getFullYear();
+
+  const set = (changes: Partial<CpfOaParams>) =>
+    draft.setDraft((d) => ({ ...d, inputs: { ...d.inputs, ...changes } }));
+
+  const handleSave = () => {
+    const result = draft.save();
+    if (result.ok) setLegacy({ pending: false, others: 0 });
+  };
+
+
+  const drawdownYears = endDrawdownAge - startDrawdownAge + 1;
+  const startYear = birthYear + startDrawdownAge;
+  const endYear = birthYear + endDrawdownAge;
+  const totalWithdrawn = rows.reduce((s, r) => s + r.withdrawals, 0);
+  const totalInterest = rows.at(-1)?.cumulativeInterest ?? 0;
 
   return (
     <>
@@ -174,6 +514,9 @@ export default function CpfOaLandingPage() {
         style={{ backgroundColor: "var(--surface-container-low)" }}
       >
         <div className="max-w-7xl mx-auto space-y-8">
+
+          <ManualSaveNotice />
+          {legacy.others > 0 && <MigrationNotice others={legacy.others} />}
 
           {/* ── Page Header ───────────────────────────────────────────────── */}
           <div>
@@ -188,76 +531,245 @@ export default function CpfOaLandingPage() {
               Back to Home
             </GuardedLink>
 
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="flex items-start gap-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
-                  style={{
-                    background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
-                    boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
-                  }}
-                >
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="6" width="20" height="12" rx="2" />
-                    <circle cx="12" cy="12" r="2" />
-                    <path d="M6 12h.01M18 12h.01" />
-                  </svg>
-                </div>
-                <div>
-                  <h1
-                    className="text-3xl sm:text-4xl font-bold"
-                    style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
-                  >
-                    CPF Ordinary Account (OA) Annuity
-                  </h1>
-                  <p
-                    className="mt-2 text-base max-w-xl"
-                    style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}
-                  >
-                    Manage multiple scenarios to compare different contribution and drawdown plans.
-                  </p>
-                </div>
+            <div className="flex items-start gap-4">
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"
+                style={{
+                  background: "linear-gradient(45deg, var(--primary-fill), var(--primary-fill-container))",
+                  boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
+                }}
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="6" width="20" height="12" rx="2" />
+                  <circle cx="12" cy="12" r="2" />
+                  <path d="M6 12h.01M18 12h.01" />
+                </svg>
               </div>
 
-              {profiles.length > 0 && (
-                <button
-                  onClick={handleAdd}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm w-full sm:w-auto flex-shrink-0"
-                  style={{
-                    background: "linear-gradient(135deg, var(--primary-fill) 0%, var(--primary-fill-container) 100%)",
-                    color: "#fff",
-                    border: "none",
-                    cursor: "pointer",
-                    boxShadow: "0 8px 24px rgba(0,53,31,0.2)",
-                    fontFamily: "Manrope, sans-serif",
-                  }}
+              <div>
+                <h1
+                  className="text-3xl sm:text-4xl font-bold"
+                  style={{ color: "var(--on-surface)", letterSpacing: "-0.02em", lineHeight: 1.15 }}
                 >
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  Add Scenario
-                </button>
-              )}
+                  {toolMeta("cpf-oa-annuity-calculator").name}
+                </h1>
+                <p
+                  className="mt-2 text-base max-w-xl"
+                  style={{ color: "var(--on-surface-sub)", lineHeight: "1.6" }}
+                >
+                  {TAGLINE}
+                </p>
+                <div className="mt-2">
+                  <LastSaved status={draft.status} dateState={draft.dateState} savedAt={draft.savedAt} />
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* ── Profile Grid or Empty State ────────────────────────────────── */}
-          {profiles.length === 0 ? (
-            <EmptyState onAdd={handleAdd} />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {profiles.map((profile) => (
-                <ProfileCard
-                  key={profile.id}
-                  profile={profile}
-                  onDelete={() => handleDelete(profile.id)}
+          {/* ── Main Grid ─────────────────────────────────────────────────── */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            {/* Left — Parameters */}
+            <div
+              className="lg:col-span-5 rounded-xl p-6"
+              style={{
+                backgroundColor: "var(--surface-container-lowest)",
+                boxShadow: "var(--shadow-botanical)",
+              }}
+            >
+              <p className="font-bold text-[1rem]" style={{ color: "var(--on-surface)" }}>
+                Parameters
+              </p>
+              <p className="text-sm mt-0.5 mb-6" style={{ color: "var(--on-surface-sub)" }}>
+                Enter your CPF OA details
+              </p>
+
+              <div className="space-y-5">
+                <FocusInput
+                  label="Birth Year"
+                  value={birthYear}
+                  onChange={(v) => set({ birthYear: Math.round(v) })}
+                  min={1930}
+                  max={currentYear}
+                  step={1}
                 />
-              ))}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FocusInput
+                    label="Age to Start Draw Down (Jan)"
+                    value={startDrawdownAge}
+                    onChange={(v) => set({ startDrawdownAge: Math.round(v) })}
+                    min={MIN_START_AGE}
+                    max={120}
+                    step={1}
+                  />
+                  <FocusInput
+                    label="Age to End Drawdown (Dec)"
+                    value={endDrawdownAge}
+                    onChange={(v) => set({ endDrawdownAge: Math.round(v) })}
+                    min={startDrawdownAge}
+                    max={120}
+                    step={1}
+                  />
+                </div>
+
+                <FocusInput
+                  label={`OA Balance at ${startDrawdownAge} (S$)`}
+                  value={balanceAtStart}
+                  onChange={(v) => set({ balanceAtStart: v })}
+                  min={0}
+                  step={1000}
+                />
+              </div>
+
+              {error ? (
+                <p className="text-[0.75rem] mt-5 font-medium" style={{ color: "var(--tertiary)" }}>
+                  {error}
+                </p>
+              ) : (
+                <p className="text-[0.75rem] mt-5" style={{ color: "var(--on-surface-sub)" }}>
+                  Balance at {startDrawdownAge} is taken as at Jan {startYear}. Drawdown runs from
+                  Jan {startYear} (age {startDrawdownAge}) to Dec {endYear} (age {endDrawdownAge}).
+                </p>
+              )}
             </div>
+
+            {/* Right — Stat Cards */}
+            {!error && (
+              <div className="lg:col-span-7 space-y-4">
+                <StatCard
+                  label="Monthly Drawdown"
+                  sublabel={`Jan ${startYear} – Dec ${endYear}`}
+                  value={fmt(monthlyDrawdown)}
+                  caption={`Constant payout for ${drawdownYears} year${drawdownYears === 1 ? "" : "s"} (${drawdownYears * 12} months), ending at S$0`}
+                  gradient
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <StatCard
+                    label="Total Withdrawn"
+                    sublabel={`Age ${startDrawdownAge} – ${endDrawdownAge}`}
+                    value={fmt(totalWithdrawn)}
+                  />
+                  <StatCard
+                    label="Total Interest Earned"
+                    sublabel="During drawdown"
+                    value={fmt(totalInterest)}
+                    caption={balanceAtStart > 0
+                      ? `${((totalInterest / balanceAtStart) * 100).toFixed(1)}% on balance at ${startDrawdownAge}`
+                      : undefined}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Chart ─────────────────────────────────────────────────────── */}
+          {rows.length > 0 && (
+            <OaChart
+              rows={rows}
+              startAge={startDrawdownAge}
+              balanceAtStart={balanceAtStart}
+              birthYear={birthYear}
+            />
           )}
+
+          {/* ── Yearly Table ──────────────────────────────────────────────── */}
+          {rows.length > 0 && <YearlyTable rows={rows} />}
+
+          {/* ── How It Works ──────────────────────────────────────────────── */}
+          <div
+            className="rounded-xl p-8"
+            style={{ backgroundColor: "var(--surface-container-lowest)", boxShadow: "var(--shadow-botanical)" }}
+          >
+            <h2
+              className="text-xl font-bold mb-6"
+              style={{ color: "var(--on-surface)", letterSpacing: "-0.01em" }}
+            >
+              How It Works
+            </h2>
+
+            <ul className="space-y-4">
+              {[
+                {
+                  heading: "Interest Rate",
+                  body: (
+                    <>
+                      A flat <strong>2.5% p.a.</strong> on the entire OA balance.
+                    </>
+                  ),
+                },
+                {
+                  heading: "Interest Calculation",
+                  body: "Computed monthly on the lowest balance of the month. Withdrawals leave at the start of the month, so the withdrawn amount earns no interest that month.",
+                },
+                {
+                  heading: "Interest Crediting",
+                  body: (
+                    <>
+                      Monthly interest accumulates through the year and is credited only at the{" "}
+                      <strong>end of December</strong>. Credited interest then compounds in subsequent years.
+                    </>
+                  ),
+                },
+                {
+                  heading: "Drawdown Period",
+                  body: "Your OA balance is taken as at January of the year you reach your chosen start age. Drawdown runs from that January to December of the year you reach your chosen end age, giving (end age − start age + 1) years.",
+                },
+                {
+                  heading: "Monthly Payout",
+                  body: "A constant monthly amount is withdrawn throughout the drawdown period. It is solved exactly so that the balance reaches S$0 after the final December interest credit.",
+                },
+              ].map(({ heading, body }) => (
+                <li
+                  key={heading}
+                  className="flex gap-3 text-sm leading-relaxed"
+                  style={{ color: "var(--on-surface-sub)", lineHeight: "1.7" }}
+                >
+                  <span
+                    className="mt-0.5 flex-shrink-0 w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: "var(--primary)", marginTop: "0.55rem" }}
+                  />
+                  <span>
+                    <span className="font-semibold" style={{ color: "var(--on-surface)" }}>
+                      {heading}:{" "}
+                    </span>
+                    {body}
+                  </span>
+                </li>
+              ))}
+            </ul>
+
+            <p
+              className="text-xs mt-8 pt-6"
+              style={{
+                color: "var(--on-surface-sub)",
+                borderTop: "1px solid var(--divider)",
+                lineHeight: "1.6",
+              }}
+            >
+              <span className="font-semibold">Disclaimer:</span> This calculator models a simplified CPF OA
+              at a constant 2.5% p.a. Results are illustrative only. It does not model extra interest on the
+              first S$60,000 of combined balances, the OA-to-RA transfer at age 55, CPF LIFE payouts,
+              housing or investment withdrawals, or actual CPF withdrawal rules. This tool does not
+              constitute financial advice.
+            </p>
+          </div>
 
         </div>
       </main>
+      <SaveBar
+        status={draft.status}
+        isDirty={draft.isDirty}
+        canSave={draft.canSave || legacy.pending}
+        dateState={draft.dateState}
+        saveError={draft.saveError}
+        onSave={handleSave}
+        onDiscard={draft.discard}
+      />
     </>
   );
 }
+
+
+export default CpfOaAnnuityCalculatorPage;
