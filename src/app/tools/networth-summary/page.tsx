@@ -99,8 +99,8 @@ export function NetworthSummaryPage() {
           {SECTIONS.map(({ key }) => {
             const isAsset = (ASSET_SECTIONS as readonly string[]).includes(key);
             return (
+              <div key={key} className="lg:col-span-2">
               <SectionCard
-                key={key}
                 section={key}
                 records={draft.records.filter((r) => r.section === key)}
                 subtotalCents={summary.sections[key].cents}
@@ -110,6 +110,7 @@ export function NetworthSummaryPage() {
                 onRemove={(id) => setDraft((d) => removeRecord(d, id))}
                 onTarget={isAsset ? (value) => setDraft((d) => setTarget(d, key as AssetSection, value)) : undefined}
               />
+              </div>
             );
           })}
 
