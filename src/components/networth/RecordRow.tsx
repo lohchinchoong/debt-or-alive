@@ -9,11 +9,29 @@ type RecordRowProps = {
   onRemove: () => void;
 };
 
-const labelClass = "block text-[0.7rem] font-semibold uppercase tracking-wide mb-1";
+// Labels show above each field on small screens. On desktop one header row
+// (see RecordHeader) names the columns, so each record fits on a single line.
+const labelClass = "block text-[0.7rem] font-semibold uppercase tracking-wide mb-1 lg:sr-only";
+
+const DESKTOP_COLUMNS = "lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1.2fr)_minmax(0,1fr)_5rem_9.5rem_4.5rem]";
+
+export function RecordHeader() {
+  const cell = "text-[0.7rem] font-semibold uppercase tracking-wide";
+  return (
+    <div className={`hidden lg:grid ${DESKTOP_COLUMNS} gap-x-3 px-2`} style={{ color: "var(--on-surface-sub)" }}>
+      <span className={cell}>Name</span>
+      <span className={cell}>Platform</span>
+      <span className={cell}>Est. Amount</span>
+      <span className={cell}>Currency</span>
+      <span className={cell}>Last Updated</span>
+      <span />
+    </div>
+  );
+}
 
 export function RecordRow({ record, onUpdate, onRemove }: RecordRowProps) {
   return (
-    <div className="grid grid-cols-2 gap-x-3 gap-y-2 items-end rounded-xl p-3"
+    <div className={`grid grid-cols-2 gap-x-3 gap-y-2 items-end rounded-xl p-3 lg:gap-y-0 lg:items-center lg:px-2 lg:py-1 ${DESKTOP_COLUMNS}`}
       style={{ background: "var(--surface-container-lowest)" }}>
       <label className="col-span-2 sm:col-span-1 min-w-0">
         <span className={labelClass} style={{ color: "var(--on-surface-sub)" }}>Name</span>
@@ -78,7 +96,7 @@ export function RecordRow({ record, onUpdate, onRemove }: RecordRowProps) {
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${record.name.trim() === "" ? "record" : record.name.trim()}`}
-        className="col-span-2 sm:col-span-1 justify-self-end rounded-md px-2 py-2 text-xs font-semibold transition-opacity hover:opacity-70"
+        className="col-span-2 sm:col-span-1 lg:col-span-1 justify-self-end rounded-md px-2 py-2 text-xs font-semibold transition-opacity hover:opacity-70"
         style={{ color: "var(--danger)", background: "none", border: "none", cursor: "pointer" }}
       >
         Remove

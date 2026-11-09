@@ -3,7 +3,7 @@ import { formatSgd, type ChartRow } from "@/lib/networth";
 // Each asset section is its own small SVG, so text keeps a fixed small size
 // however wide the card is. All bars share one scale (`axisMaxDollars`).
 const WIDTH = 300;
-const HEIGHT = 60;
+const HEIGHT = 76;
 const FONT = "Manrope, sans-serif";
 
 function describe(row: ChartRow): string {
@@ -27,23 +27,23 @@ function ChartBar({ row, axisMaxDollars }: { row: ChartRow; axisMaxDollars: numb
           <line x1="0" y1="0" x2="0" y2="4" strokeWidth="2" style={{ stroke: "var(--on-surface)", strokeOpacity: 0.35 }} />
         </pattern>
       </defs>
-      <text x={0} y={14} fontSize={13} fontWeight={700} fontFamily={FONT} style={{ fill: "var(--on-surface)" }}>
+      <text x={0} y={18} fontSize={17} fontWeight={700} fontFamily={FONT} style={{ fill: "var(--on-surface)" }}>
         {row.label}
       </text>
-      <text x={WIDTH} y={14} fontSize={12} fontWeight={600} fontFamily={FONT} textAnchor="end" style={{ fill: "var(--on-surface-sub)" }}>
+      <text x={WIDTH} y={18} fontSize={15} fontWeight={600} fontFamily={FONT} textAnchor="end" style={{ fill: "var(--on-surface-sub)" }}>
         {row.percent === null ? "Set a target" : `${row.percent}% of target${row.incomplete ? "*" : ""}`}
       </text>
-      <text x={0} y={33} fontSize={12} fontFamily={FONT} style={{ fill: "var(--on-surface-sub)" }}>
+      <text x={0} y={42} fontSize={15} fontFamily={FONT} style={{ fill: "var(--on-surface-sub)" }}>
         {hasTarget ? `${formatSgd(row.cents)} of ${formatSgd(row.targetCents)}` : formatSgd(row.cents)}
       </text>
-      <rect x={0} y={42} width={WIDTH} height={9} style={{ fill: "var(--surface-container-high)" }} />
+      <rect x={0} y={54} width={WIDTH} height={12} style={{ fill: "var(--surface-container-high)" }} />
       {hasTarget && row.cents > 0 && (
         <>
-          <rect x={0} y={42} width={over ? targetX : barEnd} height={9} style={{ fill: "var(--primary-fill)" }} />
-          {over && <rect x={targetX} y={42} width={Math.max(0, barEnd - targetX)} height={9} fill={`url(#${pattern})`} />}
+          <rect x={0} y={54} width={over ? targetX : barEnd} height={12} style={{ fill: "var(--primary-fill)" }} />
+          {over && <rect x={targetX} y={54} width={Math.max(0, barEnd - targetX)} height={12} fill={`url(#${pattern})`} />}
         </>
       )}
-      {hasTarget && <line x1={targetX} x2={targetX} y1={39} y2={54} strokeWidth={2} style={{ stroke: "var(--on-surface)" }} />}
+      {hasTarget && <line x1={targetX} x2={targetX} y1={50} y2={70} strokeWidth={2} style={{ stroke: "var(--on-surface)" }} />}
     </svg>
   );
 }
