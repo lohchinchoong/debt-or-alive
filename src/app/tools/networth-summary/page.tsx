@@ -85,14 +85,16 @@ export function NetworthSummaryPage() {
           ))}
         </datalist>
 
-        <div className="max-w-3xl flex flex-col gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
           <NetworthHeadline summary={summary} />
           <RatesPanel
             usdSgd={draft.usdSgd}
             audSgd={draft.audSgd}
             onRate={(currency, value) => setDraft((d) => setRate(d, currency, value))}
           />
-          <TargetChart rows={chart.rows} axisMaxDollars={chart.axisMaxDollars} />
+          <div className="lg:col-span-2">
+            <TargetChart rows={chart.rows} axisMaxDollars={chart.axisMaxDollars} />
+          </div>
 
           {SECTIONS.map(({ key }) => {
             const isAsset = (ASSET_SECTIONS as readonly string[]).includes(key);
@@ -111,7 +113,7 @@ export function NetworthSummaryPage() {
             );
           })}
 
-          <p className="text-xs" style={{ color: "var(--on-surface-sub)" }}>
+          <p className="lg:col-span-2 text-xs" style={{ color: "var(--on-surface-sub)" }}>
             Figures here are typed in separately and may differ from the CPF, SRS and HYSA tools.
           </p>
         </div>
