@@ -3,6 +3,7 @@ import { cpfOaAdapter } from "./adapters/cpf-oa";
 import { cpfSaAdapter } from "./adapters/cpf-sa";
 import { dividendAdapter } from "./adapters/dividend-calculator";
 import { hysaAdapter } from "./adapters/hysa-tracker";
+import { networthAdapter } from "./adapters/networth-summary";
 import { savingsGoalAdapter } from "./adapters/savings-goal";
 import {
   budgetAdapter,
@@ -26,6 +27,7 @@ export const TOOL_ADAPTERS: readonly ToolAdapter<unknown>[] = [
   srsAdapter,
   dividendAdapter,
   cpfOaAdapter,
+  networthAdapter,
 ] as readonly ToolAdapter<unknown>[];
 
 export const PROFILE_ADAPTERS: readonly ProfileAdapter<ProfileBase>[] = [
