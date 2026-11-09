@@ -45,6 +45,12 @@ describe("tools", () => {
     expect(calculators[0]?.slug).toBe("cpf-oa-annuity-calculator");
   });
 
+  it("lists Networth Summary first in the Tracking group", () => {
+    const tracking = tools.filter((t) => t.group === "tracking");
+    expect(tracking[0]?.slug).toBe("networth-summary");
+    expect(tracking[0]?.name).toBe("Networth Summary");
+  });
+
   it("has no profile route under the OA calculator", () => {
     const dir = path.join(process.cwd(), "src/app/tools/cpf-oa-annuity-calculator/[profileId]");
     expect(existsSync(dir)).toBe(false);

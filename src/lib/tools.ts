@@ -31,6 +31,14 @@ export const tools: Tool[] = [
     group: "calculators",
   },
   {
+    slug: "networth-summary",
+    name: "Networth Summary",
+    tagline: "A one-page view of your CPF, SRS, cash and debt against your targets.",
+    category: "Planning",
+    icon: "Wallet",
+    group: "tracking",
+  },
+  {
     slug: "cpf-sa-calculator",
     name: "CPF Special Account (SA)",
     tagline: "Project your Special Account balance with tiered interest and annual crediting.",
