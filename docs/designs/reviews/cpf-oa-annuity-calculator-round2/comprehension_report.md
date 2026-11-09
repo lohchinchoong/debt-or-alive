@@ -1,0 +1,32 @@
+# Round 2, Stage 6: Comprehension Test Report
+
+**Target:** `docs/designs/cpf-oa-annuity-calculator.md` (FeatureRange 1-279, DetailedRange 280-411). The reviewer read the document alone.
+
+**What this proposes**
+
+The CPF OA Annuity tool stops being a list of named saved scenarios. It becomes one calculator page at `/tools/cpf-oa-annuity-calculator` that stores a single record under the key `tool:cpf-oa-annuity-calculator`. It follows the Compound Interest calculator's pattern: load on visit, write only when the user presses Save. The maths is unchanged. Existing users' old `cpf-oa:profiles` data is migrated by keeping only the profile with the latest `savedAt`. A notice tells them how many others will be dropped, and Save removes the old key. Old backups that contain the legacy key are imported the same way. Old profile URLs return 404. On the home page the tool moves to the Calculators tab as its first card, with a new name and tagline.
+
+**How the existing system works, per this document**
+
+Each tool has a `ToolAdapter` (keys, `dateKey`, `defaults`, `read`, `toEntries`). Adapters are listed in `TOOL_ADAPTERS`, and `REGISTERED_KEYS` is the set of keys they own. Export copies exactly those keys. For tools like Compound Interest, `useToolDraft(adapter)` reads once without writing and keeps a draft. `save()` writes through `saveTool` and `saveEntries`, and `SaveBar` and `LastSaved` render according to the date state (`never`, `legacy`, `saved`). `importBackup` reads each adapter through a read-only view of the backup plus device values, writes all entries in one `saveEntries` call, and sends keys no adapter owns to `keysSkipped`. Today the OA tool is a "profile" tool, using `PROFILE_ADAPTERS`, `useProfileList`, `useProfileDraft` and a `[profileId]` route. The document does not say how that profile machinery works beyond naming it.
+
+## Findings
+
+No section failed the paraphrase test outright. Findings 2, 4 and 6 need a second read.
+
+1. **Major.** Overview and Terms (lines 12-18) and CUJ 2. The Terms paragraph defines "profile" as the data item and "scenario" as the user-facing word, but the Overview and Goals use "scenario" for the old list items while the body uses "profile". The old data shape (`id`, `name`, `savedAt?`, params) first appears under Storage (line 109). Move it to the Overview.
+2. **Major.** "How saving works today" (lines 88-98). The section depends on `useToolDraft`, `saveTool`, `saveEntries`, `SaveBar`, `LastSaved`, `useUnsavedGuard` and `dateStateOf`, which are named or glossed only in passing. `ToolRead` is used (line 104) but never defined; the shape of the `read` return is only implied later by `{ record, savedAt, exists, discarded }`. Define `ToolRead<T>` where it first appears, and say that `dateStateOf` maps a read result (`exists`, `savedAt`) to a state.
+3. **Major.** The date-state table (lines 94-98). It says the `saved` state disables Save with no edits but not how `exists` and `savedAt` map to a state. The reader cannot see why a migrated legacy winner is `saved` and not `never` (line 131). It is inferable from `exists: true` but never stated.
+4. **Major.** "Reading the legacy key", step 4 (line 118). "Write the winner's params ... as the flat new-key JSON into a one-key in-memory view, and call the base adapter's `read` on it" is dense. "The base adapter" is not defined in that section (it is identified only in plan item 4, line 316), and "one-key in-memory view" is not defined.
+5. **Major.** "Stale legacy key on load" (lines 140-142). The text says "two cases from the brief", pointing to a document the reader is not required to read. The rule ("a key that still yields a winner while the new key is absent") must be derived from three overlapping prohibitions. A table of case to action would remove the guesswork.
+6. **Major.** Import (lines 146-154). "Participating" is defined, but the rules mix new key, legacy key and both keys. Line 149 says that when both keys are in the file the legacy key "is not owned", so it goes in `keysSkipped`; line 150 says "The legacy key is added to the owned set". The `owned` set from the loop is never described (it recurs only in plan item 10), so whether a legacy key is owned is ambiguous. The reader cannot see the `importBackup` loop; "owned set" and "view" need a short definition or a pseudocode sketch.
+7. **Major.** The Problem (lines 22-26). The paragraph names the risk (the legacy key skipped as unknown, success reported), then a "Who is affected" paragraph argues about cost, not risk. It also says "The author chose ... (see Alternative D)", mixing rationale with a decision. The problem and the decision are hard to separate.
+8. **Nit.** Non-Goals (lines 44, 41). `useProfileList`, `useProfileDraft`, `NEW_PROFILE_ID` and `ProfileAdapter` are named as untouched but never explained. Line 104 says the OA adapter "stops being a `ProfileAdapter`, so its profile-only members and tests are retired" without listing them. Item 4 names them (`listPath`, `newProfile`, `readAll`) only as removals.
+9. **Nit.** Non-Goals (line 45). "This exists today" is unclear: the mismatch or the subtitle.
+10. **Nit.** CUJ 5 (line 83). The `group` field, `src/lib/tools.ts` and "orders cards by array position" are explained in a parenthetical on the CUJ line, the only place the home-page mechanism is described. It would read better in the Technical Plan with the tools-list change.
+11. **Nit.** "Notice" (line 135). `readLegacyOaState` is introduced under "Enabling Save" (line 131) as "see Notice" before it is defined. "It can differ from the hook's own read only if another tab writes between the two reads" assumes the reader knows the hook reads once on its own.
+12. **Nit.** Lines 160, 282-289 and 367-369. `ManualSaveNotice` is never defined: it is "the existing manual-save notice" and "decides whether a user is new". The reader does not learn what it says or why it matters. The project rule on Next.js docs (line 282) is a hidden prerequisite with no link.
+13. **Nit.** Lines 290-291 and 384-385. Phase item numbers match the `####` numbers, and the `balanceAt55` case moves from item 8 to item 9. The "legacy table" in `toolAdapters.test.ts` is never described.
+14. **Nit.** Lines 90-91 and Phase 3. Phase 3 ties "the new-user check" to `ManualSaveNotice` without saying so, so the reader must connect item 12 to that name.
+
+Severity counts: 0 Blocker, 7 Major, 7 Nit.

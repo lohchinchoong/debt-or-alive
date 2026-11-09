@@ -25,12 +25,12 @@ export const TOOL_ADAPTERS: readonly ToolAdapter<unknown>[] = [
   budgetAdapter,
   srsAdapter,
   dividendAdapter,
+  cpfOaAdapter,
 ] as readonly ToolAdapter<unknown>[];
 
 export const PROFILE_ADAPTERS: readonly ProfileAdapter<ProfileBase>[] = [
   cpfSaAdapter,
   cpfMaAdapter,
-  cpfOaAdapter,
   hysaAdapter,
   savingsGoalAdapter,
 ];

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { importBackup } from "@/lib/persistence/import";
 import { createMemoryStorage } from "@/lib/persistence/testing/memoryStorage";
 
@@ -81,5 +81,92 @@ describe("importBackup", () => {
     const storage = createMemoryStorage();
     importBackup(storage, { "cpf-ma:profiles": [{ id: "m", name: "No month", currentBalance: 1, monthlyContrib: 1, startYear: 2024, endContribYear: 2030, birthYear: 1990, annualMedishieldPremium: 0 }] });
     expect(JSON.parse(storage.getItem("cpf-ma:profiles") as string)[0].startMonth).toBe(1);
+  });
+});
+
+describe("importBackup with a legacy OA key", () => {
+  const LEGACY = "cpf-oa:profiles";
+  const NEW_KEY = "tool:cpf-oa-annuity-calculator";
+  const A = { id: "p_a", name: "Plan A", birthYear: 1980, startDrawdownAge: 55, balanceAtStart: 100000, endDrawdownAge: 75, savedAt: "2026-01-01T00:00:00.000Z" };
+  const B = { id: "p_b", name: "Plan B", birthYear: 1982, startDrawdownAge: 60, balanceAtStart: 200000, endDrawdownAge: 80, savedAt: "2026-03-01T00:00:00.000Z" };
+  const C = { id: "p_c", name: "Plan C", birthYear: 1984, startDrawdownAge: 65, balanceAtStart: 300000, endDrawdownAge: 85 };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("writes the latest profile and its date, replacing the device record and removing the device legacy key", () => {
+    const storage = createMemoryStorage({
+      [NEW_KEY]: JSON.stringify({ birthYear: 1999, startDrawdownAge: 55, balanceAtStart: 1, endDrawdownAge: 60, savedAt: SAVED }),
+      [LEGACY]: JSON.stringify([C]),
+    });
+
+    const result = importBackup(storage, { [LEGACY]: [A, B, C] });
+
+    expect(result).toEqual({ ok: true, toolsImported: 1, keysSkipped: [] });
+    expect(JSON.parse(storage.getItem(NEW_KEY) as string)).toEqual({
+      birthYear: 1982, startDrawdownAge: 60, balanceAtStart: 200000, endDrawdownAge: 80, savedAt: B.savedAt,
+    });
+    expect(storage.getItem(LEGACY)).toBeNull();
+  });
+
+  it("writes the new key with no date when the winner has no savedAt", () => {
+    const storage = createMemoryStorage();
+
+    importBackup(storage, { [LEGACY]: [C] });
+
+    expect(JSON.parse(storage.getItem(NEW_KEY) as string)).not.toHaveProperty("savedAt");
+  });
+
+  it("uses the new key when the file has both keys, and reports the legacy key skipped", () => {
+    const storage = createMemoryStorage();
+    const current = { birthYear: 1975, startDrawdownAge: 55, balanceAtStart: 5, endDrawdownAge: 70, savedAt: SAVED };
+
+    const result = importBackup(storage, { [NEW_KEY]: current, [LEGACY]: [B] });
+
+    expect(result).toEqual({ ok: true, toolsImported: 1, keysSkipped: [LEGACY] });
+    expect(JSON.parse(storage.getItem(NEW_KEY) as string)).toEqual(current);
+  });
+
+  it("removes a legacy key left on the device when a new-format backup is imported", () => {
+    const storage = createMemoryStorage({ [LEGACY]: JSON.stringify([A, B]) });
+
+    importBackup(storage, { [NEW_KEY]: { birthYear: 1975, startDrawdownAge: 55, balanceAtStart: 5, endDrawdownAge: 70, savedAt: SAVED } });
+
+    expect(storage.getItem(LEGACY)).toBeNull();
+  });
+
+  it.each([
+    ["[]", []],
+    ["[1, null]", [1, null]],
+    ["a string", "not json"],
+  ])("skips a legacy key holding %s and leaves the device record untouched", (_name, value) => {
+    const record = JSON.stringify({ birthYear: 1999, startDrawdownAge: 55, balanceAtStart: 1, endDrawdownAge: 60, savedAt: SAVED });
+    const storage = createMemoryStorage({ [NEW_KEY]: record });
+
+    const result = importBackup(storage, { [LEGACY]: value });
+
+    expect(result).toEqual({ ok: true, toolsImported: 0, keysSkipped: [LEGACY] });
+    expect(storage.getItem(NEW_KEY)).toBe(record);
+    expect(storage.writes).toBe(0);
+  });
+
+  it("removes no legacy key when the save fails", () => {
+    const storage = createMemoryStorage({ [LEGACY]: JSON.stringify([C]) }, { failOnSet: (call) => call === 1 });
+
+    const result = importBackup(storage, { [LEGACY]: [A, B, C] });
+
+    expect(result.ok).toBe(false);
+    expect(storage.getItem(LEGACY)).not.toBeNull();
+  });
+
+  it("still returns ok and warns when removing the device legacy key fails", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const storage = createMemoryStorage({ [LEGACY]: JSON.stringify([C]) }, { failOnRemove: (_call, key) => key === LEGACY });
+
+    const result = importBackup(storage, { [LEGACY]: [A, B, C] });
+
+    expect(result).toMatchObject({ ok: true, toolsImported: 1 });
+    expect(warn).toHaveBeenCalled();
   });
 });

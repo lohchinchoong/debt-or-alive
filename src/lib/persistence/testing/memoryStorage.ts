@@ -10,6 +10,8 @@ export type MemoryStorage = StorageLike & {
 export type MemoryStorageOptions = {
   /** Return true to make the nth setItem call (1-based) throw. */
   failOnSet?: (call: number, key: string) => boolean;
+  /** Return true to make the nth removeItem call (1-based) throw. */
+  failOnRemove?: (call: number, key: string) => boolean;
 };
 
 /** An in-memory StorageLike for tests. App code never imports this. */
@@ -20,6 +22,7 @@ export function createMemoryStorage(
   const data = new Map<string, string>(Object.entries(initial));
   let writes = 0;
   let setCalls = 0;
+  let removeCalls = 0;
 
   return {
     get writes() {
@@ -37,6 +40,10 @@ export function createMemoryStorage(
       data.set(key, value);
     },
     removeItem(key) {
+      removeCalls += 1;
+      if (options.failOnRemove?.(removeCalls, key)) {
+        throw new Error(`Remove failed (simulated) on remove #${removeCalls}`);
+      }
       writes += 1;
       data.delete(key);
     },

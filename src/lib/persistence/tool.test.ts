@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { dateStateOf, saveTool } from "@/lib/persistence/tool";
 import { createMemoryStorage } from "@/lib/persistence/testing/memoryStorage";
 import type { StorageLike, ToolAdapter } from "@/lib/persistence/types";
@@ -96,5 +96,46 @@ describe("saveTool", () => {
     expect(dateStateOf(after)).toBe("saved");
     expect(after.savedAt).toBe("2026-11-08T04:00:00Z");
     expect(JSON.parse(storage.getItem("tool:demo") as string)).toEqual({ rate: 5, savedAt: "2026-11-08T04:00:00Z" });
+  });
+});
+
+describe("saveTool with legacy keys", () => {
+  const withLegacy: ToolAdapter<Demo> = { ...demoAdapter, legacyKeys: ["demo:legacy"] };
+  const NOW = "2026-11-08T04:00:00Z";
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("removes the legacy key after a successful save", () => {
+    const storage = createMemoryStorage({ "demo:legacy": "[1]" });
+
+    const result = saveTool(storage, withLegacy, { inputs: { rate: 6 }, list: [1] }, NOW);
+
+    expect(result).toEqual({ ok: true });
+    expect(storage.getItem("demo:legacy")).toBeNull();
+  });
+
+  it("keeps the legacy key when the save fails", () => {
+    const storage = createMemoryStorage({ "demo:legacy": "[1]" }, { failOnSet: () => true });
+
+    const result = saveTool(storage, withLegacy, { inputs: { rate: 6 }, list: [1] }, NOW);
+
+    expect(result.ok).toBe(false);
+    expect(storage.getItem("demo:legacy")).toBe("[1]");
+  });
+
+  it("still returns ok and warns when removing the legacy key fails", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const storage = createMemoryStorage(
+      { "demo:legacy": "[1]" },
+      { failOnRemove: (_call, key) => key === "demo:legacy" },
+    );
+
+    const result = saveTool(storage, withLegacy, { inputs: { rate: 6 }, list: [1] }, NOW);
+
+    expect(result).toEqual({ ok: true });
+    expect(warn).toHaveBeenCalled();
+    expect(storage.getItem("demo:legacy")).toBe("[1]");
   });
 });

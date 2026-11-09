@@ -43,3 +43,18 @@ export function saveEntries(storage: StorageLike, entries: StorageEntry[]): Save
     return { ok: false, error };
   }
 }
+
+/**
+ * Removes keys that a newer record has replaced, such as an older build's
+ * storage keys. Call it only after the replacing save succeeded. A failed
+ * removal is logged and ignored: a leftover key is not read again.
+ */
+export function removeReplacedKeys(storage: StorageLike, keys: readonly string[]): void {
+  for (const key of keys) {
+    try {
+      storage.removeItem(key);
+    } catch (err) {
+      console.warn(`Could not remove replaced key "${key}"`, err);
+    }
+  }
+}
