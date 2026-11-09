@@ -2,7 +2,7 @@
 
 import { MAX_TARGET, SECTIONS, formatSgd, type NetworthRecord, type Section } from "@/lib/networth";
 import { NumberField } from "./NumberField";
-import { RecordRow } from "./RecordRow";
+import { RecordHeader, RecordRow } from "./RecordRow";
 
 type SectionCardProps = {
   section: Section;
@@ -54,7 +54,8 @@ export function SectionCard({ section, records, subtotalCents, target, onAdd, on
         </div>
       )}
 
-      <div className="mt-4 flex flex-col gap-3">
+      <div className="mt-4 flex flex-col gap-3 lg:gap-1">
+        {records.length > 0 && <RecordHeader />}
         {records.length === 0 ? (
           <p className="text-sm py-2" style={{ color: "var(--on-surface-sub)" }}>No records yet. Add one.</p>
         ) : (
