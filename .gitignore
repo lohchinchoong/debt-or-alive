@@ -26,3 +26,8 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# graphify (track only the graph and its report)
+graphify-out/*
+!graphify-out/graph.json
+!graphify-out/GRAPH_REPORT.md
