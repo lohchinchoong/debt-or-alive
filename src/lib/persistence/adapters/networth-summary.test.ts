@@ -17,7 +17,7 @@ function readFrom(value: unknown) {
 
 const goodRecord = {
   id: "a",
-  section: "cpf",
+  section: "cpfOa",
   name: "OA",
   platform: "CPF Board",
   amount: 100,
@@ -56,7 +56,7 @@ describe("networth adapter: reading", () => {
     const data: NetworthData = {
       usdSgd: 1.35,
       audSgd: 0.88,
-      targets: { cpf: 100, srs: 200, cashSavings: 300, cashInvestments: 400 },
+      targets: { cpfOa: 100, cpfSa: 110, cpfMa: 120, cpfRa: 130, srs: 200, cashSavings: 300, cashInvestments: 400 },
       records: [goodRecord as NetworthData["records"][number]],
     };
     const r = readFrom({ ...data, savedAt: SAVED });
@@ -71,11 +71,11 @@ describe("networth adapter: reading", () => {
     expect(readFrom({ usdSgd: 1000 }).record.usdSgd).toBe(1000);
   });
 
-  it("reads a target outside 0 to the maximum as 0, and a bad targets value as four zeros", () => {
-    const r = readFrom({ targets: { cpf: -1, srs: "5", cashSavings: 1e12, cashInvestments: 7 } });
-    expect(r.record.targets).toEqual({ cpf: 0, srs: 0, cashSavings: 0, cashInvestments: 7 });
+  it("reads a target outside 0 to the maximum as 0, and a bad targets value as all zeros", () => {
+    const r = readFrom({ targets: { cpfOa: -1, srs: "5", cashSavings: 1e12, cashInvestments: 7 } });
+    expect(r.record.targets).toEqual({ cpfOa: 0, cpfSa: 0, cpfMa: 0, cpfRa: 0, srs: 0, cashSavings: 0, cashInvestments: 7 });
     expect(readFrom({ targets: "lots" }).record.targets).toEqual(defaultNetworth().targets);
-    expect(readFrom({ targets: { cpf: 5 } }).record.targets).toEqual({ cpf: 5, srs: 0, cashSavings: 0, cashInvestments: 0 });
+    expect(readFrom({ targets: { cpf: 5 } }).record.targets).toEqual({ cpfOa: 5, cpfSa: 0, cpfMa: 0, cpfRa: 0, srs: 0, cashSavings: 0, cashInvestments: 0 });
   });
 
   it("treats records that are not an array as empty", () => {
@@ -94,7 +94,7 @@ describe("networth adapter: reading", () => {
       records: [
         { section: "srs", name: 5, platform: null, amount: "12", currency: "EUR", lastUpdated: "2026-02-30" },
         { id: "", section: "debt", amount: -5, lastUpdated: "yesterday" },
-        { id: "z", section: "cpf", amount: MAX_AMOUNT + 1, currency: "USD", lastUpdated: "2026-02-28" },
+        { id: "z", section: "cpfOa", amount: MAX_AMOUNT + 1, currency: "USD", lastUpdated: "2026-02-28" },
       ],
     });
     const [a, b, c] = r.record.records;
@@ -147,7 +147,7 @@ describe("networth adapter: saving", () => {
     const data: NetworthData = {
       usdSgd: 1.3,
       audSgd: null,
-      targets: { cpf: 1, srs: 2, cashSavings: 3, cashInvestments: 4 },
+      targets: { cpfOa: 1, cpfSa: 5, cpfMa: 6, cpfRa: 7, srs: 2, cashSavings: 3, cashInvestments: 4 },
       records: [goodRecord as NetworthData["records"][number]],
     };
     const storage = createMemoryStorage();
@@ -172,5 +172,12 @@ describe("networth adapter: registration and import", () => {
     expect(record.usdSgd).toBeNull();
     expect(record.records).toHaveLength(1);
     expect(record.records[0].currency).toBe("SGD");
+  });
+});
+
+describe("legacy CPF section", () => {
+  it("moves records saved under the old single cpf section to OA", () => {
+    const r = readFrom({ records: [{ ...goodRecord, id: "old", section: "cpf" }] });
+    expect(r.record.records.map((x) => x.section)).toEqual(["cpfOa"]);
   });
 });

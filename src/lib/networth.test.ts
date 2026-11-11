@@ -9,6 +9,7 @@ import {
   platformSuggestions,
   removeRecord,
   setRate,
+  setCpfAmount,
   setTarget,
   summarise,
   toSgdCents,
@@ -21,7 +22,7 @@ function data(overrides: Partial<NetworthData> = {}): NetworthData {
   return {
     usdSgd: null,
     audSgd: null,
-    targets: { cpf: 0, srs: 0, cashSavings: 0, cashInvestments: 0 },
+    targets: { cpfOa: 0, cpfSa: 0, cpfMa: 0, cpfRa: 0, srs: 0, cashSavings: 0, cashInvestments: 0 },
     records: [],
     ...overrides,
   };
@@ -69,13 +70,13 @@ describe("summarise", () => {
   it("sums each section and subtracts debt once", () => {
     const d = data({
       records: [
-        rec({ section: "cpf", amount: 1000 }),
+        rec({ section: "cpfOa", amount: 1000 }),
         rec({ section: "srs", amount: 500.5 }),
         rec({ section: "debt", amount: 200 }),
       ],
     });
     const s = summarise(d);
-    expect(s.sections.cpf.cents).toBe(100000);
+    expect(s.sections.cpfOa.cents).toBe(100000);
     expect(s.sections.srs.cents).toBe(50050);
     expect(s.assetsCents).toBe(150050);
     expect(s.debtCents).toBe(20000);
@@ -87,14 +88,14 @@ describe("summarise", () => {
     const d = data({
       usdSgd: 1,
       records: [
-        rec({ section: "cpf", amount: 0.005, currency: "USD" }),
-        rec({ section: "cpf", amount: 0.005, currency: "USD" }),
-        rec({ section: "cpf", amount: 0.005, currency: "USD" }),
+        rec({ section: "cpfOa", amount: 0.005, currency: "USD" }),
+        rec({ section: "cpfOa", amount: 0.005, currency: "USD" }),
+        rec({ section: "cpfOa", amount: 0.005, currency: "USD" }),
       ],
     });
     const s = summarise(d);
     // Each record is 1 cent. Rounding the exact total (0.015) would give 2.
-    expect(s.sections.cpf.cents).toBe(3);
+    expect(s.sections.cpfOa.cents).toBe(3);
     expect(s.netCents).toBe(s.assetsCents - s.debtCents);
     expect(s.assetsCents).toBe(3);
   });
@@ -120,19 +121,19 @@ describe("summarise", () => {
   });
 
   it("gives a negative net worth when debt is larger", () => {
-    const s = summarise(data({ records: [rec({ section: "cpf", amount: 10 }), rec({ section: "debt", amount: 50 })] }));
+    const s = summarise(data({ records: [rec({ section: "cpfOa", amount: 10 }), rec({ section: "debt", amount: 50 })] }));
     expect(s.netCents).toBe(-4000);
   });
 });
 
 describe("chartRows", () => {
   const withTargets = (cpf: number, subtotal: number) =>
-    data({ targets: { cpf, srs: 0, cashSavings: 0, cashInvestments: 0 }, records: [rec({ section: "cpf", amount: subtotal })] });
+    data({ targets: { cpfOa: cpf, cpfSa: 0, cpfMa: 0, cpfRa: 0, srs: 0, cashSavings: 0, cashInvestments: 0 }, records: [rec({ section: "cpfOa", amount: subtotal })] });
 
   it("returns one row per asset section and leaves Debt out", () => {
     const d = data({ records: [rec({ section: "debt", amount: 999 })] });
     const { rows } = chartRows(summarise(d), d);
-    expect(rows.map((r) => r.section)).toEqual(["cpf", "srs", "cashSavings", "cashInvestments"]);
+    expect(rows.map((r) => r.section)).toEqual(["cpfOa", "cpfSa", "cpfMa", "cpfRa", "srs", "cashSavings", "cashInvestments"]);
   });
 
   it("gives a null percent when the target is 0", () => {
@@ -162,7 +163,7 @@ describe("chartRows", () => {
   });
 
   it("does not count Debt towards the axis", () => {
-    const d = data({ records: [rec({ section: "cpf", amount: 100 }), rec({ section: "debt", amount: 1_000_000 })] });
+    const d = data({ records: [rec({ section: "cpfOa", amount: 100 }), rec({ section: "debt", amount: 1_000_000 })] });
     expect(chartRows(summarise(d), d).axisMaxDollars).toBeLessThan(1000);
   });
 
@@ -177,7 +178,7 @@ describe("chartRows", () => {
     const d = data({ records: [rec({ section: "srs", amount: 5, currency: "USD" })] });
     const { rows } = chartRows(summarise(d), d);
     expect(rows.find((r) => r.section === "srs")?.incomplete).toBe(true);
-    expect(rows.find((r) => r.section === "cpf")?.incomplete).toBe(false);
+    expect(rows.find((r) => r.section === "cpfOa")?.incomplete).toBe(false);
   });
 });
 
@@ -226,9 +227,9 @@ describe("draft helpers", () => {
     const d = data();
     expect(setRate(d, "USD", 1.3).usdSgd).toBe(1.3);
     expect(setRate(d, "AUD", null).audSgd).toBeNull();
-    expect(setTarget(d, "cpf", 500).targets.cpf).toBe(500);
+    expect(setTarget(d, "cpfOa", 500).targets.cpfOa).toBe(500);
     expect(d.usdSgd).toBeNull();
-    expect(d.targets.cpf).toBe(0);
+    expect(d.targets.cpfOa).toBe(0);
   });
 });
 
@@ -258,5 +259,26 @@ describe("formatters", () => {
   it("formats a record amount in its own currency", () => {
     expect(formatAmount(10, "USD")).toContain("10.00");
     expect(formatAmount(10, "USD")).not.toBe(formatAmount(10, "AUD"));
+  });
+});
+
+describe("setCpfAmount", () => {
+  it("collapses a section to one SGD record and leaves other sections alone", () => {
+    const d = data({
+      records: [
+        rec({ section: "cpfOa", amount: 10 }),
+        rec({ section: "cpfOa", amount: 20 }),
+        rec({ section: "debt", amount: 5 }),
+      ],
+    });
+    const next = setCpfAmount(d, "cpfOa", 300);
+    expect(next.records.filter((r) => r.section === "cpfOa")).toHaveLength(1);
+    expect(next.records.find((r) => r.section === "cpfOa")).toMatchObject({ amount: 300, currency: "SGD" });
+    expect(next.records.filter((r) => r.section === "debt")).toHaveLength(1);
+  });
+
+  it("removes the record when the amount is 0", () => {
+    const d = data({ records: [rec({ section: "cpfSa", amount: 10 })] });
+    expect(setCpfAmount(d, "cpfSa", 0).records).toEqual([]);
   });
 });

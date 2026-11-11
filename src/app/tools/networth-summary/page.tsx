@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { GuardedLink } from "@/components/GuardedLink";
 import { LastSaved } from "@/components/LastSaved";
 import { ManualSaveNotice } from "@/components/ManualSaveNotice";
+import { CpfCard } from "@/components/networth/CpfCard";
 import { NetworthHeadline } from "@/components/networth/NetworthHeadline";
 import { RatesPanel } from "@/components/networth/RatesPanel";
 import { SectionCard } from "@/components/networth/SectionCard";
@@ -13,12 +14,15 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { useToolDraft } from "@/hooks/useToolDraft";
 import {
   ASSET_SECTIONS,
+  CPF_SECTIONS,
   SECTIONS,
   addRecord,
   chartRows,
+  isCpfSection,
   localDateISO,
   platformSuggestions,
   removeRecord,
+  setCpfAmount,
   setRate,
   setTarget,
   summarise,
@@ -96,7 +100,20 @@ export function NetworthSummaryPage() {
             <TargetChart rows={chart.rows} axisMaxDollars={chart.axisMaxDollars} />
           </div>
 
-          {SECTIONS.map(({ key }) => {
+          <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
+            {CPF_SECTIONS.map((key) => (
+              <CpfCard
+                key={key}
+                section={key}
+                subtotalCents={summary.sections[key].cents}
+                target={draft.targets[key]}
+                onAmount={(value) => setDraft((d) => setCpfAmount(d, key, value))}
+                onTarget={(value) => setDraft((d) => setTarget(d, key, value))}
+              />
+            ))}
+          </div>
+
+          {SECTIONS.filter(({ key }) => !isCpfSection(key)).map(({ key }) => {
             const isAsset = (ASSET_SECTIONS as readonly string[]).includes(key);
             return (
               <div key={key} className="lg:col-span-2">
