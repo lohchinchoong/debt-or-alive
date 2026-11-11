@@ -47,13 +47,21 @@ function isRealDate(value: string): boolean {
 
 const SECTION_KEYS = new Set<string>(SECTIONS.map((s) => s.key));
 
+// Before CPF was split into four accounts, everything lived under one "cpf"
+// section. Keep that data by moving it to OA rather than dropping it.
+function readSection(value: unknown): Section | null {
+  if (value === "cpf") return "cpfOa";
+  return typeof value === "string" && SECTION_KEYS.has(value) ? (value as Section) : null;
+}
+
 function readRecords(value: unknown): NetworthRecord[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
   const records: NetworthRecord[] = [];
   for (const item of value) {
     if (!isObject(item)) continue;
-    if (typeof item.section !== "string" || !SECTION_KEYS.has(item.section)) continue;
+    const section = readSection(item.section);
+    if (section === null) continue;
 
     let id = typeof item.id === "string" && item.id !== "" ? item.id : genId("nw");
     while (seen.has(id)) id = genId("nw");
@@ -61,7 +69,7 @@ function readRecords(value: unknown): NetworthRecord[] {
 
     records.push({
       id,
-      section: item.section as Section,
+      section,
       name: typeof item.name === "string" ? item.name : "",
       platform: typeof item.platform === "string" ? item.platform : "",
       amount: inRange(item.amount, 0, MAX_AMOUNT) ? item.amount : 0,
@@ -93,7 +101,7 @@ export const networthAdapter: ToolAdapter<NetworthData> = {
       record.audSgd = readRate(stored.audSgd);
       if (isObject(stored.targets)) {
         for (const section of ASSET_SECTIONS) {
-          const target = stored.targets[section];
+          const target = stored.targets[section] ?? (section === "cpfOa" ? stored.targets.cpf : undefined);
           record.targets[section] = inRange(target, 0, MAX_TARGET) ? target : 0;
         }
       }

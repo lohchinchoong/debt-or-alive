@@ -5,7 +5,10 @@ import { genId, niceMax } from "@/lib/utils";
 export type SectionKind = "asset" | "debt";
 
 export const SECTIONS = [
-  { key: "cpf", label: "CPF", kind: "asset", helper: "Central Provident Fund balances (OA, SA, MA, RA)." },
+  { key: "cpfOa", label: "CPF OA", kind: "asset", helper: "CPF Ordinary Account balance." },
+  { key: "cpfSa", label: "CPF SA", kind: "asset", helper: "CPF Special Account balance." },
+  { key: "cpfMa", label: "CPF MA", kind: "asset", helper: "CPF MediSave Account balance." },
+  { key: "cpfRa", label: "CPF RA", kind: "asset", helper: "CPF Retirement Account balance." },
   { key: "srs", label: "SRS", kind: "asset", helper: "Supplementary Retirement Scheme account, cash and investments." },
   { key: "cashSavings", label: "Cash Savings", kind: "asset", helper: "Bank and savings accounts you can withdraw from." },
   { key: "cashInvestments", label: "Cash Investments", kind: "asset", helper: "Money held with a broker or in funds, at current estimated value." },
@@ -15,7 +18,13 @@ export const SECTIONS = [
 export type Section = (typeof SECTIONS)[number]["key"];
 export type AssetSection = Exclude<Section, "debt">;
 
-export const ASSET_SECTIONS: readonly AssetSection[] = ["cpf", "srs", "cashSavings", "cashInvestments"];
+export const CPF_SECTIONS = ["cpfOa", "cpfSa", "cpfMa", "cpfRa"] as const satisfies readonly AssetSection[];
+
+export function isCpfSection(section: Section): section is (typeof CPF_SECTIONS)[number] {
+  return (CPF_SECTIONS as readonly string[]).includes(section);
+}
+
+export const ASSET_SECTIONS: readonly AssetSection[] = ["cpfOa", "cpfSa", "cpfMa", "cpfRa", "srs", "cashSavings", "cashInvestments"];
 
 export const CURRENCIES = ["SGD", "USD", "AUD"] as const;
 export type Currency = (typeof CURRENCIES)[number];
@@ -49,7 +58,7 @@ export function defaultNetworth(): NetworthData {
   return {
     usdSgd: null,
     audSgd: null,
-    targets: { cpf: 0, srs: 0, cashSavings: 0, cashInvestments: 0 },
+    targets: { cpfOa: 0, cpfSa: 0, cpfMa: 0, cpfRa: 0, srs: 0, cashSavings: 0, cashInvestments: 0 },
     records: [],
   };
 }
@@ -85,6 +94,27 @@ export function updateRecord(
 ): NetworthData {
   if (!data.records.some((r) => r.id === id)) return data;
   return { ...data, records: data.records.map((r) => (r.id === id ? { ...r, ...changes } : r)) };
+}
+
+/**
+ * A CPF account holds one SGD amount. Replaces every record in the section with
+ * a single record (or none when the amount is 0), so older multi-record data
+ * collapses to its total the first time the amount is edited.
+ */
+export function setCpfAmount(data: NetworthData, section: Section, amount: number): NetworthData {
+  const others = data.records.filter((r) => r.section !== section);
+  if (amount === 0) return { ...data, records: others };
+  const existing = data.records.find((r) => r.section === section);
+  const record: NetworthRecord = {
+    id: existing?.id ?? genId("nw"),
+    section,
+    name: "",
+    platform: "",
+    amount,
+    currency: "SGD",
+    lastUpdated: "",
+  };
+  return { ...data, records: [...others, record] };
 }
 
 export function removeRecord(data: NetworthData, id: string): NetworthData {
