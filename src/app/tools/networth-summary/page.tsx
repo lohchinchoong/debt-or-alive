@@ -34,7 +34,7 @@ import { tools } from "@/lib/tools";
 
 const TAGLINE = tools.find((t) => t.slug === "networth-summary")?.tagline ?? "";
 
-export function NetworthSummaryPage() {
+function NetworthSummaryPage() {
   const tool = useToolDraft(networthAdapter);
   const { draft, setDraft } = tool;
 

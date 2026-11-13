@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { importBackup } from "@/lib/persistence/import";
+import { importBackup, overlay } from "@/lib/persistence/import";
 import { createMemoryStorage } from "@/lib/persistence/testing/memoryStorage";
 
 const SAVED = "2026-11-08T04:00:00Z";
@@ -168,5 +168,29 @@ describe("importBackup with a legacy OA key", () => {
 
     expect(result).toMatchObject({ ok: true, toolsImported: 1 });
     expect(warn).toHaveBeenCalled();
+  });
+});
+
+describe("overlay", () => {
+  it("returns the file's value for a key in the file, and the stored value otherwise", () => {
+    const storage = createMemoryStorage({ stored: "from storage", both: "old" });
+
+    const view = overlay(storage, { both: { a: 1 }, text: "plain", fileOnly: [1] });
+
+    expect(view.getItem("both")).toBe(JSON.stringify({ a: 1 }));
+    expect(view.getItem("text")).toBe("plain");
+    expect(view.getItem("fileOnly")).toBe("[1]");
+    expect(view.getItem("stored")).toBe("from storage");
+    expect(view.getItem("missing")).toBeNull();
+  });
+
+  it("throws on setItem and removeItem, and leaves the real storage untouched", () => {
+    const storage = createMemoryStorage({ stored: "x" });
+    const view = overlay(storage, {});
+
+    expect(() => view.setItem("stored", "y")).toThrow("Import view is read-only");
+    expect(() => view.removeItem("stored")).toThrow("Import view is read-only");
+    expect(storage.writes).toBe(0);
+    expect(storage.getItem("stored")).toBe("x");
   });
 });

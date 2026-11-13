@@ -1,198 +1,164 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { importBackup } from "@/lib/persistence/import";
-import { REGISTERED_KEYS } from "@/lib/persistence/registry";
+import { useMemo, useState, type ChangeEvent, type ReactNode } from "react";
+import { Download, Share2, Upload } from "lucide-react";
+import { BUTTON_PRIMARY, BUTTON_SECONDARY } from "@/components/backupButtonStyles";
+import { ImportConfirmDialog } from "@/components/ImportConfirmDialog";
+import { useBackupImport } from "@/hooks/useBackupImport";
+import { useIsClient } from "@/hooks/useIsClient";
+import { downloadBackup } from "@/lib/downloadBackup";
+import { backupFileName, buildBackup, serializeBackup } from "@/lib/persistence/backup";
+import { canShareBackupFile, shareBackupFile } from "@/lib/shareBackup";
 
-// Export covers every key owned by a registered adapter; import goes through
-// the same adapters and the save module, so it succeeds or fails as a whole.
+// The backup controls: share a backup, download one, or import one. Building,
+// reading and applying a backup live in src/lib/persistence (backup.ts,
+// preview.ts, import.ts); this component lays out the controls and shows messages.
 
-const APP_ID = "debtoralive";
-const FORMAT_VERSION = 1;
+const EMPTY_MESSAGE = "Nothing to back up yet. Save some data in a tool first.";
+const SHARE_FAILED_MESSAGE = "Couldn't open the share sheet. Use Export Data to download the backup instead.";
+const PRIVACY_NOTE =
+  "Your backup file is plain readable text and includes your CPF, debt and net worth figures. This app keeps " +
+  "no copy: the file lives wherever you send it, and anyone who can open that place can read it. Data in this " +
+  "browser is lost if you clear browser data, so back up first.";
 
-type ExportPayload = {
-  app: string;
-  version: number;
-  exportedAt: string;
-  data: Record<string, unknown>;
-};
+type Message = { kind: "info" | "error"; text: string };
 
-// ─── Export ──────────────────────────────────────────────────────────────────
-
-function exportData() {
-  const data: Record<string, unknown> = {};
-
-  for (const key of REGISTERED_KEYS) {
-    const raw = localStorage.getItem(key);
-    if (raw !== null) {
-      try {
-        data[key] = JSON.parse(raw);
-      } catch {
-        data[key] = raw; // store as-is if not valid JSON
-      }
-    }
-  }
-
-  if (Object.keys(data).length === 0) {
-    alert("Nothing to export — no saved data found.");
-    return;
-  }
-
-  const payload: ExportPayload = {
-    app: APP_ID,
-    version: FORMAT_VERSION,
-    exportedAt: new Date().toISOString(),
-    data,
-  };
-
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `debtoralive-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-
-  // Clean up
-  setTimeout(() => {
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }, 100);
+function ActionGroup({ description, children }: { description: string; children: ReactNode }) {
+  return (
+    <div className="flex flex-col gap-1.5 sm:max-w-[14rem]">
+      {children}
+      <p className="text-xs leading-snug" style={{ color: "var(--on-surface-sub)" }}>
+        {description}
+      </p>
+    </div>
+  );
 }
-
-// ─── Import ──────────────────────────────────────────────────────────────────
-
-function importData(file: File): Promise<{ toolsImported: number; keysSkipped: string[] }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      try {
-        const text = reader.result as string;
-        const payload = JSON.parse(text) as ExportPayload;
-
-        // Validate structure
-        if (payload.app !== APP_ID) {
-          reject(new Error(`Invalid file — expected app "${APP_ID}", got "${payload.app}".`));
-          return;
-        }
-
-        if (typeof payload.version !== "number" || !payload.data || typeof payload.data !== "object") {
-          reject(new Error("Invalid file format — missing version or data."));
-          return;
-        }
-
-        const result = importBackup(localStorage, payload.data);
-        if (!result.ok) {
-          reject(new Error(`Couldn't import. Nothing was changed. (${result.error.message})`));
-          return;
-        }
-        resolve({ toolsImported: result.toolsImported, keysSkipped: result.keysSkipped });
-      } catch (err) {
-        reject(new Error(`Failed to parse file: ${err instanceof Error ? err.message : "unknown error"}`));
-      }
-    };
-
-    reader.onerror = () => reject(new Error("Failed to read file."));
-    reader.readAsText(file);
-  });
-}
-
-// ─── Component ───────────────────────────────────────────────────────────────
 
 export function DataPortability() {
-  const [importStatus, setImportStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isClient = useIsClient();
+  const canShare = useMemo(() => (isClient ? canShareBackupFile() : false), [isClient]);
+  const importer = useBackupImport();
+  const [message, setMessage] = useState<Message | null>(null);
+  const [sharing, setSharing] = useState(false);
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const { state, dismiss, selectFile, confirm, cancel } = importer;
 
-    try {
-      const { toolsImported, keysSkipped } = await importData(file);
+  // Starting any action clears the last message, from the page or from the import hook.
+  function startAction() {
+    dismiss();
+    setMessage(null);
+  }
 
-      if (toolsImported === 0) {
-        setImportStatus({ type: "error", message: "No recognised data found in file." });
-      } else {
-        const msg = `Imported ${toolsImported} tool${toolsImported !== 1 ? "s" : ""} successfully.${
-          keysSkipped.length > 0 ? ` ${keysSkipped.length} unknown key${keysSkipped.length !== 1 ? "s" : ""} skipped.` : ""
-        }`;
-        setImportStatus({ type: "success", message: msg });
-
-        // Reload after a short delay so user sees the message
-        setTimeout(() => window.location.reload(), 1500);
-      }
-    } catch (err) {
-      setImportStatus({ type: "error", message: err instanceof Error ? err.message : "Import failed." });
+  async function handleShare() {
+    startAction();
+    const now = new Date();
+    const payload = buildBackup(localStorage, now);
+    if (!payload) {
+      setMessage({ kind: "info", text: EMPTY_MESSAGE });
+      return;
     }
+    const file = new File([serializeBackup(payload)], backupFileName(now), { type: "application/json" });
 
-    // Reset file input so same file can be re-selected
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+    // The share must start before any await, so the browser still sees the tap as its cause.
+    setSharing(true);
+    try {
+      const outcome = await shareBackupFile(file);
+      if (outcome === "failed") setMessage({ kind: "error", text: SHARE_FAILED_MESSAGE });
+    } finally {
+      setSharing(false);
+    }
+  }
+
+  function handleExport() {
+    startAction();
+    const now = new Date();
+    const payload = buildBackup(localStorage, now);
+    if (!payload) {
+      setMessage({ kind: "info", text: EMPTY_MESSAGE });
+      return;
+    }
+    downloadBackup(payload, now);
+  }
+
+  function handleDownloadCurrent() {
+    const now = new Date();
+    const payload = buildBackup(localStorage, now);
+    if (payload) downloadBackup(payload, now);
+  }
+
+  function handleFile(e: ChangeEvent<HTMLInputElement>) {
+    const input = e.target;
+    const file = input.files?.[0];
+    if (!file) return;
+    startAction();
+    void selectFile(file);
+    // Reset so the same file can be picked again.
+    input.value = "";
+  }
+
+  // The import hook's result, when it has one, replaces the page's own message.
+  const shown: Message | null =
+    state.status === "done"
+      ? { kind: "info", text: state.message }
+      : state.status === "error"
+        ? { kind: "error", text: state.message }
+        : message;
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3">
-        {/* Export button */}
-        <button
-          type="button"
-          onClick={exportData}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-85"
-          style={{
-            backgroundColor: "var(--surface-container-lowest)",
-            color: "var(--on-surface)",
-            border: "1px solid var(--outline-variant)",
-            cursor: "pointer",
-            fontFamily: "Manrope, sans-serif",
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          Export Data
-        </button>
+      <h2 className="text-sm font-semibold" style={{ color: "var(--on-surface)" }}>
+        Backup file on this device
+      </h2>
 
-        {/* Import button */}
-        <label
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-85"
-          style={{
-            backgroundColor: "var(--surface-container-lowest)",
-            color: "var(--on-surface)",
-            border: "1px solid var(--outline-variant)",
-            cursor: "pointer",
-            fontFamily: "Manrope, sans-serif",
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
-          Import Data
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json"
-            onChange={handleImport}
-            className="hidden"
-          />
-        </label>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+        {canShare && (
+          <ActionGroup description="Send a backup file to Drive, iCloud, a message or another app.">
+            <button type="button" onClick={handleShare} disabled={sharing} className={BUTTON_PRIMARY}>
+              <Share2 size={15} aria-hidden="true" />
+              Share backup
+            </button>
+          </ActionGroup>
+        )}
+
+        <ActionGroup description="Download a backup file to this device.">
+          <button type="button" onClick={handleExport} className={canShare ? BUTTON_SECONDARY : BUTTON_PRIMARY}>
+            <Download size={15} aria-hidden="true" />
+            Export Data
+          </button>
+        </ActionGroup>
+
+        <ActionGroup description="Restore from a backup file you saved earlier.">
+          <label className={BUTTON_SECONDARY}>
+            <Upload size={15} aria-hidden="true" />
+            Import Data
+            <input type="file" accept=".json" onChange={handleFile} className="hidden" />
+          </label>
+        </ActionGroup>
       </div>
 
-      {/* Status message */}
-      {importStatus && (
+      {shown && (
         <p
-          className="text-xs font-medium px-1"
-          style={{
-            color: importStatus.type === "success" ? "var(--primary)" : "var(--tertiary)",
-            transition: "opacity 0.3s ease",
-          }}
+          role={shown.kind === "error" ? "alert" : "status"}
+          className="px-1 text-xs font-medium"
+          style={{ color: shown.kind === "error" ? "var(--tertiary)" : "var(--primary)" }}
         >
-          {importStatus.message}
+          {shown.text}
         </p>
+      )}
+
+      <p className="text-xs leading-relaxed" style={{ color: "var(--on-surface-sub)" }}>
+        {PRIVACY_NOTE}
+      </p>
+
+      {state.status === "awaiting-confirmation" && (
+        <ImportConfirmDialog
+          open
+          exportedAt={state.payload.exportedAt}
+          preview={state.preview}
+          onConfirm={confirm}
+          onCancel={cancel}
+          onDownloadCurrent={handleDownloadCurrent}
+        />
       )}
     </div>
   );
