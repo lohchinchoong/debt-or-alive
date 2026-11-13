@@ -7,9 +7,10 @@ export type ImportResult = SaveResult & { toolsImported: number; keysSkipped: st
 /**
  * A read-only storage view: the backup's value for keys in the file, the stored
  * value otherwise. Writes throw, so an adapter's read can't change real storage
- * (the CPF SA migration's write fails here, harmlessly).
+ * (the CPF SA migration's write fails here, harmlessly). The import preview
+ * reuses it, with an empty `data` to read this browser's storage safely.
  */
-function overlay(storage: StorageLike, data: Record<string, unknown>): StorageLike {
+export function overlay(storage: StorageLike, data: Record<string, unknown>): StorageLike {
   return {
     getItem(key) {
       if (!(key in data)) return storage.getItem(key);
