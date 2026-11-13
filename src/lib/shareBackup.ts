@@ -30,6 +30,9 @@ export async function shareBackupFile(file: File): Promise<ShareOutcome> {
     await navigator.share({ files: [file], title: "Debt or Alive backup" });
     return "shared";
   } catch (error) {
-    return isAbortError(error) ? "cancelled" : "failed";
+    if (isAbortError(error)) return "cancelled";
+    // Keep the real reason for debugging; the UI only shows a generic message.
+    console.error("Share backup failed:", error);
+    return "failed";
   }
 }

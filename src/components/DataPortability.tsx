@@ -15,7 +15,7 @@ import { canShareBackupFile, shareBackupFile } from "@/lib/shareBackup";
 // preview.ts, import.ts); this component lays out the controls and shows messages.
 
 const EMPTY_MESSAGE = "Nothing to back up yet. Save some data in a tool first.";
-const SHARE_FAILED_MESSAGE = "Couldn't open the share sheet. Use Export Data to download the backup instead.";
+const SHARE_FALLBACK_MESSAGE = "Sharing isn't available in this browser, so the backup was downloaded instead.";
 const PRIVACY_NOTE =
   "Your backup file is plain readable text and includes your CPF, debt and net worth figures. This app keeps " +
   "no copy: the file lives wherever you send it, and anyone who can open that place can read it. Data in this " +
@@ -63,7 +63,11 @@ export function DataPortability() {
     setSharing(true);
     try {
       const outcome = await shareBackupFile(file);
-      if (outcome === "failed") setMessage({ kind: "error", text: SHARE_FAILED_MESSAGE });
+      if (outcome === "failed") {
+        // Some browsers (Edge on macOS) offer sharing but refuse it; download the same backup instead.
+        downloadBackup(payload, now);
+        setMessage({ kind: "info", text: SHARE_FALLBACK_MESSAGE });
+      }
     } finally {
       setSharing(false);
     }
